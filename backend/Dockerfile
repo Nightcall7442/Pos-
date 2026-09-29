@@ -12,7 +12,9 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/uploads ./uploads
+# Runtime upload directory — created here rather than copied, since git does
+# not carry empty directories and the build would fail looking for it.
+RUN mkdir -p uploads
 RUN npx prisma generate
 EXPOSE 3000
 # Schema changes are applied as reviewed migrations. `migrate deploy` never

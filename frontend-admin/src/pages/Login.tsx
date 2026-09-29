@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Store, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useLogin } from "../hooks/useAuth";
 
 export default function Login() {
@@ -19,71 +19,68 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary-50 via-white to-blue-50 px-4 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-600 shadow-lg shadow-primary-600/30">
-            <Store className="h-8 w-8 text-white" />
-          </div>
-          <h1 className="mt-4 text-3xl font-bold text-gray-900 dark:text-gray-100">Qwik</h1>
-          <p className="mt-1 text-gray-500 dark:text-gray-400">Войдите в панель управления</p>
+    <div className="auth-screen">
+      <div className="auth-box">
+        <div className="auth-head">
+          <div className="auth-kicker">Панель управления</div>
+          <h1 className="auth-title">Qwik</h1>
+          <p className="auth-sub">Войдите, чтобы управлять товарами, складом и сменами.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="card space-y-5">
-          <div>
-            <label className="label">Электронная почта</label>
+        <form onSubmit={handleSubmit} className="auth-card">
+          <div className="auth-field">
+            <label className="auth-label" htmlFor="login-email">Электронная почта</label>
             <input
+              id="login-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="input"
+              className="auth-input"
               placeholder="admin@example.com"
+              autoComplete="email"
               required
             />
           </div>
 
-          <div>
-            <label className="label">Пароль</label>
-            <div className="relative">
+          <div className="auth-field">
+            <label className="auth-label" htmlFor="login-password">Пароль</label>
+            <div className="auth-input-wrap">
               <input
+                id="login-password"
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input pr-10"
+                className="auth-input"
+                style={{ paddingRight: 40 }}
                 placeholder="Введите пароль"
+                autoComplete="current-password"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="auth-reveal"
+                aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loginMutation.isPending}
-            className="btn-primary w-full"
-          >
+          <button type="submit" disabled={loginMutation.isPending} className="auth-submit">
             {loginMutation.isPending ? (
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Вход...
-              </div>
+              <>
+                <span className="auth-spinner" />
+                Вход…
+              </>
             ) : (
               "Войти"
             )}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-          Нет аккаунта?{" "}
-          <Link to="/register" className="font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
-            Зарегистрироваться
-          </Link>
+        <p className="auth-foot">
+          Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
         </p>
       </div>
     </div>

@@ -63,6 +63,146 @@
   }
 }
 
+
+/* ── Экраны входа и регистрации ───────────────────────────────────────────────
+   Оформлены как сайт qwik.uz: бумажный фон, серифный заголовок, зелёный
+   акцент, прямые углы. Это первое, что видит пользователь после лендинга,
+   поэтому переход не должен выглядеть как переход в другой продукт.
+   Классы отдельные: внутренняя часть панели остаётся в своём оформлении.
+   Тема здесь всегда светлая — «бумага» тёмного варианта не имеет. */
+.auth-screen {
+  --paper: #f7f5f0;
+  --ink: #14150f;
+  --muted: #6d6c62;
+  --line: #dedbd2;
+  --accent: #1f5f3f;
+
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+}
+
+.auth-box { width: 100%; max-width: 420px; }
+
+.auth-head { margin-bottom: 32px; }
+
+.auth-kicker {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.auth-title {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.auth-title em { font-style: italic; color: var(--accent); }
+
+.auth-sub { margin-top: 10px; color: var(--muted); font-size: 15px; }
+
+.auth-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: 28px;
+}
+
+.auth-field + .auth-field { margin-top: 18px; }
+
+.auth-label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 7px;
+}
+
+.auth-input {
+  display: block;
+  width: 100%;
+  padding: 11px 13px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  transition: border-color 0.15s ease;
+}
+.auth-input::placeholder { color: #a8a69c; }
+.auth-input:focus { outline: none; border-color: var(--accent); }
+
+.auth-input-wrap { position: relative; }
+.auth-reveal {
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  display: flex;
+  transition: color 0.15s ease;
+}
+.auth-reveal:hover { color: var(--ink); }
+
+.auth-submit {
+  width: 100%;
+  margin-top: 24px;
+  padding: 13px 22px;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #fff;
+  background: var(--accent);
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.auth-submit:hover:not(:disabled) { background: #17492f; }
+.auth-submit:active:not(:disabled) { transform: scale(0.99); }
+.auth-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.auth-hint { color: #b04a3a; font-size: 13px; margin-top: 7px; }
+
+.auth-foot {
+  margin-top: 26px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+}
+.auth-foot a { color: var(--accent); font-weight: 500; }
+.auth-foot a:hover { text-decoration: underline; }
+
+.auth-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.auth-grid .auth-field + .auth-field { margin-top: 0; }
+
+.auth-spinner {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-right: 8px;
+  vertical-align: -2px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: auth-spin 0.7s linear infinite;
+}
+@keyframes auth-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 520px) {
+  .auth-title { font-size: 36px; }
+  .auth-grid { grid-template-columns: 1fr; }
+  .auth-grid .auth-field + .auth-field { margin-top: 18px; }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

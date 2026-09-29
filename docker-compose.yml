@@ -1,0 +1,73 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - DATABASE_URL=file:./dev.db
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production-use-real-secret}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-change-me-in-production-use-real-secret}
+      - JWT_EXPIRES_IN=15m
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - CORS_ORIGIN=http://localhost
+      - REDIS_URL=redis://redis:6379
+      - PENDING_ORDER_TTL_MINUTES=30
+    volumes:
+      - backend-db:/app/prisma
+      - backend-uploads:/app/uploads
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: ./frontend-admin
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      - PORT=80
+      - BACKEND_URL=backend:3000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  pos-terminal:
+    build:
+      context: ./pos-terminal
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      - PORT=80
+      - BACKEND_URL=backend:3000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  landing:
+    build:
+      context: ./landing
+      dockerfile: Dockerfile
+    ports:
+      - "8081:80"
+    environment:
+      - PORT=80
+      - ADMIN_URL=http://localhost
+      - POS_URL=http://localhost:8080
+      - CONTACT_EMAIL=hello@example.com
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+volumes:
+  backend-db:
+  backend-uploads:

@@ -1,0 +1,35 @@
+server {
+    # Railway (and most PaaS) inject the port to listen on; 80 is the local default.
+    listen ${PORT};
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # The landing is public and static — a few headers cost nothing and keep
+    # the page out of other people's frames.
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    location = /healthz {
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 'ok';
+    }
+
+    # index.html carries the links substituted at start-up, so it must not be
+    # cached by proxies; the static assets can be.
+    location = / {
+        add_header Cache-Control "no-cache";
+        try_files /index.html =404;
+    }
+
+    location ~* \.(svg|png|ico|txt|webmanifest)$ {
+        expires 7d;
+        add_header Cache-Control "public, max-age=604800";
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

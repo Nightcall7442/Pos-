@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qwik — торговая точка под контролем</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f7f5f0;
+    --ink: #14150f;
+    --muted: #6d6c62;
+    --line: #dedbd2;
+    --accent: #1f5f3f;
+    --accent-soft: #e8efe9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased; line-height: 1.6; overflow-x: hidden;
+  }
+  .wrap { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  a { color: inherit; text-decoration: none; }
+  .serif { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; }
+
+  nav { border-bottom: 1px solid var(--line); position: sticky; top: 0; background: rgba(247,245,240,.9); backdrop-filter: blur(10px); z-index: 50; }
+  nav .wrap { display: flex; align-items: center; height: 72px; gap: 28px; }
+  .logo { font-size: 22px; letter-spacing: -.02em; }
+  .nav-links { margin-left: auto; display: flex; gap: 28px; font-size: 14px; color: var(--muted); }
+  .nav-links a:hover { color: var(--ink); }
+  .btn { display: inline-flex; align-items: center; gap: 9px; padding: 12px 22px; border-radius: 4px; font-size: 14px; font-weight: 500; transition: all .15s ease; white-space: nowrap; }
+  .btn:active { transform: scale(.98); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #17492f; }
+  .btn-ghost { border: 1px solid var(--ink); }
+  .btn-ghost:hover { background: var(--ink); color: var(--paper); }
+
+  header { padding: 92px 0 72px; border-bottom: 1px solid var(--line); }
+  .kicker { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 26px; }
+  h1 { font-size: clamp(44px, 8vw, 88px); line-height: .98; letter-spacing: -.02em; }
+  h1 em { font-style: italic; color: var(--accent); }
+  .under { margin-top: 34px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 46px; align-items: end; }
+  .lede { font-size: 17.5px; color: var(--muted); max-width: 44ch; }
+  .cta { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 12px; }
+
+  .ticket { border: 1px solid var(--line); background: #fff; padding: 22px; font-size: 13.5px; }
+  .ticket .t-head { display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px dashed var(--line); margin-bottom: 12px; }
+  .ticket .t-row { display: flex; justify-content: space-between; padding: 5px 0; color: var(--muted); }
+  .ticket .t-row b { color: var(--ink); font-weight: 500; }
+  .ticket .t-total { display: flex; justify-content: space-between; border-top: 1px dashed var(--line); margin-top: 12px; padding-top: 12px; font-size: 18px; }
+  .ticket .t-total b { font-weight: 600; }
+
+  section { padding: 84px 0; border-bottom: 1px solid var(--line); }
+  h2 { font-size: clamp(30px, 4.4vw, 46px); line-height: 1.08; letter-spacing: -.015em; }
+  .sec-head { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; margin-bottom: 52px; }
+  .sec-head p { color: var(--muted); }
+
+  .list { border-top: 1px solid var(--line); }
+  .item { display: grid; grid-template-columns: 56px 1fr 1.25fr; gap: 26px; padding: 26px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+  .item .num { font-size: 15px; color: var(--muted); }
+  .item h3 { font-size: 21px; font-weight: 500; letter-spacing: -.01em; }
+  .item p { color: var(--muted); font-size: 15px; }
+
+  .quote-band { background: var(--accent); color: #fff; border-bottom: 0; }
+  .quote-band .wrap { padding-top: 76px; padding-bottom: 76px; }
+  .quote-band p { font-size: clamp(24px, 3.4vw, 34px); line-height: 1.28; max-width: 22ch; }
+  .quote-band .meta { margin-top: 24px; font-size: 14px; opacity: .75; }
+
+  .numbers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .num-cell { background: var(--paper); padding: 30px 26px; }
+  .num-cell b { display: block; font-size: 34px; letter-spacing: -.02em; font-family: "Instrument Serif", Georgia, serif; font-weight: 400; }
+  .num-cell span { font-size: 14px; color: var(--muted); }
+
+  .final { text-align: center; border-bottom: 0; }
+  .final p { margin: 16px auto 0; color: var(--muted); max-width: 46ch; }
+  .final .cta { justify-content: center; margin-top: 30px; }
+
+  footer { padding: 34px 0; font-size: 13.5px; color: var(--muted); border-top: 1px solid var(--line); }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; }
+  footer a:hover { color: var(--ink); }
+
+  @media (max-width: 880px) {
+    .under, .sec-head { grid-template-columns: 1fr; gap: 30px; }
+    .item { grid-template-columns: 34px 1fr; }
+    .item p { grid-column: 2; }
+    .numbers { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+    section, header { padding: 58px 0; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="logo serif">Qwik</div>
+    <div class="nav-links">
+      <a href="#what">Что умеет</a>
+      <a href="#how">Как начать</a>
+      <a href="#start">Вход</a>
+    </div>
+    <a class="btn btn-ghost" href="#start">Войти</a>
+  </div>
+</nav>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">Касса · склад · отчёты</div>
+    <h1 class="serif">Точка продаж,<br>которая <em>считает сама</em></h1>
+    <div class="under">
+      <div>
+        <p class="lede">
+          Qwik ведёт продажу, остатки, себестоимость и смены в одной системе.
+          Кассир нажимает «Оплатить» — склад, выручка и отчёты обновляются сами.
+        </p>
+        <div class="cta">
+          <a class="btn btn-primary" href="#start">Панель управления
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a class="btn btn-ghost" href="#start">Открыть кассу</a>
+        </div>
+      </div>
+
+      <div class="ticket">
+        <div class="t-head"><span>Чек №128</span><span>19:42</span></div>
+        <div class="t-row"><span>2× Классический бургер</span><b>26 000</b></div>
+        <div class="t-row"><span>1× Капучино</span><b>18 000</b></div>
+        <div class="t-row"><span>1× Салат «Цезарь»</span><b>32 000</b></div>
+        <div class="t-total"><span>Итого</span><b>76 000</b></div>
+        <div class="t-row" style="margin-top:8px"><span>Наличные</span><b>80 000</b></div>
+        <div class="t-row"><span>Сдача</span><b>4 000</b></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="what">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="serif">Что делает система</h2>
+      <p>Шесть блоков, которые закрывают рабочий день точки — от прихода товара до сверки кассы вечером.</p>
+    </div>
+    <div class="list">
+      <div class="item"><span class="num">01</span><h3>Тач-касса</h3><p>Категории, поиск, вес в граммах, столы и клиент. Заказ, оплата и чек — одной операцией.</p></div>
+      <div class="item"><span class="num">02</span><h3>Склад</h3><p>Остаток резервируется в момент заказа, приход обновляет себестоимость, цена продажи меняется только по вашему решению.</p></div>
+      <div class="item"><span class="num">03</span><h3>Техкарты</h3><p>Рецепт блюда списывает ингредиенты при оплате — с точностью до грамма.</p></div>
+      <div class="item"><span class="num">04</span><h3>Смены</h3><p>Открытие с суммой в кассе, живые итоги по наличным, карте и QR, расхождение при закрытии.</p></div>
+      <div class="item"><span class="num">05</span><h3>Отчёты</h3><p>Выручка по часам в часовом поясе заведения, топ товаров, продажи по сотрудникам.</p></div>
+      <div class="item"><span class="num">06</span><h3>Доступы</h3><p>Роли, вход по PIN, журнал действий со временем и адресом — видно, кто что сделал.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="quote-band">
+  <div class="wrap">
+    <p class="serif">«Кассир нажал оплату — склад, смена и отчёт уже обновились».</p>
+    <div class="meta">Так работает система по умолчанию, без ручной сверки в конце дня.</div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="serif">Запуск — за вечер</h2>
+      <p>Ничего не нужно устанавливать: система открывается в браузере на планшете, ноутбуке или телефоне.</p>
+    </div>
+    <div class="numbers">
+      <div class="num-cell"><b>01</b><span>Создайте заведение: название, валюта, часовой пояс</span></div>
+      <div class="num-cell"><b>02</b><span>Заведите товары приходом — с закупкой и ценой продажи</span></div>
+      <div class="num-cell"><b>03</b><span>Откройте смену и продавайте — кассир входит по PIN</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="final" id="start">
+  <div class="wrap">
+    <h2 class="serif">Готовы начать?</h2>
+    <p>Создайте заведение и сделайте первую продажу сегодня. Данные остаются вашими.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="#">Панель управления</a>
+      <a class="btn btn-ghost" href="#">POS-терминал</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Qwik</span>
+    <span><a href="#">Панель</a> · <a href="#">Касса</a> · <a href="mailto:hello@example.com">Связаться</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

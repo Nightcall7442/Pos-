@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qwik — касса, склад и отчёты</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0c11;
+    --surface: #14161f;
+    --surface-2: #1b1e2a;
+    --line: #262a38;
+    --text: #f4f5f8;
+    --muted: #9095a8;
+    --accent: #a855f7;
+    --accent-2: #6366f1;
+    --success: #22c55e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.55;
+    overflow-x: hidden;
+  }
+  .wrap { width: 100%; max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ── nav ── */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(11,12,17,.72);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+  }
+  nav .wrap { display: flex; align-items: center; gap: 28px; height: 68px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; letter-spacing: -.02em; }
+  .logo-mark {
+    width: 30px; height: 30px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: grid; place-items: center;
+  }
+  .nav-links { display: flex; gap: 26px; margin-left: auto; font-size: 14px; color: var(--muted); }
+  .nav-links a:hover { color: var(--text); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: 11px;
+    font-size: 14px; font-weight: 600; white-space: nowrap;
+    transition: transform .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; box-shadow: 0 8px 28px rgba(168,85,247,.28); }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-ghost { border: 1px solid var(--line); color: var(--text); background: var(--surface); }
+  .btn-ghost:hover { border-color: #3a4054; }
+
+  /* ── hero ── */
+  header { position: relative; padding: 96px 0 72px; overflow: hidden; }
+  header::before {
+    content: ""; position: absolute; top: -280px; left: 50%; transform: translateX(-50%);
+    width: 900px; height: 620px; pointer-events: none;
+    background: radial-gradient(closest-side, rgba(168,85,247,.28), transparent 72%);
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 13px; border-radius: 99px;
+    border: 1px solid var(--line); background: var(--surface);
+    font-size: 13px; color: var(--muted); margin-bottom: 26px;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+  h1 {
+    font-size: clamp(38px, 6.4vw, 62px); line-height: 1.06;
+    letter-spacing: -.035em; font-weight: 700; max-width: 16ch;
+  }
+  h1 .grad { background: linear-gradient(120deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lede { margin-top: 22px; font-size: 18px; color: var(--muted); max-width: 54ch; }
+  .cta { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 12px; }
+  .note { margin-top: 18px; font-size: 13px; color: #6f748a; }
+
+  /* ── app mockup ── */
+  .mock {
+    margin-top: 64px; border-radius: 18px; overflow: hidden;
+    border: 1px solid var(--line); background: var(--surface);
+    box-shadow: 0 40px 90px -30px rgba(0,0,0,.9);
+  }
+  .mock-bar { display: flex; align-items: center; gap: 7px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+  .mock-bar i { width: 10px; height: 10px; border-radius: 50%; background: #343a4d; display: block; }
+  .mock-body { display: grid; grid-template-columns: 1fr 1.5fr; min-height: 340px; }
+  .mock-cart { border-right: 1px solid var(--line); padding: 20px; display: flex; flex-direction: column; }
+  .mock-title { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: #5f6478; margin-bottom: 16px; }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid #1f2331; font-size: 14px; }
+  .row span:last-child { font-weight: 600; }
+  .mock-total { margin-top: auto; padding-top: 18px; display: flex; justify-content: space-between; align-items: baseline; }
+  .mock-total b { font-size: 26px; color: var(--accent); letter-spacing: -.02em; }
+  .pay { margin-top: 16px; text-align: center; padding: 13px; border-radius: 12px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); font-weight: 600; font-size: 14px; }
+  .mock-grid { padding: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-content: start; }
+  .tile { border: 1px solid var(--line); border-radius: 13px; padding: 16px 12px; text-align: center; background: var(--surface-2); }
+  .tile .em { font-size: 24px; }
+  .tile .nm { font-size: 13px; margin-top: 8px; color: #c9cddb; }
+  .tile .pr { font-size: 13px; font-weight: 600; color: var(--accent); margin-top: 3px; }
+
+  /* ── features ── */
+  section { padding: 92px 0; }
+  .sec-head { max-width: 46ch; margin-bottom: 48px; }
+  h2 { font-size: clamp(28px, 3.6vw, 38px); letter-spacing: -.028em; line-height: 1.15; font-weight: 700; }
+  .sec-head p { margin-top: 14px; color: var(--muted); font-size: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .card {
+    padding: 26px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface);
+    transition: border-color .2s ease, transform .2s ease;
+  }
+  .card:hover { border-color: #3a4054; transform: translateY(-3px); }
+  .ic { width: 40px; height: 40px; border-radius: 11px; background: rgba(168,85,247,.12); display: grid; place-items: center; margin-bottom: 16px; }
+  .ic svg { width: 20px; height: 20px; stroke: var(--accent); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .card p { font-size: 14px; color: var(--muted); }
+
+  /* ── numbers ── */
+  .strip { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--surface); }
+  .strip .wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding-top: 44px; padding-bottom: 44px; }
+  .stat b { display: block; font-size: 28px; letter-spacing: -.02em; }
+  .stat span { font-size: 13px; color: var(--muted); }
+
+  /* ── final cta ── */
+  .final { text-align: center; }
+  .final .box {
+    border: 1px solid var(--line); border-radius: 22px; padding: 64px 32px;
+    background: radial-gradient(ellipse at top, rgba(99,102,241,.16), transparent 70%), var(--surface);
+  }
+  .final .cta { justify-content: center; }
+
+  footer { border-top: 1px solid var(--line); padding: 34px 0; color: #6f748a; font-size: 13px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; }
+  footer a:hover { color: var(--text); }
+
+  @media (max-width: 860px) {
+    .mock-body { grid-template-columns: 1fr; }
+    .mock-cart { border-right: 0; border-bottom: 1px solid var(--line); }
+    .grid { grid-template-columns: 1fr; }
+    .strip .wrap { grid-template-columns: repeat(2, 1fr); }
+    .nav-links { display: none; }
+    section { padding: 64px 0; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="logo">
+      <span class="logo-mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18M5 9V6a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/></svg>
+      </span>
+      Qwik
+    </div>
+    <div class="nav-links">
+      <a href="#features">Возможности</a>
+      <a href="#how">Как устроено</a>
+      <a href="#start">Начать</a>
+    </div>
+    <a class="btn btn-ghost" href="#start">Войти</a>
+  </div>
+</nav>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow"><span class="dot"></span> Работает на планшете, ноутбуке и телефоне</div>
+    <h1>Касса, склад и отчёты — <span class="grad">в одном месте</span></h1>
+    <p class="lede">
+      Qwik закрывает весь цикл торговой точки: продажа на тач-экране, приходы с себестоимостью,
+      списание по техкартам, кассовые смены со сверкой наличных и отчётность по каждому часу.
+    </p>
+    <div class="cta">
+      <a class="btn btn-primary" href="#start">Открыть кассу
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+      <a class="btn btn-ghost" href="#start">Панель управления</a>
+    </div>
+    <p class="note">Без установки — открывается в браузере.</p>
+
+    <div class="mock">
+      <div class="mock-bar"><i></i><i></i><i></i></div>
+      <div class="mock-body">
+        <div class="mock-cart">
+          <div class="mock-title">Заказ · стол 3</div>
+          <div class="row"><span>2× Классический бургер</span><span>26 000</span></div>
+          <div class="row"><span>1× Капучино</span><span>18 000</span></div>
+          <div class="row"><span>1× Салат «Цезарь»</span><span>32 000</span></div>
+          <div class="mock-total"><span style="color:var(--muted);font-size:14px">К оплате</span><b>76 000</b></div>
+          <div class="pay">Оплатить</div>
+        </div>
+        <div class="mock-grid">
+          <div class="tile"><div class="em">🍔</div><div class="nm">Бургеры</div><div class="pr">от 13 000</div></div>
+          <div class="tile"><div class="em">🍕</div><div class="nm">Пицца</div><div class="pr">от 19 000</div></div>
+          <div class="tile"><div class="em">🥗</div><div class="nm">Салаты</div><div class="pr">от 10 000</div></div>
+          <div class="tile"><div class="em">☕</div><div class="nm">Кофе</div><div class="pr">от 8 000</div></div>
+          <div class="tile"><div class="em">🥤</div><div class="nm">Напитки</div><div class="pr">от 5 000</div></div>
+          <div class="tile"><div class="em">🍰</div><div class="nm">Десерты</div><div class="pr">от 9 000</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Всё, что нужно точке продаж</h2>
+      <p>Ничего лишнего: только то, чем реально пользуются каждый день — от первой продажи до закрытия смены.</p>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 15h3"/></svg></div>
+        <h3>Тач-касса</h3>
+        <p>Категории, поиск, вес в граммах, столы и клиенты. Заказ и оплата — одним действием, без зависаний.</p>
+      </div>
+      <div class="card">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8"/></svg></div>
+        <h3>Склад и приходы</h3>
+        <p>Остаток резервируется при заказе, себестоимость обновляется приходом, цена продажи — только по вашему решению.</p>
+      </div>
+      <div class="card">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3v6M5 12a7 7 0 1 0 14 0M9 21h6"/></svg></div>
+        <h3>Техкарты</h3>
+        <p>Рецептура блюда списывает ингредиенты автоматически в момент оплаты — с точностью до грамма.</p>
+      </div>
+      <div class="card">
+        <div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h3>Кассовые смены</h3>
+        <p>Открытие с суммой в кассе, живые итоги по способам оплаты, расхождение при закрытии — видно сразу.</p>
+      </div>
+      <div class="card">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg></div>
+        <h3>Отчёты</h3>
+        <p>Выручка по часам в вашем часовом поясе, топ товаров, продажи по сотрудникам, средний чек.</p>
+      </div>
+      <div class="card">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 2l7 4v6c0 5-3 8-7 10-4-2-7-5-7-10V6l7-4z"/></svg></div>
+        <h3>Контроль</h3>
+        <p>Роли сотрудников, вход по PIN, журнал всех действий с IP и временем. Ничего не теряется.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="strip" id="how">
+  <div class="wrap">
+    <div class="stat"><b>3 шага</b><span>от прихода до первой продажи</span></div>
+    <div class="stat"><b>1 клик</b><span>заказ, оплата и чек одной операцией</span></div>
+    <div class="stat"><b>Реальное время</b><span>кухня видит заказ сразу</span></div>
+    <div class="stat"><b>Любая валюта</b><span>и часовой пояс заведения</span></div>
+  </div>
+</div>
+
+<section class="final" id="start">
+  <div class="wrap">
+    <div class="box">
+      <h2>Запустите точку сегодня</h2>
+      <p style="margin-top:14px;color:var(--muted)">Создайте заведение, заведите товары — и касса готова к работе.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="#">Панель управления</a>
+        <a class="btn btn-ghost" href="#">POS-терминал</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Qwik</span>
+    <span><a href="#">Панель</a> · <a href="#">Касса</a> · <a href="mailto:hello@example.com">Связаться</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

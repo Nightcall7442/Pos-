@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dark-950: #0a0c14;
+  --color-dark-900: #0f1117;
+  --color-dark-800: #1a1d27;
+  --color-dark-700: #252836;
+  --color-dark-600: #2e3244;
+  --color-dark-500: #3b3f54;
+  --color-dark-400: #6b7194;
+  --color-dark-300: #9ca3c4;
+  --color-dark-50: #ffffff;
+  --color-primary-50: #faf5ff;
+  --color-primary-100: #f3e8ff;
+  --color-primary-200: #e9d5ff;
+  --color-primary-300: #d8b4fe;
+  --color-primary-400: #c084fc;
+  --color-primary-500: #a855f7;
+  --color-primary-600: #9333ea;
+  --color-primary-700: #7e22ce;
+  --color-primary-800: #6b21a8;
+  --color-primary-900: #581c87;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+}
+
+/*
+ * The whole UI is built on the "dark-*" color scale (bg-dark-950 for the
+ * page background down to dark-50 for the brightest text). Rather than
+ * rewrite every screen with light/dark variants, the light theme just
+ * redefines what each step of that scale means: darkest becomes lightest
+ * and vice versa. Every component keeps using the exact same classes.
+ */
+:root[data-theme="light"] {
+  --color-dark-950: #f4f5f9;
+  --color-dark-900: #ffffff;
+  --color-dark-800: #ffffff;
+  --color-dark-700: #eef0f5;
+  --color-dark-600: #dfe2ea;
+  --color-dark-500: #b8bdcc;
+  --color-dark-400: #6b7280;
+  --color-dark-300: #384152;
+  --color-dark-50: #0f1117;
+}
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-dark-500) transparent;
+  }
+
+  body {
+    background-color: var(--color-dark-950);
+    color: var(--color-dark-50);
+    font-family: system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  button, [role="button"] {
+    user-select: none;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-dark-500);
+    border-radius: 3px;
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-right {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(168, 85, 247, 0); }
+}

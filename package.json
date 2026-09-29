@@ -1,0 +1,21 @@
+{
+  "name": "qwik",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Qwik — POS: касса, склад, техкарты, смены и отчёты",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:admin\" \"npm run dev:terminal\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:admin": "cd frontend-admin && npm run dev",
+    "dev:terminal": "cd pos-terminal && npm run dev",
+    "build": "npm run build:backend && npm run build:admin && npm run build:terminal",
+    "build:backend": "cd backend && npm run build",
+    "build:admin": "cd frontend-admin && npm run build",
+    "build:terminal": "cd pos-terminal && npm run build",
+    "setup": "npm install --prefix backend && npm install --prefix frontend-admin && npm install --prefix pos-terminal && npm run db:generate --prefix backend && npm run db:deploy --prefix backend && npm run db:seed --prefix backend",
+    "test": "cd backend && npm run test:run"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

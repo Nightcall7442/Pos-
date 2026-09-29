@@ -1,0 +1,214 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Plus, Grid3X3, List, Package, Pencil, Trash2 } from "lucide-react";
+import { useProducts, useDeleteProduct, useCategories } from "../hooks/useProducts";
+import SearchInput from "../components/SearchInput";
+import Badge from "../components/Badge";
+import LoadingSpinner from "../components/LoadingSpinner";
+import EmptyState from "../components/EmptyState";
+import Modal from "../components/Modal";
+import type { Product, Category } from "../services";
+import { useMoney } from "../hooks/useMoney";
+
+
+export default function Products() {
+  const { money } = useMoney();
+  const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+  const [categoryId, setCategoryId] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const { data, isLoading } = useProducts({ search, categoryId: categoryId || undefined, limit: 50 });
+  const { data: categories } = useCategories();
+  const deleteProduct = useDeleteProduct();
+
+  const products: Product[] = data?.data || [];
+
+  const handleDelete = (): void => {
+    if (deleteId) {
+      deleteProduct.mutate(deleteId, { onSuccess: () => setDeleteId(null) });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Товары</h1>
+          <p className="text-gray-500">Управление каталогом товаров</p>
+        </div>
+        <Link to="/products/new" className="btn-primary">
+          <Plus className="mr-2 h-4 w-4" />
+          Добавить товар
+        </Link>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <SearchInput value={search} onChange={setSearch} className="w-80" placeholder="Поиск товаров..." />
+        <select
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          className="input w-48"
+        >
+          <option value="">Все категории</option>
+          {categories?.map((cat: Category) => (
+            <option key={cat.id} value={cat.id}>{cat.name}</option>
+          ))}
+        </select>
+        <div className="flex rounded-lg border border-gray-200">
+          <button
+            onClick={() => setViewMode("grid")}
+            className={`p-2 ${viewMode === "grid" ? "bg-gray-100 text-gray-900" : "text-gray-400"}`}
+          >
+            <Grid3X3 className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setViewMode("list")}
+            className={`p-2 ${viewMode === "list" ? "bg-gray-100 text-gray-900" : "text-gray-400"}`}
+          >
+            <List className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <LoadingSpinner />
+      ) : products.length === 0 ? (
+        <EmptyState
+          title="Товары не найдены"
+          description="Создайте первый товар для начала работы"
+          action={
+            <Link to="/products/new" className="btn-primary">
+              <Plus className="mr-2 h-4 w-4" />
+              Добавить товар
+            </Link>
+          }
+        />
+      ) : viewMode === "grid" ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {products.map((product) => (
+            <div key={product.id} className="card group relative overflow-hidden transition-shadow hover:shadow-md">
+              {product.imageUrl ? (
+                <img src={product.imageUrl} alt={product.name} className="h-40 w-full rounded-lg object-cover" />
+              ) : (
+                <div className="flex h-40 w-full items-center justify-center rounded-lg bg-gray-100">
+                  <Package className="h-12 w-12 text-gray-300" />
+                </div>
+              )}
+              <div className="mt-3">
+                <div className="flex items-start justify-between">
+                  <h3 className="font-semibold text-gray-900 line-clamp-1">{product.name}</h3>
+                  {product.category && <Badge variant="gray">{product.category.name}</Badge>}
+                </div>
+                {product.sku && <p className="mt-0.5 text-xs text-gray-400">Артикул: {product.sku}</p>}
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-lg font-bold text-gray-900">{money(product.price)}</span>
+                  {product.trackInventory && (
+                    <span className={`text-sm ${product.currentStock <= product.minStock ? "text-red-600 font-medium" : "text-gray-500"}`}>
+                      Остаток: {product.currentStock}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="mt-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Link to={`/products/${product.id}`} className="btn-secondary flex-1 text-xs py-1.5">
+                  <Pencil className="mr-1 inline h-3 w-3" />
+                  Изменить
+                </Link>
+                <button onClick={() => setDeleteId(product.id)} className="btn-danger flex-1 text-xs py-1.5">
+                  <Trash2 className="mr-1 inline h-3 w-3" />
+                  Удалить
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="card overflow-x-auto">
+          <table className="w-full min-w-[720px]">
+            <thead>
+              <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="p-4">Товар</th>
+                <th className="p-4">Категория</th>
+                <th className="p-4">Цена</th>
+                <th className="p-4">Себестоимость</th>
+                <th className="p-4">Остаток</th>
+                <th className="p-4">Статус</th>
+                <th className="p-4 text-right">Действия</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {products.map((product) => (
+                <tr key={product.id} className="hover:bg-gray-50">
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      {product.imageUrl ? (
+                        <img src={product.imageUrl} alt="" className="h-10 w-10 rounded-lg object-cover" />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100">
+                          <Package className="h-5 w-5 text-gray-400" />
+                        </div>
+                      )}
+                      <div>
+                        <span className="font-medium text-gray-900">{product.name}</span>
+                        {product.sku && <p className="text-xs text-gray-400">{product.sku}</p>}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-4 text-sm text-gray-500">{product.category?.name || "—"}</td>
+                  <td className="p-4 whitespace-nowrap font-medium text-gray-900">
+                    {money(product.price)}
+                    {/* A price at or below cost usually means it was overwritten
+                        by a delivery rather than set deliberately. */}
+                    {product.costPrice > 0 && product.price <= product.costPrice && (
+                      <span
+                        className="ml-2 inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-600"
+                        title="Цена продажи не выше себестоимости — проверьте цену или наценку категории"
+                      >
+                        без маржи
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-4 whitespace-nowrap text-sm text-gray-500">{money(product.costPrice)}</td>
+                  <td className="p-4">
+                    <span className={`font-semibold ${product.trackInventory && product.currentStock <= product.minStock ? "text-red-600" : "text-gray-900"}`}>
+                      {product.trackInventory ? product.currentStock : "—"}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <Badge variant={product.isActive ? "success" : "gray"}>
+                      {product.isActive ? "Активен" : "Неактивен"}
+                    </Badge>
+                  </td>
+                  <td className="p-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Link to={`/products/${product.id}`} className="text-sm font-medium text-primary-600 hover:text-primary-700">
+                        Изменить
+                      </Link>
+                      <button
+                        onClick={() => setDeleteId(product.id)}
+                        className="text-sm font-medium text-red-600 hover:text-red-700"
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Удалить товар" size="sm">
+        <p className="text-gray-600">Вы уверены, что хотите удалить этот товар? Это действие нельзя отменить.</p>
+        <div className="mt-4 flex justify-end gap-3">
+          <button onClick={() => setDeleteId(null)} className="btn-secondary">Отмена</button>
+          <button onClick={handleDelete} disabled={deleteProduct.isPending} className="btn-danger">
+            {deleteProduct.isPending ? "Удаление..." : "Удалить"}
+          </button>
+        </div>
+      </Modal>
+    </div>
+  );
+}

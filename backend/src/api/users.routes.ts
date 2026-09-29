@@ -9,8 +9,8 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get("/", validate(userQuerySchema, "query"), (req, res) => userController.findAll(req, res));
-router.get("/:id", (req, res) => userController.findById(req, res));
+router.get("/", authorize("admin", "manager"), validate(userQuerySchema, "query"), (req, res) => userController.findAll(req, res));
+router.get("/:id", authorize("admin", "manager"), (req, res) => userController.findById(req, res));
 router.post("/", authorize("admin", "manager"), validate(createUserSchema), auditLog("user.create", "user"), (req, res) => userController.create(req, res));
 router.put("/:id", authorize("admin", "manager"), validate(updateUserSchema), auditLog("user.update", "user"), (req, res) => userController.update(req, res));
 router.delete("/:id", authorize("admin"), auditLog("user.delete", "user"), (req, res) => userController.delete(req, res));

@@ -10,7 +10,7 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get("/", validate(paymentQuerySchema, "query"), (req, res) => paymentController.findAll(req, res));
+router.get("/", authorize("admin", "manager"), validate(paymentQuerySchema, "query"), (req, res) => paymentController.findAll(req, res));
 router.get("/summary", authorize("admin", "manager"), validate(paymentSummaryQuerySchema, "query"), (req, res) => paymentController.getSummary(req, res));
 router.post("/", authorize("admin", "manager", "cashier"), validate(createPaymentSchema), auditLog("payment.create", "payment"), (req, res) => paymentController.create(req, res));
 router.post("/:id/refund", authorize("admin", "manager"), validate(refundPaymentSchema), auditLog("payment.refund", "payment"), (req, res) => paymentController.refund(req, res));

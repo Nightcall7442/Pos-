@@ -10,8 +10,8 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get("/", validate(stockReceiptQuerySchema, "query"), (req, res) => stockReceiptController.findAll(req, res));
-router.get("/:id", (req, res) => stockReceiptController.findById(req, res));
+router.get("/", authorize("admin", "manager"), validate(stockReceiptQuerySchema, "query"), (req, res) => stockReceiptController.findAll(req, res));
+router.get("/:id", authorize("admin", "manager"), (req, res) => stockReceiptController.findById(req, res));
 router.post("/", authorize("admin", "manager", "cashier"), validate(createStockReceiptSchema), auditLog("stock_receipt.create", "stock_receipt"), (req, res) => stockReceiptController.create(req, res));
 router.delete("/:id", authorize("admin", "manager"), auditLog("stock_receipt.delete", "stock_receipt"), (req, res) => stockReceiptController.delete(req, res));
 

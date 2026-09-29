@@ -10,7 +10,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get("/active", (req, res) => orderController.getActive(req, res));
-router.get("/", validate(orderQuerySchema, "query"), (req, res) => orderController.findAll(req, res));
+router.get("/", authorize("admin", "manager"), validate(orderQuerySchema, "query"), (req, res) => orderController.findAll(req, res));
 router.get("/:id", (req, res) => orderController.findById(req, res));
 router.post("/", validate(createOrderSchema), auditLog("order.create", "order"), (req, res) => orderController.create(req, res));
 router.post("/checkout", authorize("admin", "manager", "cashier"), validate(checkoutSchema), auditLog("order.checkout", "order"), (req, res) => orderController.checkout(req, res));

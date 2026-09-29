@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useUIStore } from "../store/uiStore";
 import { useAuthStore } from "../store/authStore";
+import { canOpenPath } from "../utils/access";
 import clsx from "clsx";
 
 const navItems = [
@@ -41,6 +42,9 @@ const navItems = [
 export default function Sidebar() {
   const { sidebarOpen, toggleSidebar } = useUIStore();
   const user = useAuthStore((s) => s.user);
+  // Повару из всего меню положена одна «Кухня» — остальное не показываем,
+  // чтобы он не упирался в пункты, которые всё равно не откроются.
+  const items = navItems.filter((item) => canOpenPath(user?.role, item.to));
   const userInitial = user?.firstName?.[0] || user?.email?.[0] || "U";
   const userName = user ? `${user.firstName} ${user.lastName}` : "Пользователь";
   const userEmail = user?.email || "";
@@ -72,7 +76,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {navItems.map((item) => (
+        {items.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

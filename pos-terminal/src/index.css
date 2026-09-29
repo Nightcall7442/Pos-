@@ -10,16 +10,21 @@
   --color-dark-400: #6b7194;
   --color-dark-300: #9ca3c4;
   --color-dark-50: #ffffff;
-  --color-primary-50: #faf5ff;
-  --color-primary-100: #f3e8ff;
-  --color-primary-200: #e9d5ff;
-  --color-primary-300: #d8b4fe;
-  --color-primary-400: #c084fc;
-  --color-primary-500: #a855f7;
-  --color-primary-600: #9333ea;
-  --color-primary-700: #7e22ce;
-  --color-primary-800: #6b21a8;
-  --color-primary-900: #581c87;
+  /*
+   * Акцент — фирменный зелёный Qwik (#1f5f3f с сайта и панели). Шаги 400–600
+   * осветлены, чтобы кнопки и подписи читались и на тёмном фоне кассы, и на
+   * белом в светлой теме; 700 — ровно тот зелёный, что на qwik.uz.
+   */
+  --color-primary-50: #eef4f0;
+  --color-primary-100: #d5e7dc;
+  --color-primary-200: #abcdb9;
+  --color-primary-300: #6fae8f;
+  --color-primary-400: #3f8f69;
+  --color-primary-500: #2e8a5f;
+  --color-primary-600: #24734e;
+  --color-primary-700: #1f5f3f;
+  --color-primary-800: #184c33;
+  --color-primary-900: #123c28;
   --color-success-500: #22c55e;
   --color-success-600: #16a34a;
   --color-danger-500: #ef4444;
@@ -105,6 +110,147 @@
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.4); }
-  50% { box-shadow: 0 0 0 12px rgba(168, 85, 247, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(46, 138, 95, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(46, 138, 95, 0); }
+}
+
+/* ── Экран входа ──────────────────────────────────────────────────────────────
+   Оформлен как сайт qwik.uz и вход в панель: бумажный фон, серифный заголовок,
+   зелёный акцент, прямые углы. Кассир приходит сюда с лендинга или по ссылке,
+   и переход не должен выглядеть как переход в другой продукт.
+
+   Отличие от панели — размеры: касса живёт на планшете, поэтому поля и кнопка
+   рассчитаны на палец (56–58 px), а шрифт крупнее. Классы отдельные
+   (.pos-auth-*), рабочие экраны остаются в своём тёмном оформлении.
+   Тема здесь всегда светлая — «бумага» тёмного варианта не имеет, поэтому
+   переменные заданы прямо на экране и не зависят от data-theme. */
+.pos-auth {
+  --paper: #f7f5f0;
+  --ink: #14150f;
+  --muted: #6d6c62;
+  --line: #dedbd2;
+  --accent: #1f5f3f;
+
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+}
+
+.pos-auth-box { width: 100%; max-width: 440px; }
+
+.pos-auth-head { margin-bottom: 30px; }
+
+.pos-auth-kicker {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.pos-auth-title {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  font-size: 46px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.pos-auth-title em { font-style: italic; color: var(--accent); }
+
+.pos-auth-sub { margin-top: 10px; color: var(--muted); font-size: 15px; }
+
+.pos-auth-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: 26px 24px;
+}
+
+.pos-auth-field + .pos-auth-field { margin-top: 18px; }
+
+.pos-auth-label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.pos-auth-input {
+  display: block;
+  width: 100%;
+  height: 56px;
+  padding: 0 14px;
+  font-size: 17px;
+  font-family: inherit;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  transition: border-color 0.15s ease;
+}
+.pos-auth-input::placeholder { color: #a8a69c; }
+.pos-auth-input:focus { outline: none; border-color: var(--accent); }
+
+.pos-auth-input-wrap { position: relative; }
+.pos-auth-input-wrap .pos-auth-input { padding-right: 52px; }
+.pos-auth-reveal {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  transition: color 0.15s ease;
+}
+.pos-auth-reveal:hover { color: var(--ink); }
+
+.pos-auth-submit {
+  width: 100%;
+  height: 58px;
+  margin-top: 24px;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #fff;
+  background: var(--accent);
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.pos-auth-submit:hover:not(:disabled) { background: #17492f; }
+.pos-auth-submit:active:not(:disabled) { transform: scale(0.99); }
+.pos-auth-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.pos-auth-foot {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.pos-auth-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  vertical-align: -3px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: pos-auth-spin 0.7s linear infinite;
+}
+@keyframes pos-auth-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 520px) {
+  .pos-auth-title { font-size: 38px; }
 }

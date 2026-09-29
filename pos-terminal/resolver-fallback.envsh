@@ -1,0 +1,8 @@
+#!/bin/sh
+# Официальный образ nginx экспортирует NGINX_LOCAL_RESOLVERS из
+# /etc/resolv.conf (см. 15-local-resolvers.envsh) до подстановки шаблонов.
+# Этот файл — страховка: если переменная пуста, директива `resolver` окажется
+# без аргумента и nginx не стартует вовсе.
+[ -n "${NGINX_LOCAL_RESOLVERS}" ] || NGINX_LOCAL_RESOLVERS=$(awk '/^nameserver/ { printf "%s ", $2 }' /etc/resolv.conf)
+[ -n "${NGINX_LOCAL_RESOLVERS}" ] || NGINX_LOCAL_RESOLVERS="1.1.1.1"
+export NGINX_LOCAL_RESOLVERS

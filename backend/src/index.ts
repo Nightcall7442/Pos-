@@ -99,7 +99,11 @@ async function main() {
 
     startStaleOrderSweeper(env.PENDING_ORDER_TTL_MINUTES);
 
-    httpServer.listen(env.PORT, "0.0.0.0", () => {
+    // Приватная сеть Railway (и её домены *.railway.internal) работает только
+    // по IPv6, поэтому bind на 0.0.0.0 делал сервис недоступным для соседних
+    // сервисов. "::" в Node открывает dual-stack сокет — IPv4 продолжает
+    // работать, локально и в docker-compose ничего не меняется.
+    httpServer.listen(env.PORT, "::", () => {
       logger.info(`Server running on port ${env.PORT}`);
       logger.info(`Environment: ${env.NODE_ENV}`);
     });

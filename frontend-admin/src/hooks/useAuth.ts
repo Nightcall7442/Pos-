@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { authService, type RegisterInput } from "../services";
 import { useAuthStore } from "../store/authStore";
-import { canOpenPanel, PanelAccessError } from "../utils/access";
+import { canOpenPanel, PanelAccessError, posUrl } from "../utils/access";
 
 export function useLogin() {
   const login = useAuthStore((s) => s.login);
@@ -20,8 +20,15 @@ export function useLogin() {
       toast.success("Добро пожаловать!");
     },
     onError: (error: any) => {
+      // Кассир пришёл не туда, но пароль ввёл верный — не заставляем его
+      // искать адрес кассы, а отправляем сразу. Пауза нужна, чтобы человек
+      // успел прочитать, почему его перебросило: иначе переход выглядит
+      // как необъяснимый сбой.
       if (error instanceof PanelAccessError) {
-        toast.error(error.message);
+        toast.error(`${error.message} Открываем кассу…`);
+        setTimeout(() => {
+          window.location.href = posUrl();
+        }, 1800);
         return;
       }
       toast.error(error.response?.data?.error || "Ошибка входа");

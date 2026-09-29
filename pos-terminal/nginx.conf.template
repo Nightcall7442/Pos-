@@ -1,6 +1,10 @@
 server {
     # Railway (and most PaaS) inject the port to listen on; 80 is the local default.
+    # Внутренняя сеть платформы — IPv6-only, и входящий трафик приходит по
+    # ней, поэтому слушаем оба стека. Штатный 10-listen-on-ipv6-by-default.sh
+    # нам не помогает: он правит только неизменённый конфиг из образа.
     listen ${PORT};
+    listen [::]:${PORT};
     server_name localhost;
     root /usr/share/nginx/html;
     index index.html;

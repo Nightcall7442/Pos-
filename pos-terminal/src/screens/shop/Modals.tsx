@@ -3,7 +3,7 @@ import { PauseCircle, Trash2, X } from "lucide-react";
 import type { ParkedCheck } from "../../store/cartStore";
 
 /** Escape closes any of these windows; the register's global keys are off while one is open. */
-function useEscape(onClose: () => void): void {
+export function useEscape(onClose: () => void): void {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;

@@ -2,6 +2,7 @@ import prisma from "../../config/database.js";
 import type { CreateProductInput, UpdateProductInput, ProductQueryInput } from "./product.schema.js";
 import { AppError, NotFoundError } from "../../utils/errors.js";
 import { caseVariants, searchTokens } from "../../utils/search.js";
+import { catalogService } from "../catalog/catalog.service.js";
 
 // saleUnit values that mean "sold by weight" — see gramsPerUnit().
 const WEIGHT_UNITS = ["г", "кг", "g", "kg"];
@@ -143,7 +144,7 @@ export class ProductService {
       conversionFactor = this.calculateConversionFactor(data.purchaseUnit, data.saleUnit);
     }
 
-    return prisma.product.create({
+    const product = await prisma.product.create({
       data: {
         ...rest,
         tenantId,
@@ -153,6 +154,10 @@ export class ProductService {
       },
       include: { category: true, techCardRef: true },
     });
+
+    // A barcoded product a shop enters by hand teaches the shared catalogue too.
+    if (product.barcode) void catalogService.contribute(tenantId, { barcode: product.barcode, name: product.name, category: product.category?.name });
+    return product;
   }
 
   async update(tenantId: string, id: string, data: UpdateProductInput) {

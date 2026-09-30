@@ -2,6 +2,7 @@ import { spawn, execSync, type ChildProcess } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import fs from "node:fs";
+import http from "node:http";
 
 // The suite talks to a real HTTP server. It used to expect one already running
 // on the development port and wiped the development database as it went; now
@@ -13,6 +14,41 @@ const DATABASE_URL = "file:./test.db";
 const PORT = Number(process.env.TEST_PORT || 3100);
 
 let server: ChildProcess | undefined;
+let offStub: http.Server | undefined;
+const OFF_PORT = Number(process.env.TEST_OFF_PORT || 3199);
+
+// Stands in for Open Food Facts, so the live barcode lookup is tested without
+// the network: one product it "knows", 404 for every other code, and a counter
+// (GET /__hits/<code>) that shows how often the API was really asked.
+const OFF_KNOWN = "4607000000014";
+const offHits = new Map<string, number>();
+
+function startOffStub(): Promise<void> {
+  offStub = http.createServer((req, res) => {
+    const url = req.url ?? "";
+    const counted = url.match(/^\/__hits\/(\d+)$/);
+    if (counted) {
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ hits: offHits.get(counted[1]) ?? 0 }));
+      return;
+    }
+    const asked = url.match(/^\/api\/v2\/product\/(\d+)\.json/);
+    if (!asked) {
+      res.statusCode = 404;
+      res.end();
+      return;
+    }
+    offHits.set(asked[1], (offHits.get(asked[1]) ?? 0) + 1);
+    res.setHeader("Content-Type", "application/json");
+    if (asked[1] === OFF_KNOWN) {
+      res.end(JSON.stringify({ code: asked[1], status: 1, product: { product_name: "Choco &amp; Nuts", brands: "Acme, Other", quantity: "250 G", categories_tags: ["en:snacks", "en:sweet-snacks", "en:chocolates"] } }));
+    } else {
+      res.statusCode = 404;
+      res.end(JSON.stringify({ code: asked[1], status: 0, status_verbose: "no code or invalid code" }));
+    }
+  });
+  return new Promise((resolve) => offStub!.listen(OFF_PORT, "127.0.0.1", resolve));
+}
 
 async function waitForHealth(url: string, timeoutMs = 30000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
@@ -50,8 +86,10 @@ export async function setup(): Promise<void> {
     JWT_SECRET: "test-jwt-secret-value-0123456789",
     JWT_REFRESH_SECRET: "test-refresh-secret-value-0123456789",
     LOG_LEVEL: "error",
+    OFF_BASE_URL: `http://127.0.0.1:${OFF_PORT}`,
   };
 
+  await startOffStub();
   execSync("npx prisma migrate deploy", { cwd: root, env, stdio: "ignore" });
 
   // `npx` spawns tsx as a child of its own, so the whole process group is
@@ -62,6 +100,7 @@ export async function setup(): Promise<void> {
 }
 
 export async function teardown(): Promise<void> {
+  offStub?.close();
   if (!server?.pid) return;
   const pgid = -server.pid;
   try {

@@ -304,3 +304,15 @@
   .sh-left { padding: 12px 14px; }
   .sh-ready span:last-child { display: none; }
 }
+
+/* новый товар по штрихкоду */
+.sh-cnote { margin: -4px 0 16px; padding: 10px 14px; border-radius: 4px; background: var(--accent-soft); color: var(--ink); font-size: 13.5px; line-height: 1.45; }
+.sh-cnote.none { background: var(--paper); border: 1px dashed var(--line); color: var(--muted); }
+.sh-cgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.sh-field span em { font-style: normal; color: var(--faint); }
+.sh-field select { display: block; width: 100%; height: 50px; padding: 0 12px; font: inherit; font-size: 17px; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 4px; outline: 0; }
+.sh-field select:focus { border-color: var(--accent); }
+.sh-seg { display: flex; height: 50px; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.sh-seg button { flex: 1; font-size: 15px; font-weight: 600; color: var(--muted); background: var(--card); text-align: center; }
+.sh-seg button + button { border-left: 1px solid var(--line); }
+.sh-seg button.on { background: var(--accent-soft); color: var(--accent); }

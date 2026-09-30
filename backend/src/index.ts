@@ -34,6 +34,8 @@ import auditRoutes from "./api/audit.routes.js";
 import stockReceiptRoutes from "./api/stock-receipts.routes.js";
 import cashShiftRoutes from "./api/cash-shifts.routes.js";
 import techCardRoutes from "./api/tech-cards.routes.js";
+import catalogRoutes from "./api/catalog.routes.js";
+import { importSnapshot } from "./modules/catalog/catalog.import.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,6 +86,7 @@ app.use("/api/audit", apiLimiter, auditRoutes);
 app.use("/api/stock-receipts", apiLimiter, stockReceiptRoutes);
 app.use("/api/cash-shifts", apiLimiter, cashShiftRoutes);
 app.use("/api/tech-cards", apiLimiter, techCardRoutes);
+app.use("/api/catalog", apiLimiter, catalogRoutes);
 
 // 404 handler
 app.use(notFoundHandler);
@@ -107,6 +110,12 @@ async function main() {
       logger.info(`Server running on port ${env.PORT}`);
       logger.info(`Environment: ${env.NODE_ENV}`);
     });
+
+    // The barcode catalogue loads in the background: the API is up at once and
+    // lookups simply find more as the import proceeds. Tests seed their own rows.
+    if (env.NODE_ENV !== "test") {
+      importSnapshot().catch((error) => logger.error("Barcode catalogue import failed", { message: error instanceof Error ? error.message : String(error) }));
+    }
   } catch (error) {
     logger.error("Failed to start server", error);
     process.exit(1);

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Grid3X3, List, Package, Pencil, Trash2 } from "lucide-react";
+import { Plus, Grid3X3, List, Package, Pencil, Trash2, ScanBarcode } from "lucide-react";
 import { useProducts, useDeleteProduct, useCategories } from "../hooks/useProducts";
 import SearchInput from "../components/SearchInput";
 import Badge from "../components/Badge";
@@ -37,10 +37,16 @@ export default function Products() {
           <h1 className="text-2xl font-bold text-gray-900">Товары</h1>
           <p className="text-gray-500">Управление каталогом товаров</p>
         </div>
-        <Link to="/products/new" className="btn-primary">
-          <Plus className="mr-2 h-4 w-4" />
-          Добавить товар
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link to="/products/scan" className="btn-secondary" title="Наведите сканер на штрихкод — название подставится из общей базы">
+            <ScanBarcode className="mr-2 h-4 w-4" />
+            Добавить сканером
+          </Link>
+          <Link to="/products/new" className="btn-primary">
+            <Plus className="mr-2 h-4 w-4" />
+            Добавить товар
+          </Link>
+        </div>
       </div>
 
       <div className="flex items-center gap-4">

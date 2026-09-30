@@ -21,6 +21,9 @@ model Tenant {
   currency             String    @default("USD")
   taxRate              Float     @default(0) @map("tax_rate")
   defaultMarkupPercent Float     @default(0) @map("default_markup_percent")
+  // Делится ли магазин с общей базой штрихкодов тем, что вносит сам: штрихкод,
+  // название, бренд, объём, полка. Цены и остатки не уходят никогда.
+  catalogSharing       Boolean   @default(true) @map("catalog_sharing")
   subscriptionPlan     String    @default("free") @map("subscription_plan")
   subscriptionExpiresAt DateTime? @map("subscription_expires_at")
   settings             String    @default("{}")
@@ -481,4 +484,31 @@ model CashShift {
   orders Order[]
 
   @@map("cash_shifts")
+}
+
+// Общая база штрихкодов: по штрихкоду знает название, бренд, объём и полку, чтобы
+// новый магазин не набирал товары с нуля. Не привязана к магазину — общая для всех.
+model CatalogProduct {
+  barcode       String   @id
+  name          String
+  brand         String?
+  quantity      String?
+  category      String?
+  // "snapshot" — поставляется вместе с приложением (Open Food Facts),
+  // "off" — найден вживую и запомнен, "crowd" — внесён магазином.
+  source        String   @default("snapshot")
+  // Сколько магазинов внесли такое же название (только для source = "crowd").
+  confirmations Int      @default(1)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("catalog_products")
+}
+
+// Служебные значения базы штрихкодов: версия загруженной поставки и т. п.
+model CatalogMeta {
+  key   String @id
+  value String
+
+  @@map("catalog_meta")
 }

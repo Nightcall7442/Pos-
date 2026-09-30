@@ -22,6 +22,11 @@ const envSchema = z.object({
   // Unpaid orders hold a stock reservation; after this many minutes they are
   // cancelled automatically and the stock is returned.
   PENDING_ORDER_TTL_MINUTES: z.coerce.number().int().min(1).default(30),
+  // Barcodes the shipped catalogue does not know are looked up live on Open Food
+  // Facts (and its sister catalogues). OFF_BASE_URL sends every such lookup to
+  // one server instead — the tests stand a stub in for the real thing.
+  CATALOG_LIVE_LOOKUP: z.enum(["on", "off"]).default("on"),
+  OFF_BASE_URL: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

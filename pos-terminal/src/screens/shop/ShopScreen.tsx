@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Lock, LogOut, Moon, PackagePlus, PauseCircle, Sun, Volume2, VolumeX } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
@@ -12,6 +12,7 @@ import { beep, setSoundEnabled, soundEnabled } from "../../utils/sound";
 import { gramsPerUnit, kgToGrams, parseDecimal, pricePerKg, stockInKg, weightLineTotal } from "../../utils/weight";
 import StockReceiptScreen from "../StockReceiptScreen";
 import "./shop.css";
+import CatalogAdd, { type CatalogHit } from "./CatalogAdd";
 import NumberPad from "./NumberPad";
 import QuickKeys from "./QuickKeys";
 import Receipt from "./Receipt";
@@ -49,7 +50,8 @@ function useClock(): Date {
  * item. The screen answers with a tone, so nobody has to watch it.
  */
 export default function ShopScreen({ user, shift, onLogout, onCloseShift }: ShopScreenProps) {
-  const { money, parts, shopName } = useMoney();
+  const { money, parts, shopName, symbol } = useMoney();
+  const queryClient = useQueryClient();
   const { theme, toggleTheme } = useThemeStore();
   const { items, parked, customerName, customerPhone, setCustomer, updateQuantity, removeItem, insertItem, parkCurrent, restoreParked, discardParked, getTotal } = useCartStore();
   const clock = useClock();
@@ -71,12 +73,15 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
   const [showParked, setShowParked] = useState(false);
   const [showCustomer, setShowCustomer] = useState(false);
   const [showReceiptIn, setShowReceiptIn] = useState(false);
+  // A scanned code the shop does not have yet, offered to the manager as a new product.
+  const [newProduct, setNewProduct] = useState<{ code: string; hit: CatalogHit | null; multiplier: number | null } | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const products = useRef(new Map<string, Product>()); // what the terminal has seen of each product (stock, price)
   const lookups = useRef(new Map<string, { at: number; product: Product | null }>());
 
-  const modalOpen = Boolean(weightFor || qtyFor || payMethod || sale || showParked || showCustomer || showReceiptIn);
+  const modalOpen = Boolean(weightFor || qtyFor || payMethod || sale || showParked || showCustomer || showReceiptIn || newProduct);
+  const canAddProducts = user.role === "admin" || user.role === "manager";
   const total = getTotal();
 
   // Retail orders are takeaway orders with no table — and a table left over
@@ -114,9 +119,9 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
   useEffect(() => setSuggestIndex(0), [debouncedTerm]);
 
   // ── добавление товара ────────────────────────────────────────────────────
-  const fail = useCallback((message: string) => {
+  const fail = useCallback((message: string, duration = 2600) => {
     beep("error");
-    toast.error(message, { id: "shop-error", duration: 2600 });
+    toast.error(message, { id: "shop-error", duration });
   }, []);
 
   const touched = useCallback((id: string) => {
@@ -212,6 +217,40 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
     }
   }, []);
 
+  // A code the shop does not sell yet. If it is a real barcode the shared catalogue
+  // is asked; a manager gets the name filled in and only types the price, a cashier
+  // is told what the item is and whom to ask.
+  const offerCatalog = useCallback(
+    async (code: string, multiplier: number | null) => {
+      let answer: (CatalogHit | { found: false; valid: boolean }) | null = null;
+      // A code nobody has seen may take a few seconds (the public catalogues are asked) — say so.
+      const hint = window.setTimeout(() => toast.loading("Ищу товар в общей базе…", { id: "shop-lookup" }), 500);
+      try {
+        answer = (await api.get("/catalog/lookup", { params: { code } })).data.data;
+      } catch {
+        answer = null; // no network beyond the shop's own server — treat as unknown
+      } finally {
+        window.clearTimeout(hint);
+        toast.dismiss("shop-lookup");
+      }
+      if (!answer || (!answer.found && !answer.valid)) {
+        fail(`Товар «${code}» не найден`);
+        return;
+      }
+      if (!canAddProducts) {
+        fail(
+          answer.found
+            ? `«${answer.displayName}» есть в общей базе, но не в вашей кассе — попросите администратора добавить цену`
+            : `Штрихкод ${code} не найден — попросите администратора добавить товар`,
+          4500
+        );
+        return;
+      }
+      setNewProduct({ code, hit: answer.found ? answer : null, multiplier });
+    },
+    [canAddProducts, fail]
+  );
+
   const live = useRef({ query, armed, suggestions, suggestFresh, suggestIndex, items, modalOpen, selectedId, payMethod });
   live.current = { query, armed, suggestions, suggestFresh, suggestIndex, items, modalOpen, selectedId, payMethod };
 
@@ -258,13 +297,15 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
         setQuery(text);
         setArmed(multiplier);
         beep("error");
+      } else if (/^\d{8,14}$/.test(text)) {
+        await offerCatalog(text, multiplier);
       } else {
         fail(`Товар «${text}» не найден`);
       }
     } catch {
       fail("Нет связи с сервером");
     }
-  }, [addProduct, fail, findByCode]);
+  }, [addProduct, fail, findByCode, offerCatalog]);
 
   // ── правая клавиатура: набирает в поле сканера ───────────────────────────
   const focusField = useCallback(() => inputRef.current?.focus(), []);
@@ -737,6 +778,22 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
         />
       )}
       {showReceiptIn && <StockReceiptScreen onClose={() => setShowReceiptIn(false)} />}
+      {newProduct && (
+        <CatalogAdd
+          code={newProduct.code}
+          hit={newProduct.hit}
+          symbol={symbol}
+          onClose={() => setNewProduct(null)}
+          onAdded={(product) => {
+            const { code, multiplier } = newProduct;
+            setNewProduct(null);
+            lookups.current.set(code, { at: Date.now(), product });
+            for (const key of ["shop-tiles", "shop-quick", "categories"]) queryClient.invalidateQueries({ queryKey: [key] });
+            toast.success(`Добавлено в кассу: ${product.name}`, { id: "shop-added", duration: 2200 });
+            addProduct(product, multiplier);
+          }}
+        />
+      )}
     </div>
   );
 }

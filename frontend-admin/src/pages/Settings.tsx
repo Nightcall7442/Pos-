@@ -33,9 +33,11 @@ export default function Settings() {
   const [defaultUnit, setDefaultUnit] = useState("piece");
   const [newUnitLabel, setNewUnitLabel] = useState("");
   const [newUnitKey, setNewUnitKey] = useState("");
+  const [catalogSharing, setCatalogSharing] = useState(true);
 
   useEffect(() => {
     if (settings) {
+      setCatalogSharing(settings.catalogSharing !== false);
       setForm({ name: settings.name || "", businessType: settings.businessType || "cafe", phone: settings.phone || "", email: settings.email || "", address: settings.address || "", timezone: settings.timezone || "UTC", currency: settings.currency || "USD", taxRate: Number(settings.taxRate) || 0, defaultMarkupPercent: Number(settings.defaultMarkupPercent) || 0 });
       try {
         const parsed = JSON.parse(settings.settings || "{}");
@@ -77,7 +79,7 @@ export default function Settings() {
 
   const handleSaveProducts = (e: React.FormEvent) => {
     e.preventDefault();
-    updateMutation.mutate({ settings: JSON.stringify({ units, defaultUnit }) });
+    updateMutation.mutate({ settings: JSON.stringify({ units, defaultUnit }), catalogSharing });
   };
 
   if (isLoading) return <LoadingSpinner />;
@@ -225,6 +227,22 @@ export default function Settings() {
 
       {activeTab === "products" && (
         <form onSubmit={handleSaveProducts} className="space-y-6">
+          <div className="card space-y-3">
+            <h2 className="text-lg font-semibold text-gray-900">Общая база штрихкодов</h2>
+            <p className="text-sm text-gray-500">
+              Сканер узнаёт товары по общей базе: название, объём и полку подставляются сами, вводить остаётся только цену.
+              База пополняется магазинами — товар, который вы добавили со штрихкодом, находят и другие.
+            </p>
+            <label className="flex cursor-pointer items-start gap-3">
+              <input type="checkbox" checked={catalogSharing} onChange={(e) => setCatalogSharing(e.target.checked)} className="mt-1 h-4 w-4 rounded border-gray-300" />
+              <span className="text-sm text-gray-700">
+                Делиться с общей базой названиями моих товаров
+                <span className="block text-xs text-gray-400">
+                  Передаются только штрихкод, название и полка из стандартного списка. Цены, остатки, продажи и названия ваших категорий не передаются никогда.
+                </span>
+              </span>
+            </label>
+          </div>
           <div className="card space-y-4">
             <h2 className="text-lg font-semibold text-gray-900">Единицы измерения</h2>
             <p className="text-sm text-gray-500">Управьте единицами, которые доступны при добавлении товаров</p>

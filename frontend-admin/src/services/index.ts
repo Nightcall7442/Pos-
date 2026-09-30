@@ -162,6 +162,35 @@ export const productService = {
   getTechCardCost: (id: string) => api.get<ApiResponse<{ cost: number }>>(`/products/${id}/tech-card-cost`),
 };
 
+/** What the shared barcode catalogue knows about a code — GET /catalog/lookup. */
+export interface CatalogHit {
+  found: true;
+  barcode: string;
+  name: string;
+  brand: string | null;
+  quantity: string | null;
+  category: string | null;
+  displayName: string;
+  source: "snapshot" | "off" | "crowd";
+}
+export type CatalogAnswer = CatalogHit | { found: false; barcode: string; valid: boolean };
+
+export interface CatalogAddInput {
+  barcode: string;
+  name: string;
+  price: number;
+  categoryId?: string;
+  categoryName?: string;
+  weighed?: boolean;
+  stock?: number;
+}
+
+export const catalogService = {
+  lookup: (code: string) => api.get<ApiResponse<CatalogAnswer>>("/catalog/lookup", { params: { code } }),
+  add: (data: CatalogAddInput) => api.post<ApiResponse<Product>>("/catalog/add", data),
+  stats: () => api.get<ApiResponse<{ total: number; crowd: number }>>("/catalog/stats"),
+};
+
 export const orderService = {
   list: (params?: Record<string, string | number | boolean | undefined>) => api.get<ApiResponse<Order[]>>("/orders", { params }),
   get: (id: string) => api.get<ApiResponse<Order>>(`/orders/${id}`),

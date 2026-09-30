@@ -12,6 +12,7 @@ const ALLOWED_FIELDS = [
   "currency",
   "taxRate",
   "defaultMarkupPercent",
+  "catalogSharing",
   "settings",
 ] as const;
 
@@ -27,6 +28,9 @@ export const settingsService = {
   async update(tenantId: string, data: Record<string, any>) {
     if ("businessType" in data && !BUSINESS_TYPES.includes(data.businessType)) {
       throw new AppError("Неизвестный тип заведения");
+    }
+    if ("catalogSharing" in data && typeof data.catalogSharing !== "boolean") {
+      throw new AppError("Некорректное значение настройки общей базы");
     }
     const safeData: Record<string, any> = {};
     for (const key of ALLOWED_FIELDS) {

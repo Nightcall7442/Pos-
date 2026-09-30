@@ -5,6 +5,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import ProductEdit from "./pages/ProductEdit";
+import ScanAdd from "./pages/ScanAdd";
 import Orders from "./pages/Orders";
 import OrderDetail from "./pages/OrderDetail";
 import Payments from "./pages/Payments";
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/tech-cards" element={<TechCards />} />
         <Route path="/products" element={<Products />} />
         <Route path="/products/new" element={<ProductEdit />} />
+        <Route path="/products/scan" element={<ScanAdd />} />
         <Route path="/products/:id" element={<ProductEdit />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/orders/:id" element={<OrderDetail />} />

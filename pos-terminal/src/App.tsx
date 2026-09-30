@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import LoginScreen from "./screens/LoginScreen";
 import MenuScreen from "./screens/MenuScreen";
+import ShopScreen from "./screens/shop/ShopScreen";
+import { useMoney } from "./hooks/useMoney";
 import PaymentModal from "./screens/PaymentScreen";
 import ReceiptModal from "./screens/ReceiptScreen";
 import OpenShiftScreen from "./screens/OpenShiftScreen";
@@ -16,6 +18,34 @@ interface UserData {
   lastName: string;
   email: string;
   role: string;
+}
+
+interface WorkspaceProps {
+  user: UserData;
+  shift: CashShift;
+  onLogout: () => void;
+  onCheckout: () => void;
+  onCloseShift: () => void;
+}
+
+// Which register the point works with follows its type, set in the admin panel.
+// A separate component so the settings request only starts once someone is
+// signed in — an unauthenticated 401 would make the api client reload the page.
+function Workspace({ user, shift, onLogout, onCheckout, onCloseShift }: WorkspaceProps) {
+  const { businessType, settingsLoaded } = useMoney();
+
+  if (!settingsLoaded) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-dark-500 border-t-primary-500" />
+      </div>
+    );
+  }
+
+  if (businessType === "retail") {
+    return <ShopScreen user={user} shift={shift} onLogout={onLogout} onCloseShift={onCloseShift} />;
+  }
+  return <MenuScreen user={user} shift={shift} onLogout={onLogout} onCheckout={onCheckout} onCloseShift={onCloseShift} />;
 }
 
 function App() {
@@ -112,7 +142,7 @@ function App() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-dark-950">
-      <MenuScreen
+      <Workspace
         user={user}
         shift={currentShift}
         onLogout={handleLogout}

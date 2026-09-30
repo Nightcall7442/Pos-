@@ -6,11 +6,48 @@ export type Tx = Prisma.TransactionClient;
 
 export const round2 = (n: number): number => Math.round(n * 100) / 100;
 
-// Weighted products (sold by gram) keep their stock in grams, so one cart line
-// of `weightGrams` grams consumes that many units of stock; everything else
-// consumes `quantity` pieces.
-export function stockUnitsFor(item: { quantity: number; weightGrams?: number | null }): number {
-  return item.weightGrams ? item.weightGrams : item.quantity;
+// Stock is counted to the gram: kilograms with three decimals. Plain float
+// arithmetic would leave 84.2 − 1.24 = 82.96000000000001 in the database and,
+// worse, turn "0.3 kg, sell 0.1, then 0.2" into 0.19999999999999998 < 0.2 —
+// refusing the very last bit of a product that is in stock. So a new balance
+// is rounded when it is written, and "is there enough" tolerates the noise.
+export const roundStock = (n: number): number => Math.round(n * 1000) / 1000;
+const STOCK_EPSILON = 1e-6;
+export const hasEnough = (stock: number, need: number): boolean => stock + STOCK_EPSILON >= need;
+
+// Weighted products are priced and stocked per gram ("г") or per kilogram
+// ("кг"). The cart always carries the weight in grams; this says how many grams
+// one priced/stocked unit is, or null when the product is not sold by weight.
+export function gramsPerUnit(saleUnit?: string | null): number | null {
+  switch ((saleUnit || "").trim().toLowerCase()) {
+    case "г":
+    case "g":
+      return 1;
+    case "кг":
+    case "kg":
+      return 1000;
+    default:
+      return null;
+  }
+}
+
+// Human label of the unit weighted stock is kept in — for error messages.
+export function stockUnitLabel(saleUnit?: string | null): string {
+  const per = gramsPerUnit(saleUnit);
+  return per === 1000 ? " кг" : per === 1 ? " г" : "";
+}
+
+// Stock consumed by one order line. A weighted line of `weightGrams` grams,
+// repeated `quantity` times, takes weightGrams × quantity out of stock, in the
+// product's own unit (grams or kilograms); everything else takes `quantity`
+// pieces. Callers without the unit at hand get grams, as before.
+export function stockUnitsFor(
+  item: { quantity: number; weightGrams?: number | null },
+  saleUnit?: string | null
+): number {
+  if (!item.weightGrams) return item.quantity;
+  const per = gramsPerUnit(saleUnit) ?? 1;
+  return (item.weightGrams * item.quantity) / per;
 }
 
 export interface Reservation {
@@ -28,12 +65,17 @@ export async function reserveStock(
   const { tenantId, userId, orderId, reservations } = params;
   for (const r of reservations) {
     const fresh = await tx.product.findUnique({ where: { id: r.productId } });
-    if (!fresh || fresh.currentStock < r.units) {
-      throw new Error(`Недостаточно товара «${fresh?.name || r.name}» на складе: осталось ${fresh?.currentStock ?? 0}`);
+    if (!fresh || !hasEnough(fresh.currentStock, r.units)) {
+      throw new Error(
+        `Недостаточно товара «${fresh?.name || r.name}» на складе: осталось ${fresh ? roundStock(fresh.currentStock) : 0}${stockUnitLabel(fresh?.saleUnit)}`
+      );
     }
+    // Written as a value, not a decrement, so it can be rounded. The balance
+    // was just re-read inside this transaction, which is what stops two
+    // terminals from both selling the last unit.
     await tx.product.update({
       where: { id: r.productId },
-      data: { currentStock: { decrement: r.units } },
+      data: { currentStock: roundStock(fresh.currentStock - r.units) },
     });
     await tx.inventoryMovement.create({
       data: {
@@ -56,9 +98,10 @@ export async function releaseStock(
 ): Promise<void> {
   const { tenantId, userId, orderId, reservations } = params;
   for (const r of reservations) {
+    const fresh = await tx.product.findUniqueOrThrow({ where: { id: r.productId } });
     await tx.product.update({
       where: { id: r.productId },
-      data: { currentStock: { increment: r.units } },
+      data: { currentStock: roundStock(fresh.currentStock + r.units) },
     });
     await tx.inventoryMovement.create({
       data: {
@@ -115,7 +158,7 @@ export async function deductTechCardIngredients(
       const units = round2(Number(line.quantity) * item.quantity);
       await tx.product.update({
         where: { id: ingredient.id },
-        data: { currentStock: { decrement: units } },
+        data: { currentStock: roundStock(ingredient.currentStock - units) },
       });
       await tx.inventoryMovement.create({
         data: {

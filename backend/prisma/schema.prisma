@@ -11,6 +11,8 @@ model Tenant {
   id                   String    @id @default(uuid())
   name                 String
   slug                 String    @unique
+  // "cafe" — зал, столы, навынос; "retail" — магазин: сканер, вес, чек без столов.
+  businessType         String    @default("cafe") @map("business_type")
   logoUrl              String?   @map("logo_url")
   phone                String?
   email                String?

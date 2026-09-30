@@ -40,6 +40,19 @@ export function formatMoney(amount: number | string | null | undefined, currency
   return fmt.suffix ? `${text} ${fmt.symbol}` : `${fmt.symbol}${text}`;
 }
 
+/** The number and the symbol apart, for screens that set the figure large and the symbol small. */
+export function moneyParts(
+  amount: number | string | null | undefined,
+  currency?: string | null
+): { figure: string; symbol: string; suffix: boolean } {
+  const fmt = currencyFormat(currency);
+  const figure = (Number(amount) || 0).toLocaleString(fmt.locale, {
+    minimumFractionDigits: fmt.fractionDigits,
+    maximumFractionDigits: fmt.fractionDigits,
+  });
+  return { figure, symbol: fmt.symbol, suffix: fmt.suffix };
+}
+
 export function currencySymbol(currency?: string | null): string {
   return currencyFormat(currency).symbol;
 }
@@ -62,3 +75,10 @@ export function compactAmount(amount: number, currency?: string | null): string 
   if (fractionDigits === 0 && amount >= 1000) return `${amount / 1000}К`;
   return amount.toLocaleString(locale, { maximumFractionDigits: fractionDigits });
 }
+
+/**
+ * Rounds to kopecks exactly as the server does (stock.helpers.round2), so the
+ * total the cashier collects is the total the server computes — a difference
+ * larger than a cent is rejected as "prices changed".
+ */
+export const round2 = (n: number): number => Math.round(n * 100) / 100;

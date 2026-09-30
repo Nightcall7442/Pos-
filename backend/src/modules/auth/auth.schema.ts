@@ -12,6 +12,8 @@ export const registerSchema = z.object({
   lastName: z.string().min(1),
   phone: z.string().optional(),
   tenantName: z.string().min(1),
+  // Café (tables, dine-in, takeaway) or shop (barcode scanner, weight, one check).
+  businessType: z.enum(["cafe", "retail"]).optional(),
 });
 
 export const refreshTokenSchema = z.object({

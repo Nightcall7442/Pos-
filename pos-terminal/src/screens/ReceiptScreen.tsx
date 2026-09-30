@@ -127,7 +127,7 @@ export default function ReceiptModal({ order, onNewOrder }: ReceiptModalProps) {
       >
         <div className="p-6">
           <div className="pb-4 text-center">
-            <h2 className="text-xl font-bold text-dark-50">Wespro</h2>
+            <h2 className="text-xl font-bold text-dark-50">{shopName}</h2>
             <p className="mt-1 text-xs text-dark-400">Спасибо за заказ!</p>
           </div>
 

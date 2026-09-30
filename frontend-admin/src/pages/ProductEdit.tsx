@@ -8,6 +8,18 @@ import { settingsService } from "../services";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useMoney } from "../hooks/useMoney";
 
+// Быстрые кнопки на кассе магазина — товары с этим тегом.
+const QUICK_TAG = "quick";
+
+function parseTags(raw: unknown): string[] {
+  try {
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    return Array.isArray(parsed) ? parsed.filter((t): t is string => typeof t === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function ProductEdit() {
   const { money } = useMoney();
   const { id } = useParams();
@@ -50,7 +62,10 @@ export default function ProductEdit() {
     preparationArea: "",
     cookingMethod: "",
     noDiscounts: false,
+    quick: false,
   });
+  // Теги, которых нет на форме, сохраняются как были — форма управляет только «quick».
+  const [otherTags, setOtherTags] = useState<string[]>([]);
 
   const getConversionFactor = (purchase: string, sale: string): number | undefined => {
     const conversions: Record<string, Record<string, number>> = {
@@ -82,7 +97,8 @@ export default function ProductEdit() {
         saleUnit,
         conversionFactor,
         purchaseCost,
-        minStock: product.minStock || 0, currentStock: product.currentStock || 0,
+        // Остатки в килограммах ведутся до грамма: старые значения вида 82.96000000000001 показываем как 82.96.
+        minStock: Math.round((product.minStock || 0) * 1000) / 1000, currentStock: Math.round((product.currentStock || 0) * 1000) / 1000,
         trackInventory: product.trackInventory || false, categoryId: product.categoryId || "",
         imageUrl: product.imageUrl || "", isActive: product.isActive ?? true,
         isIngredient: (product as any).isIngredient || false,
@@ -90,7 +106,9 @@ export default function ProductEdit() {
         preparationArea: (product as any).preparationArea || "",
         cookingMethod: (product as any).cookingMethod || "",
         noDiscounts: (product as any).noDiscounts || false,
+        quick: parseTags((product as any).tags).includes(QUICK_TAG),
       });
+      setOtherTags(parseTags((product as any).tags).filter((t) => t !== QUICK_TAG));
     }
   }, [product]);
 
@@ -106,10 +124,11 @@ export default function ProductEdit() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const { purchaseCost, volumeType, ...submitForm } = form;
+    const { purchaseCost, volumeType, quick, ...submitForm } = form;
     const submitData: any = {
       ...submitForm,
       techCardId: form.techCardId || null,
+      tags: quick ? [...otherTags, QUICK_TAG] : otherTags,
     };
     if (isNew) {
       createProduct.mutate(submitData, { onSuccess: () => navigate("/products") });
@@ -247,10 +266,13 @@ export default function ProductEdit() {
               </label>
             </div>
           </div>
-          {form.categoryId && (
+          {(
             <div className="card space-y-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
               <h3 className="text-sm font-semibold text-gray-700">Единицы измерения</h3>
-              <p className="text-xs text-gray-500">Укажите как товар закупается и продаётся</p>
+              <p className="text-xs text-gray-500">
+                Укажите как товар закупается и продаётся. Для овощей, сыра, мяса на развес выберите продажу в килограммах:
+                цена и остаток тогда считаются за 1 кг, а вес кассир вводит на кассе.
+              </p>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label text-xs">Закупка</label>
@@ -265,6 +287,7 @@ export default function ProductEdit() {
                   <label className="label text-xs">Продажа</label>
                   <select value={form.saleUnit || ""} onChange={(e) => setForm({ ...form, saleUnit: e.target.value })} className="input text-sm">
                     <option value="">Штука</option>
+                    <option value="кг">Килограмм (весовой товар)</option>
                     <option value="г">Грамм</option>
                     <option value="мл">Мл</option>
                     <option value="portion">Порция</option>
@@ -331,8 +354,8 @@ export default function ProductEdit() {
           </label>
           {form.trackInventory && (
             <div className="grid grid-cols-2 gap-4">
-              <div><label className="label">Текущий остаток</label><input type="number" value={form.currentStock} onChange={(e) => setForm({ ...form, currentStock: parseInt(e.target.value) || 0 })} className="input" /></div>
-              <div><label className="label">Минимальный остаток</label><input type="number" value={form.minStock} onChange={(e) => setForm({ ...form, minStock: parseInt(e.target.value) || 0 })} className="input" /></div>
+              <div><label className="label">Текущий остаток{form.saleUnit === "кг" ? ", кг" : form.saleUnit === "г" ? ", г" : ""}</label><input type="number" value={form.currentStock} onChange={(e) => setForm({ ...form, currentStock: parseFloat(e.target.value) || 0 })} className="input" step="any" /></div>
+              <div><label className="label">Минимальный остаток{form.saleUnit === "кг" ? ", кг" : form.saleUnit === "г" ? ", г" : ""}</label><input type="number" value={form.minStock} onChange={(e) => setForm({ ...form, minStock: parseFloat(e.target.value) || 0 })} className="input" step="any" /></div>
             </div>
           )}
         </div>
@@ -425,9 +448,24 @@ export default function ProductEdit() {
         <div className="card space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Идентификация</h2>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="label">Артикул (SKU)</label><input type="text" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} className="input" placeholder="Артикул товара" /></div>
-            <div><label className="label">Штрихкод</label><input type="text" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} className="input" placeholder="Штрихкод" /></div>
+            <div>
+              <label className="label">{form.saleUnit === "кг" ? "Код на весах (PLU)" : "Артикул / короткий код"}</label>
+              <input type="text" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} className="input" placeholder={form.saleUnit === "кг" ? "например, 104" : "Артикул товара"} />
+              <p className="mt-1 text-xs text-gray-400">Его можно набрать на кассе цифрами, если штрихкода нет.</p>
+            </div>
+            <div>
+              <label className="label">Штрихкод</label>
+              <input type="text" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} className="input" placeholder="Штрихкод" />
+              <p className="mt-1 text-xs text-gray-400">Кассир сканирует его — товар сразу попадает в чек.</p>
+            </div>
           </div>
+          <label className="flex items-start gap-3">
+            <input type="checkbox" checked={form.quick} onChange={(e) => setForm({ ...form, quick: e.target.checked })} className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600" />
+            <span>
+              <span className="text-sm font-medium text-gray-700">Быстрая кнопка на кассе</span>
+              <span className="block text-xs text-gray-400">Для товаров без штрихкода — хлеб, пакет: одно касание на экране кассы магазина.</span>
+            </span>
+          </label>
           <div><label className="label">URL изображения</label><input type="url" value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} className="input" placeholder="https://..." /></div>
         </div>
 

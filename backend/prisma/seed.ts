@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { seedRetail } from "./seed-retail";
 
 const prisma = new PrismaClient();
 
@@ -87,6 +88,8 @@ async function main() {
       },
     });
   }
+
+  await seedRetail(prisma);
 
   console.log("Database seeded successfully!");
   console.log("Admin login: admin@wespro.com / admin123");

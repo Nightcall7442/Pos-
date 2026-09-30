@@ -22,7 +22,7 @@ export async function cancelStalePendingOrders(maxAgeMinutes: number): Promise<n
   for (const order of stale) {
     const reservations: Reservation[] = order.items
       .filter((item) => item.product.trackInventory)
-      .map((item) => ({ productId: item.productId, name: item.product.name, units: stockUnitsFor(item) }));
+      .map((item) => ({ productId: item.productId, name: item.product.name, units: stockUnitsFor(item, item.product.saleUnit) }));
 
     try {
       await prisma.$transaction(async (tx) => {

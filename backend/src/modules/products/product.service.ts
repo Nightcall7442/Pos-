@@ -1,10 +1,14 @@
 import prisma from "../../config/database.js";
 import type { CreateProductInput, UpdateProductInput, ProductQueryInput } from "./product.schema.js";
 import { AppError, NotFoundError } from "../../utils/errors.js";
+import { caseVariants, searchTokens } from "../../utils/search.js";
+
+// saleUnit values that mean "sold by weight" — see gramsPerUnit().
+const WEIGHT_UNITS = ["г", "кг", "g", "kg"];
 
 export class ProductService {
   async findAll(tenantId: string, query: ProductQueryInput) {
-    const { search, categoryId, isActive = true, isIngredient, minPrice, maxPrice, inStock, sort = "sortOrder", order = "asc", page = 1, limit = 20 } = query;
+    const { search, categoryId, isActive = true, isIngredient, minPrice, maxPrice, inStock, weighted, noBarcode, tag, sort = "sortOrder", order = "asc", page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
     // Every filter is its own AND clause: a previous version put both the
@@ -12,15 +16,22 @@ export class ProductService {
     // last silently replaced the other.
     const and: any[] = [];
     const where: any = { tenantId, AND: and };
-    if (search) {
+    // Every word of the search must match the name (in any spelling of its
+    // case — see utils/search.ts), or be found in the SKU / barcode.
+    for (const token of searchTokens(search || "")) {
       and.push({
         OR: [
-          { name: { contains: search } },
-          { sku: { contains: search } },
-          { barcode: { contains: search } },
+          ...caseVariants(token).map((variant) => ({ name: { contains: variant } })),
+          { sku: { contains: token } },
+          { barcode: { contains: token } },
         ],
       });
     }
+    if (weighted === true) and.push({ saleUnit: { in: WEIGHT_UNITS } });
+    else if (weighted === false) and.push({ OR: [{ saleUnit: null }, { saleUnit: { notIn: WEIGHT_UNITS } }] });
+    if (noBarcode === true) and.push({ OR: [{ barcode: null }, { barcode: "" }] });
+    // tags is a JSON array kept as text, e.g. ["quick"]
+    if (tag) and.push({ tags: { contains: JSON.stringify(tag) } });
     if (categoryId) where.categoryId = categoryId;
     if (isActive !== undefined) where.isActive = isActive;
     if (isIngredient === false) {
@@ -35,7 +46,9 @@ export class ProductService {
       where.currentStock = inStock ? { gt: 0 } : { lte: 0 };
     }
 
-    const orderBy: any = { [sort]: order };
+    // Ties (equal sortOrder, which is every product until an admin arranges them)
+    // fall back to the name so pages of a long catalogue are stable.
+    const orderBy: any = sort === "name" ? { name: order } : [{ [sort]: order }, { name: "asc" }];
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
@@ -59,6 +72,33 @@ export class ProductService {
     ]);
 
     return { products, total, page, limit };
+  }
+
+  // Exact match on what the scanner read (barcode) or on the short code typed
+  // on the keypad (SKU). Only sellable goods: no ingredients, nothing archived.
+  // A barcode match wins over an SKU match, so a short code that happens to
+  // equal some other product's barcode cannot shadow the real scan.
+  async lookup(tenantId: string, code: string) {
+    const sellable = {
+      tenantId,
+      isActive: true,
+      isIngredient: false,
+      OR: [{ categoryId: null }, { category: { isIngredient: false } }],
+    };
+    const include = { category: { select: { id: true, name: true, color: true } } };
+    const orderBy = [{ sortOrder: "asc" as const }, { name: "asc" as const }];
+
+    // The same product reads as 12 digits (UPC-A) on one scanner and as 13
+    // (EAN-13 with a leading zero) on another; the catalogue may hold either.
+    const barcodes = new Set([code]);
+    if (/^\d{12}$/.test(code)) barcodes.add("0" + code);
+    if (/^0\d{12}$/.test(code)) barcodes.add(code.slice(1));
+
+    const product =
+      (await prisma.product.findFirst({ where: { ...sellable, barcode: { in: [...barcodes] } }, include, orderBy })) ??
+      (await prisma.product.findFirst({ where: { ...sellable, sku: code }, include, orderBy }));
+    if (!product) throw new NotFoundError("Товар не найден");
+    return product;
   }
 
   async findById(tenantId: string, id: string) {

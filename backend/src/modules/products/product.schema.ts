@@ -61,10 +61,23 @@ export const productQuerySchema = z.object({
   minPrice: z.coerce.number().optional(),
   maxPrice: z.coerce.number().optional(),
   inStock: booleanQuery.optional(),
+  // Sold by weight (per gram or per kilogram) — the terminal's «Весовые» tab.
+  weighted: booleanQuery.optional(),
+  // Goods with no barcode at all (bread, produce) — the fallback set of
+  // one-tap keys when the admin has not marked any.
+  noBarcode: booleanQuery.optional(),
+  // Products carrying a tag, e.g. "quick" for the register's one-tap keys.
+  tag: z.string().max(50).optional(),
   sort: z.enum(["name", "price", "createdAt", "sortOrder"]).optional(),
   order: z.enum(["asc", "desc"]).optional(),
   page: pageQuery,
   limit: limitQuery,
+});
+
+// One product by what the scanner read: barcode, or the short code (SKU/PLU)
+// typed on the keypad. Exact match only.
+export const productLookupSchema = z.object({
+  code: z.string().trim().min(1).max(64),
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;

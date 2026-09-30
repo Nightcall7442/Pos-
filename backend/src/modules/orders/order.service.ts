@@ -3,9 +3,13 @@ import type { CreateOrderInput, CheckoutInput, UpdateOrderStatusInput, OrderQuer
 import { Server as SocketIOServer } from "socket.io";
 import {
   deductTechCardIngredients,
+  gramsPerUnit,
+  hasEnough,
   releaseStock,
   reserveStock,
   round2,
+  roundStock,
+  stockUnitLabel,
   stockUnitsFor,
   type Reservation,
   type Tx,
@@ -118,12 +122,15 @@ export class OrderService {
       });
       if (!product) throw new NotFoundError(`Товар ${item.productId} не найден`);
 
-      const isWeighted = product.saleUnit === "г";
+      // Price is per gram or per kilogram depending on the sale unit; the cart
+      // always states the weight in grams.
+      const perUnit = gramsPerUnit(product.saleUnit);
+      const isWeighted = perUnit !== null;
       if (isWeighted && !item.grams) {
         throw new Error(`Для весового товара «${product.name}» не указан вес`);
       }
       const weightGrams = isWeighted ? item.grams! : null;
-      const unitPrice = isWeighted ? round2(product.price * weightGrams!) : product.price;
+      const unitPrice = isWeighted ? round2((product.price * weightGrams!) / perUnit!) : product.price;
 
       let itemTotal = unitPrice * item.quantity;
 
@@ -151,12 +158,12 @@ export class OrderService {
       subtotal += itemTotal;
 
       if (product.trackInventory) {
-        const units = stockUnitsFor({ quantity: item.quantity, weightGrams });
+        const units = stockUnitsFor({ quantity: item.quantity, weightGrams }, product.saleUnit);
         const prev = reserved.get(product.id);
         reserved.set(product.id, { productId: product.id, name: product.name, units: (prev?.units || 0) + units });
         // Early, friendlier check; the authoritative one happens in reserveStock.
-        if (reserved.get(product.id)!.units > product.currentStock) {
-          throw new Error(`Недостаточно товара «${product.name}» на складе: осталось ${product.currentStock}`);
+        if (!hasEnough(product.currentStock, reserved.get(product.id)!.units)) {
+          throw new Error(`Недостаточно товара «${product.name}» на складе: осталось ${roundStock(product.currentStock)}${stockUnitLabel(product.saleUnit)}`);
         }
       }
 
@@ -334,7 +341,7 @@ export class OrderService {
 
     const reservations: Reservation[] = order.items
       .filter((item) => item.product.trackInventory)
-      .map((item) => ({ productId: item.productId, name: item.product.name, units: stockUnitsFor(item) }));
+      .map((item) => ({ productId: item.productId, name: item.product.name, units: stockUnitsFor(item, item.product.saleUnit) }));
 
     const updated = await prisma.$transaction(async (tx) => {
       await releaseStock(tx, { tenantId, userId, orderId: id, reservations });

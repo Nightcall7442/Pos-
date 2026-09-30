@@ -12,6 +12,7 @@ import { useRegister } from "../hooks/useAuth";
 export default function Register() {
   const [form, setForm] = useState({
     tenantName: "",
+    businessType: "retail" as "retail" | "cafe",
     firstName: "",
     lastName: "",
     email: "",
@@ -39,6 +40,7 @@ export default function Register() {
     registerMutation.mutate(
       {
         tenantName: form.tenantName.trim(),
+        businessType: form.businessType,
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         email: form.email.trim(),
@@ -59,6 +61,26 @@ export default function Register() {
         </div>
 
         <form onSubmit={handleSubmit} className="auth-card">
+          <div className="auth-field">
+            <span className="auth-label">Что у вас</span>
+            <div className="auth-choice">
+              {([
+                { key: "retail", title: "Магазин", text: "Сканер, весы, быстрый чек" },
+                { key: "cafe", title: "Кафе или ресторан", text: "Зал, столы, кухня" },
+              ] as const).map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  className={`auth-choice-item${form.businessType === option.key ? " on" : ""}`}
+                  onClick={() => setForm({ ...form, businessType: option.key })}
+                >
+                  <b>{option.title}</b>
+                  <span>{option.text}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="auth-field">
             <label className="auth-label" htmlFor="reg-tenant">Название заведения</label>
             <input

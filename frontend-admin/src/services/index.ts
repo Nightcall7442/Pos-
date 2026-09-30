@@ -139,6 +139,7 @@ export interface RegisterInput {
   email: string;
   phone?: string;
   password: string;
+  businessType?: "cafe" | "retail";
 }
 
 export const authService = {

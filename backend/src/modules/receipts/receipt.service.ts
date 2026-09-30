@@ -1,5 +1,6 @@
 import prisma from "../../config/database.js";
 import { NotFoundError } from "../../utils/errors.js";
+import { formatMoney } from "../../utils/money.js";
 
 // Receipt HTML is assembled from user-entered strings (shop name, customer
 // name, product names) — escape them so a stray "<" can't break or script the
@@ -88,22 +89,51 @@ export class ReceiptService {
     const dateStr = now.toLocaleDateString("ru-RU");
     const timeStr = now.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 
+    const retail = tenant?.businessType === "retail";
+    const money = (n: unknown) => escapeHtml(formatMoney(Number(n), tenant?.currency));
+
     const itemsHTML = items.map((item: any) => {
       const modifiersText = item.modifiers?.length
-        ? item.modifiers.map((m: any) => `  + ${escapeHtml(m.modifierItem.name)} (${Number(m.price).toFixed(2)})`).join("\n")
+        ? item.modifiers.map((m: any) => `  + ${escapeHtml(m.modifierItem.name)} (${money(m.price)})`).join("\n")
         : "";
+      const modifiersRow = modifiersText ? `<tr><td class="modifier">${modifiersText}</td><td></td></tr>` : "";
+
+      if (retail) {
+        // A shop check reads like a shop check: the name on its own line, then
+        // "quantity × price" against the line total. Weighed goods show the
+        // weight in kilograms and the price per kilogram, whichever unit the
+        // product is stocked in.
+        const quantity = item.weightGrams
+          ? `${(Number(item.weightGrams) / 1000).toFixed(3).replace(".", ",")} кг × ${money(
+              (Number(item.unitPrice) * 1000) / Number(item.weightGrams)
+            )}/кг`
+          : `${item.quantity} × ${money(item.unitPrice)}`;
+        return `
+        <tr><td colspan="2">${escapeHtml(item.product.name)}</td></tr>
+        <tr><td class="modifier">${quantity}</td><td class="right">${money(item.totalPrice)}</td></tr>
+        ${modifiersRow}
+      `;
+      }
+
       const weight = item.weightGrams ? ` (${Number(item.weightGrams)} г)` : "";
-      const unit = item.quantity > 1 ? ` × ${Number(item.unitPrice).toFixed(2)}` : "";
+      const unit = item.quantity > 1 ? ` × ${money(item.unitPrice)}` : "";
       return `
         <tr>
           <td>${item.quantity}x ${escapeHtml(item.product.name)}${weight}${unit}</td>
-          <td class="right">${Number(item.totalPrice).toFixed(2)}</td>
+          <td class="right">${money(item.totalPrice)}</td>
         </tr>
-        ${modifiersText ? `<tr><td class="modifier">${modifiersText}</td><td></td></tr>` : ""}
+        ${modifiersRow}
       `;
     }).join("");
 
-    const paymentMethod = order.payments?.[0]?.method === "card" ? "Карта" : "Наличные";
+    const PAYMENT_LABELS: Record<string, string> = {
+      cash: "Наличные",
+      card: "Карта",
+      qr: "QR",
+      online: "Онлайн",
+      gift_card: "Подарочная карта",
+    };
+    const paymentMethod = PAYMENT_LABELS[order.payments?.[0]?.method] ?? "Наличные";
 
     return `
 <!DOCTYPE html>
@@ -212,13 +242,13 @@ export class ReceiptService {
       <span>Дата:</span>
       <span>${dateStr} ${timeStr}</span>
     </div>
-    <div class="info-row">
+    ${retail ? "" : `<div class="info-row">
       <span>Тип:</span>
       <span>${order.type === "dine_in" ? "В зале" : order.type === "takeaway" ? "Навынос" : escapeHtml(order.type)}</span>
-    </div>
-    ${order.table ? `<div class="info-row"><span>Стол:</span><span>${escapeHtml(order.table.number)}</span></div>` : ""}
+    </div>`}
+    ${!retail && order.table ? `<div class="info-row"><span>Стол:</span><span>${escapeHtml(order.table.number)}</span></div>` : ""}
     ${order.customerName ? `<div class="info-row"><span>Клиент:</span><span>${escapeHtml(order.customerName)}</span></div>` : ""}
-    ${order.user ? `<div class="info-row"><span>Официант:</span><span>${escapeHtml(order.user.firstName)}</span></div>` : ""}
+    ${order.user ? `<div class="info-row"><span>${retail ? "Кассир" : "Официант"}:</span><span>${escapeHtml(order.user.firstName)}</span></div>` : ""}
   </div>
 
   <table>
@@ -236,23 +266,23 @@ export class ReceiptService {
   <div class="totals">
     <div class="total-row">
       <span>Подытог:</span>
-      <span>${Number(order.subtotal).toFixed(2)} ₽</span>
+      <span>${money(order.subtotal)}</span>
     </div>
     ${Number(order.taxAmount) > 0 ? `
     <div class="total-row">
       <span>Налог:</span>
-      <span>${Number(order.taxAmount).toFixed(2)} ₽</span>
+      <span>${money(order.taxAmount)}</span>
     </div>
     ` : ""}
     ${Number(order.discountAmount) > 0 ? `
     <div class="total-row">
       <span>Скидка:</span>
-      <span>-${Number(order.discountAmount).toFixed(2)} ₽</span>
+      <span>-${money(order.discountAmount)}</span>
     </div>
     ` : ""}
     <div class="total-row" style="font-size: 14px; margin-top: 4px;">
       <span>ИТОГО:</span>
-      <span>${Number(order.total).toFixed(2)} ₽</span>
+      <span>${money(order.total)}</span>
     </div>
   </div>
 
@@ -264,7 +294,7 @@ export class ReceiptService {
     ${order.payments?.[0]?.amount ? `
     <div class="info-row">
       <span>Сумма оплаты:</span>
-      <span>${Number(order.payments[0].amount).toFixed(2)} ₽</span>
+      <span>${money(order.payments[0].amount)}</span>
     </div>
     ` : ""}
   </div>

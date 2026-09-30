@@ -5,6 +5,7 @@ import { getEnv } from "../../config/env.js";
 import { generateTokens } from "../../middleware/auth.js";
 import type { LoginInput, RegisterInput } from "./auth.schema.js";
 import { AppError, ConflictError, NotFoundError } from "../../utils/errors.js";
+import { slugify } from "../../utils/slug.js";
 
 // bcrypt hash of a random string, used only to burn a comparable amount of
 // time when no user matches.
@@ -75,11 +76,7 @@ export class AuthService {
   // called (or misspelled into) the same name must not fail to register; it
   // gets "-2", "-3", ... appended instead of hitting the unique constraint.
   private async uniqueSlug(tenantName: string): Promise<string> {
-    const base =
-      tenantName
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)/g, "") || "shop";
+    const base = slugify(tenantName) || "shop";
 
     for (let suffix = 1; suffix < 50; suffix++) {
       const candidate = suffix === 1 ? base : `${base}-${suffix}`;
@@ -168,6 +165,7 @@ export class AuthService {
       data: {
         name: data.tenantName,
         slug,
+        businessType: data.businessType ?? "cafe",
         users: {
           create: {
             email: data.email,

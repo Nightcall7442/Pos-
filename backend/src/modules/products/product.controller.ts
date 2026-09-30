@@ -16,6 +16,15 @@ export class ProductController {
     }
   }
 
+  async lookup(req: Request, res: Response) {
+    try {
+      const product = await productService.lookup(req.user!.tenantId, String(req.query.code));
+      sendSuccess(res, product);
+    } catch (error) {
+      handleError(res, error, 404);
+    }
+  }
+
   async findById(req: Request, res: Response) {
     try {
       const id = req.params.id as string;

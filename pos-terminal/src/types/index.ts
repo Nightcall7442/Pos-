@@ -99,8 +99,15 @@ export interface CartItem {
   name: string;
   price: number;
   quantity: number;
-  // Portion weight for products sold by gram; the server prices rate × grams.
+  // Weight in grams for weighed products; the server prices rate × grams
+  // (per gram or per kilogram, depending on the product's sale unit).
   grams?: number;
+  // Shop register: how a weighed product is priced and at what rate — kept on
+  // the line so it can be re-priced when the weight is edited.
+  weightUnit?: "г" | "кг";
+  rate?: number;
+  barcode?: string | null;
+  emoji?: string;
   notes?: string;
   modifiers?: { id: string; name: string; price: number }[];
 }

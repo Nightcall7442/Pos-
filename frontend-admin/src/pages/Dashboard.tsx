@@ -1,4 +1,6 @@
-import { DollarSign, ShoppingCart, Package, Clock, TrendingUp } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { DollarSign, ShoppingCart, Package, Clock, TrendingUp, ScanBarcode } from "lucide-react";
 import { useDashboard } from "../hooks/useReports";
 import StatsCard from "../components/StatsCard";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -6,10 +8,12 @@ import Badge, { statusBadge } from "../components/Badge";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { useMoney } from "../hooks/useMoney";
+import { settingsService } from "../services";
 
 export default function Dashboard() {
   const { money } = useMoney();
   const { data: dashboard, isLoading } = useDashboard();
+  const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: () => settingsService.get().then((r) => r.data.data), staleTime: 5 * 60 * 1000 });
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -29,6 +33,21 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Дашборд</h1>
         <p className="text-gray-500 dark:text-gray-400">Добро пожаловать! Вот что происходит сегодня.</p>
       </div>
+
+      {settings?.businessType === "retail" && stats.totalProducts === 0 && (
+        <div className="card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Начните с товаров</h2>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Наведите сканер на штрихкоды — название, объём и полка подставятся из общей базы, останется ввести цену. Каждый товар не нужно набирать руками.
+            </p>
+          </div>
+          <Link to="/products/scan" className="btn-primary whitespace-nowrap">
+            <ScanBarcode className="mr-2 h-4 w-4" />
+            Добавить сканером
+          </Link>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard

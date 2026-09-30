@@ -84,10 +84,16 @@ export default function Products() {
           title="Товары не найдены"
           description="Создайте первый товар для начала работы"
           action={
-            <Link to="/products/new" className="btn-primary">
-              <Plus className="mr-2 h-4 w-4" />
-              Добавить товар
-            </Link>
+            <div className="flex items-center justify-center gap-3">
+              <Link to="/products/scan" className="btn-secondary">
+                <ScanBarcode className="mr-2 h-4 w-4" />
+                Добавить сканером
+              </Link>
+              <Link to="/products/new" className="btn-primary">
+                <Plus className="mr-2 h-4 w-4" />
+                Добавить товар
+              </Link>
+            </div>
           }
         />
       ) : viewMode === "grid" ? (

@@ -90,6 +90,14 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 `PENDING_ORDER_TTL_MINUTES` — через сколько минут неоплаченный заказ
 автоматически отменяется и возвращает зарезервированный остаток на склад.
 
+**База штрихкодов.** При старте backend в фоне загружает в базу поставляемый
+каталог (`backend/catalog/catalog.jsonl.gz`, ~137 тыс. позиций, около 20 МБ на
+томе, несколько секунд; следующие старты ничего не делают). В логах —
+«Barcode catalogue loaded» (первая загрузка) или «Barcode catalogue already
+loaded» (уже есть). Необязательные переменные: `CATALOG_LIVE_LOOKUP=off` — не
+спрашивать Open Food Facts про неизвестные коды; `OFF_BASE_URL` — другой
+сервер вместо него.
+
 ---
 
 ## 4. Admin и Terminal: переменные
@@ -208,6 +216,9 @@ railway run --service backend npm run check-inventory
   поднялся. Проверь Private Networking и логи backend.
 - **Домен не подтверждается** — DNS-запись ещё не разошлась либо у
   регистратора включён прокси, подменяющий CNAME. Проверь `dig CNAME admin.qwik.uz`.
+- **Сканер не узнаёт товары по общей базе** — в логах backend нет строки
+  «Barcode catalogue loaded / already loaded» (файл `catalog/` не попал в
+  образ или загрузка упала — см. строку «Barcode catalogue import failed»).
 - **«no such table» в логах backend** — volume не смонтирован в `/data`
   или `DATABASE_URL` указывает мимо тома.
 - **CORS-ошибки в консоли** — в обычной работе их быть не должно (admin и

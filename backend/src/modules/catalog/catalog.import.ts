@@ -64,7 +64,10 @@ async function run(file: string): Promise<{ skipped: boolean; rows: number }> {
   const db = new PrismaClient({ log: ["error"] });
   try {
     const loaded = await db.catalogMeta.findUnique({ where: { key: "snapshot_version" } });
-    if (loaded?.value === version) return { skipped: true, rows: 0 };
+    if (loaded?.value === version) {
+      logger.info("Barcode catalogue already loaded", { rows: await db.catalogProduct.count() });
+      return { skipped: true, rows: 0 };
+    }
 
     const started = Date.now();
     const lines = readline.createInterface({ input: fs.createReadStream(file).pipe(zlib.createGunzip()), crlfDelay: Infinity });

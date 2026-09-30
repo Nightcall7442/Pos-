@@ -26,15 +26,14 @@ export const logger = winston.createLogger({
   ],
 });
 
-if (env.NODE_ENV !== "production") {
-  logger.add(
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.simple()
-      ),
-    })
-  );
-}
+// The console is how a hosted container is observed (Railway shows nothing but
+// its stdout): JSON lines in production, readable colour in development.
+logger.add(
+  new winston.transports.Console(
+    env.NODE_ENV !== "production"
+      ? { format: winston.format.combine(winston.format.colorize(), winston.format.simple()) }
+      : {}
+  )
+);
 
 export default logger;

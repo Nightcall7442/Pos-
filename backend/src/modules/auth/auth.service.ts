@@ -70,6 +70,87 @@ export class AuthService {
     };
   }
 
+  // The slug is no longer just a cosmetic URL fragment — it is the code an
+  // admin reads out loud to whoever sets up a terminal, so a second shop
+  // called (or misspelled into) the same name must not fail to register; it
+  // gets "-2", "-3", ... appended instead of hitting the unique constraint.
+  private async uniqueSlug(tenantName: string): Promise<string> {
+    const base =
+      tenantName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "") || "shop";
+
+    for (let suffix = 1; suffix < 50; suffix++) {
+      const candidate = suffix === 1 ? base : `${base}-${suffix}`;
+      const taken = await prisma.tenant.findUnique({ where: { slug: candidate } });
+      if (!taken) return candidate;
+    }
+    // Practically unreachable — 49 shops with the exact same name — but a
+    // loop must still terminate rather than register forever.
+    return `${base}-${Date.now()}`;
+  }
+
+  // Public: lets a terminal that already knows the shop's code show tap-to-
+  // login tiles without anyone typing an email. Only staff who have a PIN
+  // configured can sign in this way — no PIN, no tile, no email/phone
+  // exposed. Physical access to the terminal is the security boundary here,
+  // the same assumption every "tap your name" kiosk POS makes.
+  async staff(tenantSlug: string) {
+    const tenant = await prisma.tenant.findUnique({
+      where: { slug: tenantSlug },
+      select: { id: true, name: true, isActive: true },
+    });
+    if (!tenant || !tenant.isActive) throw new NotFoundError("Точка не найдена — проверьте код");
+
+    const staff = await prisma.user.findMany({
+      where: { tenantId: tenant.id, isActive: true, pin: { not: null } },
+      select: { id: true, firstName: true, lastName: true, avatarUrl: true, role: true },
+      orderBy: { firstName: "asc" },
+    });
+
+    return { tenantName: tenant.name, staff };
+  }
+
+  // Companion to staff(): the tile was already chosen, so this only checks
+  // the PIN for that exact user — no email search, no cross-tenant loop.
+  async loginPin(tenantSlug: string, userId: string, pin: string) {
+    const tenant = await prisma.tenant.findUnique({ where: { slug: tenantSlug } });
+    if (!tenant || !tenant.isActive) throw new AppError("Точка не найдена", 401);
+
+    const user = await prisma.user.findFirst({
+      where: { id: userId, tenantId: tenant.id, isActive: true },
+    });
+
+    if (!user || !user.pin || !(await bcrypt.compare(pin, user.pin))) {
+      if (!user?.pin) await bcrypt.compare(pin, DUMMY_HASH); // even out timing
+      throw new AppError("Неверный PIN", 401);
+    }
+
+    await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+
+    const tokens = generateTokens({
+      id: user.id,
+      tenantId: user.tenantId,
+      email: user.email,
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        avatarUrl: user.avatarUrl,
+      },
+      ...tokens,
+    };
+  }
+
   async register(data: RegisterInput) {
     const existingUser = await prisma.user.findFirst({
       where: { email: data.email },
@@ -79,10 +160,7 @@ export class AuthService {
       throw new ConflictError("Email уже зарегистрирован");
     }
 
-    const slug = data.tenantName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
+    const slug = await this.uniqueSlug(data.tenantName);
 
     const passwordHash = await bcrypt.hash(data.password, 12);
 

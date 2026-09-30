@@ -47,3 +47,38 @@ export const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// PIN is only 4-10 digits — far weaker than a password — so it needs its own,
+// tighter bucket keyed by the account being attacked, not just the terminal's
+// IP. Keying by IP alone would let one bad actor lock out every cashier on
+// the same shop network; keying by account alone would let a botnet spread
+// guesses across many IPs. Combining both closes both gaps.
+function tenantUserKey(req: Request): string {
+  const tenant = String(req.body?.tenant ?? "");
+  const userId = String(req.body?.userId ?? "");
+  const ip = ipKey(req.ip ?? "unknown");
+  return userId ? `pin:${tenant}:${userId}:${ip}` : `ip:${ip}`;
+}
+
+export const pinLoginLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 8,
+  keyGenerator: tenantUserKey,
+  // Считаются только неудачные попытки: кассир, который за смену несколько
+  // раз выходит и входит, в лимит упираться не должен.
+  skipSuccessfulRequests: true,
+  message: { success: false, error: "Слишком много попыток, подождите несколько минут" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// The staff-tile list has no secret in it beyond names and roles, but it is
+// reachable without a login, so a scripted sweep of guessed shop codes across
+// the whole platform is still worth slowing down.
+export const staffLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: { success: false, error: "Слишком много запросов, попробуйте позже" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

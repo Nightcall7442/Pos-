@@ -23,6 +23,25 @@ export class AuthController {
     }
   }
 
+  async staff(req: Request, res: Response) {
+    try {
+      const data = await authService.staff(req.query.tenant as string);
+      sendSuccess(res, data);
+    } catch (error) {
+      handleError(res, error, 404);
+    }
+  }
+
+  async loginPin(req: Request, res: Response) {
+    try {
+      const { tenant, userId, pin } = req.body;
+      const result = await authService.loginPin(tenant, userId, pin);
+      sendSuccess(res, result, "Login successful");
+    } catch (error) {
+      handleError(res, error, 401);
+    }
+  }
+
   async refreshToken(req: Request, res: Response) {
     try {
       const result = await authService.refreshToken(req.body.refreshToken);

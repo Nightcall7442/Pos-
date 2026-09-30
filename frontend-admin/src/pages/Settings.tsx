@@ -109,6 +109,32 @@ export default function Settings() {
 
       {activeTab === "general" && (
         <form onSubmit={handleSaveGeneral} className="space-y-6">
+          {settings?.slug && (
+            <div className="card space-y-3">
+              <h2 className="text-lg font-semibold text-gray-900">Касса</h2>
+              <p className="text-sm text-gray-500">
+                Код точки вводится один раз при настройке планшета на кассе. После этого кассиры входят,
+                нажав своё имя и набрав PIN, — PIN задаётся в разделе «Сотрудники».
+              </p>
+              <div className="flex items-center gap-3">
+                <code className="rounded-lg bg-gray-100 px-4 py-2.5 font-mono text-lg tracking-wide text-gray-900">{settings.slug}</code>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(settings.slug);
+                      toast.success("Код скопирован");
+                    } catch {
+                      toast.error("Не удалось скопировать — выделите код вручную");
+                    }
+                  }}
+                >
+                  Копировать
+                </button>
+              </div>
+            </div>
+          )}
           <div className="card space-y-4">
             <h2 className="text-lg font-semibold text-gray-900">Информация о бизнесе</h2>
             <div><label className="label">Название</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input" /></div>

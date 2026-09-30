@@ -19,7 +19,7 @@ export class UserService {
     if (role) where.role = role;
     if (isActive !== undefined) where.isActive = isActive;
 
-    const [users, total] = await Promise.all([
+    const [rows, total] = await Promise.all([
       prisma.user.findMany({
         where,
         select: {
@@ -33,6 +33,7 @@ export class UserService {
           isActive: true,
           lastLoginAt: true,
           createdAt: true,
+          pin: true, // не возвращается наружу — превращается в hasPin ниже
         },
         orderBy: { createdAt: "desc" },
         skip,
@@ -40,6 +41,10 @@ export class UserService {
       }),
       prisma.user.count({ where }),
     ]);
+
+    // Панели нужно знать, у кого есть вход на кассе по PIN, но не сам хеш —
+    // поэтому поле заменяется булевым флагом перед отправкой наружу.
+    const users = rows.map(({ pin, ...rest }) => ({ ...rest, hasPin: !!pin }));
 
     return { users, total, page, limit };
   }
@@ -58,10 +63,12 @@ export class UserService {
         isActive: true,
         lastLoginAt: true,
         createdAt: true,
+        pin: true,
       },
     });
     if (!user) throw new NotFoundError("Пользователь не найден");
-    return user;
+    const { pin, ...rest } = user;
+    return { ...rest, hasPin: !!pin };
   }
 
   // Only an admin may mint another admin — otherwise a manager could promote

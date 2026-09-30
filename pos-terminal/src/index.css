@@ -254,3 +254,174 @@
 @media (max-width: 520px) {
   .pos-auth-title { font-size: 38px; }
 }
+
+/* ── Вход по имени и PIN ──────────────────────────────────────────────────────
+   Три шага: привязка планшета к точке (один раз), плитки с именами, цифровая
+   клавиатура PIN. Всё живёт внутри .pos-auth и пользуется его переменными —
+   те же бумага, тушь и зелёный. Сетке имён и клавиатуре тесно в 440 px,
+   поэтому для них колонка шире. */
+.pos-auth-box--wide { max-width: 680px; }
+
+.pos-auth-hint { color: #b04a3a; font-size: 13px; margin-top: 10px; }
+
+.pos-auth-link {
+  display: block;
+  margin: 22px auto 0;
+  padding: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.pos-auth-link:hover { color: var(--ink); }
+
+.pos-auth-links { display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; }
+.pos-auth-links .pos-auth-link { margin: 18px 0 0; }
+
+/* Сетка сотрудников */
+.pos-staff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 12px;
+}
+
+.pos-staff-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-height: 150px;
+  padding: 22px 12px 18px;
+  font-family: inherit;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+.pos-staff-tile:hover { border-color: var(--accent); }
+.pos-staff-tile:active { transform: scale(0.97); }
+
+.pos-avatar {
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 24px;
+  overflow: hidden;
+}
+.pos-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.pos-staff-name { font-size: 15px; font-weight: 500; text-align: center; line-height: 1.25; }
+.pos-staff-role { font-size: 12px; color: var(--muted); }
+
+.pos-staff-empty {
+  padding: 34px 18px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+  background: #fff;
+  border: 1px dashed var(--line);
+}
+
+/* PIN */
+.pos-pin {
+  position: relative;
+  padding: 26px 24px 24px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+
+.pos-pin-back {
+  position: absolute;
+  top: 10px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.pos-pin-back:hover { color: var(--ink); }
+
+.pos-pin-who { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 8px; }
+.pos-pin-who .pos-staff-name { font-size: 17px; }
+
+.pos-pin-dots {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  height: 16px;
+  margin: 22px 0 24px;
+}
+.pos-pin-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  transition: background 0.1s ease, border-color 0.1s ease;
+}
+.pos-pin-dot--on { background: var(--ink); border-color: var(--ink); }
+.pos-pin-dots--error .pos-pin-dot { border-color: #b04a3a; animation: pos-pin-shake 0.35s ease; }
+@keyframes pos-pin-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.pos-pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-width: 312px;
+  margin: 0 auto;
+}
+.pos-pin-key {
+  height: 66px;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 28px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease, transform 0.08s ease;
+  user-select: none;
+}
+.pos-pin-key:hover { border-color: var(--accent); }
+.pos-pin-key:active { transform: scale(0.96); background: #ece9e1; }
+.pos-pin-key:disabled { opacity: 0.4; cursor: not-allowed; }
+.pos-pin-key--muted {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--muted);
+}
+.pos-pin-key--go {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.pos-pin-key--go:hover:not(:disabled) { background: #17492f; }

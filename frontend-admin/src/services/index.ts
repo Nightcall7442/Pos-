@@ -186,8 +186,10 @@ export const categoryService = {
 export const userService = {
   list: (params?: Record<string, string | number | boolean | undefined>) => api.get<ApiResponse<User[]>>("/users", { params }),
   get: (id: string) => api.get<ApiResponse<User>>(`/users/${id}`),
-  create: (data: { email: string; password: string; firstName: string; lastName: string; role: string }) => api.post("/users", data),
-  update: (id: string, data: Partial<User>) => api.put(`/users/${id}`, data),
+  // pin: 4–10 цифр для входа на кассе по имени. Пустая строка при
+  // обновлении снимает PIN, отсутствие поля — оставляет как было.
+  create: (data: { email: string; password: string; firstName: string; lastName: string; role: string; pin?: string }) => api.post("/users", data),
+  update: (id: string, data: Partial<User> & { password?: string; pin?: string }) => api.put(`/users/${id}`, data),
   delete: (id: string) => api.delete(`/users/${id}`),
   toggleActive: (id: string) => api.post(`/users/${id}/toggle`),
 };

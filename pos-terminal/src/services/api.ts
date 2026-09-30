@@ -53,7 +53,10 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
-    if (error.response?.status === 401 && original && !original._retry) {
+    // 401 от самого входа — это «неверный PIN/пароль», а не протухшая сессия:
+    // обновлять нечего, а reload() стёр бы сообщение об ошибке с экрана.
+    const isAuthAttempt = /\/auth\/(login|login-pin|refresh)$/.test(original?.url ?? "");
+    if (error.response?.status === 401 && original && !original._retry && !isAuthAttempt) {
       original._retry = true;
       try {
         const token = await refreshAccessToken();

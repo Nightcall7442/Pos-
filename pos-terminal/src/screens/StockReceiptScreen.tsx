@@ -5,6 +5,7 @@ import api from "../services/api";
 import toast from "react-hot-toast";
 import type { Category, Product } from "../types";
 import { useMoney } from "../hooks/useMoney";
+import { weightUnitOf } from "../utils/weight";
 
 interface StockReceiptScreenProps {
   onClose: () => void;
@@ -25,6 +26,15 @@ interface StagedItem {
     | { newProduct: { name: string; categoryId?: string; newCategoryName?: string; unit: string } };
 }
 
+
+// Остаток для подписи в списке: округлён до грамма и с единицей у весового
+// товара — без этого «82.96000000000001» и непонятно, штуки это или килограммы.
+function stockText(p: Pick<Product, "currentStock" | "saleUnit">): string {
+  const value = Math.round(Number(p.currentStock) * 1000) / 1000;
+  const unit = weightUnitOf(p.saleUnit);
+  const text = String(value).replace(".", ",");
+  return unit ? `${text} ${unit}` : text;
+}
 
 function computeSalePrice(costPrice: number, markupPercent: number): number {
   const price = costPrice * (1 + markupPercent / 100);
@@ -321,7 +331,7 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
                   <option value="">{categoryId ? "Выберите товар" : "Сначала выберите категорию"}</option>
                   {categoryProducts?.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} (остаток {p.currentStock})
+                      {p.name} (остаток {stockText(p)})
                     </option>
                   ))}
                 </select>

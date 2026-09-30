@@ -78,6 +78,23 @@ describe("Retail: weighted goods, lookup, search, business type", () => {
     expect((await prisma.product.findUniqueOrThrow({ where: { id: apples.id } })).currentStock).toBe(82.96);
   });
 
+  it("keeps stock clean when goods are received and a receipt is cancelled", async () => {
+    // 82.96 + 10.55 is 93.50999999999999 in plain arithmetic.
+    const plums = await product({ name: "Сливы", price: 20000, currentStock: 82.96, saleUnit: "кг" });
+
+    const created = await api("/stock-receipts", cashierToken, {
+      method: "POST",
+      body: JSON.stringify({ supplierName: "Поставщик", items: [{ productId: plums.id, quantity: 10.55, costPrice: 14000 }] }),
+    });
+    expect(created.status).toBe(201);
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: plums.id } })).currentStock).toBe(93.51);
+
+    const receiptId = ((await created.json()) as any).data.id;
+    const removed = await api(`/stock-receipts/${receiptId}`, adminToken, { method: "DELETE" });
+    expect(removed.status).toBe(200);
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: plums.id } })).currentStock).toBe(82.96);
+  });
+
   it("refuses a weighed product sold without a weight", async () => {
     const cheese = await product({ name: "Сыр", price: 92000, currentStock: 6.8, saleUnit: "кг" });
     const res = await checkout(cashierToken, [{ productId: cheese.id, quantity: 1 }], 92000);

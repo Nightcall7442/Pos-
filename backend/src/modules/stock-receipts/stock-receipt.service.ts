@@ -2,7 +2,7 @@ import prisma from "../../config/database.js";
 import type { CreateStockReceiptInput } from "./stock-receipt.schema.js";
 import { optionalDateFilter, tenantTimeZone } from "../../utils/dates.js";
 import { AppError, NotFoundError } from "../../utils/errors.js";
-import { round2 } from "../inventory/stock.helpers.js";
+import { round2, roundStock } from "../inventory/stock.helpers.js";
 
 function computeSalePrice(costPrice: number, markupPercent: number): number {
   const price = costPrice * (1 + markupPercent / 100);
@@ -157,10 +157,11 @@ export class StockReceiptService {
       });
 
       for (const line of lines) {
+        const current = await tx.product.findUniqueOrThrow({ where: { id: line.productId }, select: { currentStock: true } });
         await tx.product.update({
           where: { id: line.productId },
           data: {
-            currentStock: { increment: line.quantity },
+            currentStock: roundStock(current.currentStock + line.quantity),
             costPrice: line.costPrice,
             ...(line.newPrice !== null ? { price: line.newPrice } : {}),
           },
@@ -241,9 +242,10 @@ export class StockReceiptService {
     // (and is allowed to go negative if the goods were already sold).
     await prisma.$transaction(async (tx) => {
       for (const item of items) {
+        const current = await tx.product.findUniqueOrThrow({ where: { id: item.productId }, select: { currentStock: true } });
         await tx.product.update({
           where: { id: item.productId },
-          data: { currentStock: { decrement: item.quantity } },
+          data: { currentStock: roundStock(current.currentStock - item.quantity) },
         });
         await tx.inventoryMovement.create({
           data: {

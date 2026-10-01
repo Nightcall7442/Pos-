@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import jwt, { type SignOptions } from "jsonwebtoken";
 import { getEnv } from "../config/env.js";
-import prisma from "../config/database.js";
 import { sendError } from "../utils/response.js";
 
 export interface AuthUser {
@@ -11,6 +10,27 @@ export interface AuthUser {
   role: string;
   firstName: string;
   lastName: string;
+}
+
+/**
+ * Токен доступа и токен обновления раньше отличались только секретом, которым
+ * подписаны: полезная нагрузка у них была одна и та же. Если JWT_SECRET и
+ * JWT_REFRESH_SECRET совпадут (запретить это было нечем — теперь запрещает
+ * config/env.ts), refresh-токен работал бы как access и наоборот: пятнадцать
+ * минут доступа превращались в семь дней. Поэтому тип написан в самом токене
+ * и проверяется на входе.
+ */
+export type TokenType = "access" | "refresh";
+
+export interface TokenClaims extends AuthUser {
+  typ: TokenType;
+  /**
+   * Версия токенов пользователя. Пишется только в refresh-токен и сверяется с
+   * users.token_version при обновлении: смена пароля увеличивает счётчик и тем
+   * самым гасит все выданные ранее refresh-токены. Без этого украденный
+   * refresh-токен жил свои семь дней, и смена пароля его не отменяла.
+   */
+  ver?: number;
 }
 
 declare global {
@@ -33,7 +53,11 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, env.JWT_SECRET) as AuthUser;
+    const decoded = jwt.verify(token, env.JWT_SECRET) as TokenClaims;
+    if (decoded.typ !== "access") {
+      sendError(res, "Invalid or expired token", 401);
+      return;
+    }
     req.user = decoded;
     next();
   } catch {
@@ -55,9 +79,17 @@ export function authorize(...roles: string[]) {
   };
 }
 
-export function generateTokens(user: { id: string; tenantId: string; email: string; role: string; firstName: string; lastName: string }) {
+export function generateTokens(user: {
+  id: string;
+  tenantId: string;
+  email: string;
+  role: string;
+  firstName: string;
+  lastName: string;
+  tokenVersion?: number;
+}) {
   const env = getEnv();
-  const payload = {
+  const payload: AuthUser = {
     id: user.id,
     tenantId: user.tenantId,
     email: user.email,
@@ -66,8 +98,20 @@ export function generateTokens(user: { id: string; tenantId: string; email: stri
     lastName: user.lastName,
   };
 
-  const accessToken = jwt.sign(payload, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN as any });
-  const refreshToken = jwt.sign(payload, env.JWT_REFRESH_SECRET, { expiresIn: env.JWT_REFRESH_EXPIRES_IN as any });
+  // JWT_EXPIRES_IN приходит из окружения строкой ("15m", "7d"), а тип
+  // SignOptions["expiresIn"] шире строки — приведение точечное, вместо двух
+  // `as any`, которые гасили проверку всего объекта настроек.
+  const accessOptions: SignOptions = { expiresIn: env.JWT_EXPIRES_IN as SignOptions["expiresIn"] };
+  const refreshOptions: SignOptions = {
+    expiresIn: env.JWT_REFRESH_EXPIRES_IN as SignOptions["expiresIn"],
+  };
+
+  const accessToken = jwt.sign({ ...payload, typ: "access" }, env.JWT_SECRET, accessOptions);
+  const refreshToken = jwt.sign(
+    { ...payload, typ: "refresh", ver: user.tokenVersion ?? 0 },
+    env.JWT_REFRESH_SECRET,
+    refreshOptions
+  );
 
   return { accessToken, refreshToken };
 }

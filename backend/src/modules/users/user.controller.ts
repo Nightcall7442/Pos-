@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { userService } from "./user.service.js";
-import { sendSuccess, sendCreated, sendError, sendPaginated } from "../../utils/response.js";
+import { sendSuccess, sendCreated, sendPaginated } from "../../utils/response.js";
 import { handleError } from "../../utils/errors.js";
 
 export class UserController {

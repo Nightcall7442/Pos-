@@ -24,7 +24,7 @@
     "typecheck:admin": "tsc --noEmit -p frontend-admin/tsconfig.json",
     "typecheck:terminal": "tsc --noEmit -p pos-terminal/tsconfig.json",
     "ci": "npm run lint && npm run typecheck && npm test",
-    "lint:budget": "eslint . --max-warnings 382"
+    "lint:budget": "eslint . --max-warnings 353"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

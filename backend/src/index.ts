@@ -72,7 +72,11 @@ app.get("/health", (_req, res) => {
 });
 
 // API Routes
-app.use("/api/auth", authRoutes);
+// У /login, /login-pin и /staff есть свои, более строгие лимиты (см.
+// middleware/rateLimiter.ts), но /refresh и /me до этого не были ограничены
+// ничем: токен можно было перебирать и дёргать обновление без счёта.
+// apiLimiter — общая сетка поверх точечных лимитов.
+app.use("/api/auth", apiLimiter, authRoutes);
 app.use("/api/products", apiLimiter, productRoutes);
 app.use("/api/orders", apiLimiter, orderRoutes);
 app.use("/api/payments", apiLimiter, paymentRoutes);

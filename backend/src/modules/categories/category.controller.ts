@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { categoryService } from "./category.service.js";
-import { sendSuccess, sendCreated, sendError } from "../../utils/response.js";
+import { sendSuccess, sendCreated } from "../../utils/response.js";
 import { handleError } from "../../utils/errors.js";
 
 export class CategoryController {

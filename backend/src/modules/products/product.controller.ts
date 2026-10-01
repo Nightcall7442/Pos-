@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { productService } from "./product.service.js";
-import { sendSuccess, sendCreated, sendError, sendPaginated } from "../../utils/response.js";
+import { sendSuccess, sendCreated, sendPaginated } from "../../utils/response.js";
 import { handleError } from "../../utils/errors.js";
 import type { ProductQueryInput } from "./product.schema.js";
 

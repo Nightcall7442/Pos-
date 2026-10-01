@@ -87,7 +87,7 @@ export class UserService {
     if (existing) throw new ConflictError("Email уже используется");
 
     const passwordHash = await bcrypt.hash(data.password, 12);
-    const { password, pin, ...rest } = data;
+    const { password: _password, pin, ...rest } = data;
     const pinHash = pin ? await bcrypt.hash(pin, 10) : undefined;
 
     return prisma.user.create({

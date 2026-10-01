@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { inventoryService } from "./inventory.service.js";
-import { sendSuccess, sendError, sendPaginated } from "../../utils/response.js";
+import { sendSuccess, sendPaginated } from "../../utils/response.js";
 import { handleError } from "../../utils/errors.js";
 
 export class InventoryController {

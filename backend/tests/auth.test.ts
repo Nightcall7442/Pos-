@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { setupTestData, getTokens, cleanupTestData, adminToken, testTenantId, BASE_URL } from "./helpers.js";
+import jwt from "jsonwebtoken";
+import { setupTestData, getTokens, cleanupTestData, adminToken, testTenantId, testUserId, BASE_URL } from "./helpers.js";
 
 
 describe("Auth API", () => {
@@ -95,5 +96,94 @@ describe("Auth API", () => {
     expect(res.status).toBe(200);
     expect(data.success).toBe(true);
     expect(data.data.accessToken).toBeDefined();
+  });
+
+  // До появления поля typ токен доступа и токен обновления отличались только
+  // секретом подписи: с одинаковыми секретами одно работало вместо другого, и
+  // 15 минут доступа превращались в 7 дней. Совпадение секретов теперь
+  // запрещает config/env.ts, а эти два теста проверяют вторую линию — что
+  // сервер смотрит на заявленный в токене тип. Токены здесь подписываются
+  // тестовыми секретами из vitest.config.ts намеренно «не тем» типом: иначе
+  // запрос отклонила бы проверка подписи, а не проверка типа.
+  const JWT_SECRET = process.env.JWT_SECRET as string;
+  const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET as string;
+
+  function sign(secret: string, claims: Record<string, unknown>): string {
+    return jwt.sign(
+      { id: testUserId, tenantId: testTenantId, email: "admin@test.com", role: "admin", firstName: "Admin", lastName: "Test", ...claims },
+      secret,
+      { expiresIn: "15m" }
+    );
+  }
+
+  it("should reject a token that is not marked as an access token", async () => {
+    const res = await fetch(`${BASE_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${sign(JWT_SECRET, { typ: "refresh", ver: 0 })}` },
+    });
+
+    expect(res.status).toBe(401);
+  });
+
+  it("should reject a token that is not marked as a refresh token", async () => {
+    const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken: sign(JWT_REFRESH_SECRET, { typ: "access" }) }),
+    });
+
+    expect(res.status).toBe(401);
+  });
+
+  // Смена пароля должна завершать сессии, а не только менять строку в базе.
+  // Своя точка и свой пользователь — чтобы не менять пароль админа, которым
+  // входят остальные тесты файла.
+  it("should invalidate refresh tokens issued before a password change", async () => {
+    const stamp = Date.now();
+    const email = `pwd-${stamp}@test.com`;
+
+    const regRes = await fetch(`${BASE_URL}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password: "oldpassword1",
+        firstName: "Pwd",
+        lastName: "Owner",
+        tenantName: `Pwd Shop ${stamp}`,
+      }),
+    });
+    const regData = await regRes.json() as any;
+    expect(regRes.status).toBe(201);
+    const { accessToken, refreshToken } = regData.data;
+
+    const changed = await fetch(`${BASE_URL}/api/auth/change-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ currentPassword: "oldpassword1", newPassword: "newpassword1" }),
+    });
+    expect(changed.status).toBe(200);
+
+    const stale = await fetch(`${BASE_URL}/api/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+    expect(stale.status).toBe(401);
+
+    // А новый вход выдаёт рабочую пару.
+    const reloginRes = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password: "newpassword1" }),
+    });
+    const reloginData = await reloginRes.json() as any;
+    expect(reloginRes.status).toBe(200);
+
+    const fresh = await fetch(`${BASE_URL}/api/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken: reloginData.data.refreshToken }),
+    });
+    expect(fresh.status).toBe(200);
   });
 });

@@ -63,6 +63,11 @@ model User {
   role          String    @default("cashier")
   avatarUrl     String?   @map("avatar_url")
   isActive      Boolean   @default(true) @map("is_active")
+  // Счётчик для отзыва refresh-токенов: он пишется в токен обновления и
+  // сверяется при каждом обновлении. Смена пароля увеличивает счётчик, и все
+  // выданные ранее refresh-токены перестают работать. Без этого украденный
+  // токен жил свои семь дней, а смена пароля его не отменяла.
+  tokenVersion  Int       @default(0) @map("token_version")
   lastLoginAt   DateTime? @map("last_login_at")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")

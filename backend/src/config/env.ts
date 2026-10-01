@@ -31,13 +31,37 @@ const envSchema = z.object({
   TASNIF_BASE_URL: z.string().url().optional(),
 });
 
+// Значения из .env.example. В проде с ними сервер подписывал бы токены
+// секретом, который лежит в открытом репозитории.
+const PLACEHOLDER_SECRETS = [
+  "your-super-secret-jwt-key-change-in-production",
+  "your-refresh-secret-key-change-in-production",
+];
+
+const envWithChecks = envSchema
+  .refine((env) => env.JWT_SECRET !== env.JWT_REFRESH_SECRET, {
+    path: ["JWT_REFRESH_SECRET"],
+    message:
+      "JWT_SECRET и JWT_REFRESH_SECRET должны различаться: с одинаковыми секретами токен доступа работает как токен обновления",
+  })
+  .refine(
+    (env) =>
+      env.NODE_ENV !== "production" ||
+      (!PLACEHOLDER_SECRETS.includes(env.JWT_SECRET) &&
+        !PLACEHOLDER_SECRETS.includes(env.JWT_REFRESH_SECRET)),
+    {
+      path: ["JWT_SECRET"],
+      message: "В production нельзя оставлять секреты из .env.example",
+    }
+  );
+
 export type Env = z.infer<typeof envSchema>;
 
 let _env: Env;
 
 export function getEnv(): Env {
   if (!_env) {
-    _env = envSchema.parse(process.env);
+    _env = envWithChecks.parse(process.env);
   }
   return _env;
 }

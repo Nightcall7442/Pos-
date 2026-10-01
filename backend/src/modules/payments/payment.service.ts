@@ -97,9 +97,29 @@ export class PaymentService {
     });
     if (!payment) throw new NotFoundError("Платёж не найден");
 
+    // Причину возврата требует refundPaymentSchema, контроллер передаёт её
+    // сюда — и до сих пути она терялась: в платёж не писалась, а в журнал
+    // аудита не попадала (middleware/audit сохраняет data из ответа, где
+    // причины нет). Теперь она лежит в metadata платежа вместе с временем.
+    let metadata: Record<string, unknown> = {};
+    try {
+      const parsed: unknown = JSON.parse(payment.metadata || "{}");
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        metadata = parsed as Record<string, unknown>;
+      }
+    } catch {
+      // битый JSON в metadata не должен ломать возврат
+    }
+
     const updated = await prisma.payment.update({
       where: { id: paymentId },
-      data: { status: "refunded" },
+      data: {
+        status: "refunded",
+        metadata: JSON.stringify({
+          ...metadata,
+          refund: { reason, at: new Date().toISOString() },
+        }),
+      },
     });
 
     const order = payment.order;

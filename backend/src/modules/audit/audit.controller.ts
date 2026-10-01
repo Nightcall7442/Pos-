@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { auditService } from "./audit.service.js";
-import { sendSuccess, sendError, sendPaginated } from "../../utils/response.js";
+import { sendPaginated } from "../../utils/response.js";
 import { handleError } from "../../utils/errors.js";
 
 export class AuditController {

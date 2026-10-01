@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { cashShiftService } from "./cash-shift.service.js";
-import { sendSuccess, sendError, sendPaginated } from "../../utils/response.js";
+import { sendSuccess, sendPaginated } from "../../utils/response.js";
 import { handleError } from "../../utils/errors.js";
 
 export class CashShiftController {

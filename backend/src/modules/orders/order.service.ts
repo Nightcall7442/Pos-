@@ -20,6 +20,7 @@ import {
 import { optionalDateFilter, tenantTimeZone } from "../../utils/dates.js";
 import { AppError, ConflictError, NotFoundError } from "../../utils/errors.js";
 import { inTransaction } from "../../utils/transaction.js";
+import { attachIdempotencyResource, claimIdempotencyKey, type IdempotencyContext } from "../../utils/idempotency.js";
 import { lockOrder } from "./order.locks.js";
 
 export class OrderTotalChangedError extends Error {
@@ -254,12 +255,14 @@ export class OrderService {
     return created;
   }
 
-  async create(tenantId: string, userId: string, data: CreateOrderInput) {
+  async create(tenantId: string, userId: string, data: CreateOrderInput, idem?: IdempotencyContext | null) {
     const created = await inTransaction(async (tx) => {
+      await claimIdempotencyKey(tx, tenantId, idem);
       const row = await this.createOrderInTx(tx, tenantId, userId, data, "pending");
       if (data.tableId) {
         await tx.table.update({ where: { id: data.tableId }, data: { status: "occupied" } });
       }
+      await attachIdempotencyResource(tx, tenantId, idem, row.id);
       return row;
     });
 
@@ -277,8 +280,9 @@ export class OrderService {
   // one transaction. Rejects with OrderTotalChangedError when the server total
   // differs from what the cashier collected, so the terminal can re-price the
   // cart instead of recording an underpaid "completed" sale.
-  async checkout(tenantId: string, userId: string, data: CheckoutInput) {
+  async checkout(tenantId: string, userId: string, data: CheckoutInput, idem?: IdempotencyContext | null) {
     const created = await inTransaction(async (tx) => {
+      await claimIdempotencyKey(tx, tenantId, idem);
       const row = await this.createOrderInTx(tx, tenantId, userId, data, "completed");
 
       if (Math.abs(row.total - data.expectedTotal) > 0.01) {
@@ -300,6 +304,7 @@ export class OrderService {
       });
 
       await deductTechCardIngredients(tx, { tenantId, userId, orderId: row.id });
+      await attachIdempotencyResource(tx, tenantId, idem, row.id);
 
       return row;
     });

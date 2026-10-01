@@ -5,6 +5,7 @@ import { optionalDateFilter, tenantTimeZone } from "../../utils/dates.js";
 import { AppError, NotFoundError } from "../../utils/errors.js";
 import { lockStockRows, round2, roundStock } from "../inventory/stock.helpers.js";
 import { inTransaction } from "../../utils/transaction.js";
+import { attachIdempotencyResource, claimIdempotencyKey, type IdempotencyContext } from "../../utils/idempotency.js";
 
 function computeSalePrice(costPrice: number, markupPercent: number): number {
   const price = costPrice * (1 + markupPercent / 100);
@@ -49,11 +50,12 @@ export class StockReceiptService {
    * half-way through (an unpriceable line, for example) left a receipt
    * document behind with no stock movement against it.
    */
-  async create(tenantId: string, userId: string, data: CreateStockReceiptInput) {
+  async create(tenantId: string, userId: string, data: CreateStockReceiptInput, idem?: IdempotencyContext | null) {
     const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
     const defaultMarkup = tenant?.defaultMarkupPercent ?? 0;
 
     const receiptId = await inTransaction(async (tx) => {
+      await claimIdempotencyKey(tx, tenantId, idem);
       const newCategoryCache = new Map<string, string>();
       const lines: {
         productId: string;
@@ -187,6 +189,7 @@ export class StockReceiptService {
         });
       }
 
+      await attachIdempotencyResource(tx, tenantId, idem, receipt.id);
       return receipt.id;
     // Большой приход (сотни строк, новые товары) не должен упираться в
     // общий таймаут транзакции в 10 с.

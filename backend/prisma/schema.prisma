@@ -39,6 +39,7 @@ model Tenant {
   products     Product[]
   orders       Order[]
   orderCounter OrderCounter?
+  idempotencyKeys IdempotencyKey[]
   payments     Payment[]
   inventory    InventoryMovement[]
   tables       Table[]
@@ -314,6 +315,28 @@ model OrderCounter {
   lastNumber Int    @map("last_number")
 
   @@map("order_counters")
+}
+
+// Ключи идемпотентности (заголовок Idempotency-Key). Касса, у которой
+// оборвалась связь посреди продажи, не знает, прошла ли продажа, и шлёт её
+// ещё раз — с тем же ключом. Строка пишется в той же транзакции, что и сама
+// продажа (оплата, приход): либо есть и то и другое, либо ничего, — и
+// повтор возвращает уже созданное вместо второго чека. Ключ живёт сутки.
+model IdempotencyKey {
+  tenantId    String   @map("tenant_id")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key         String
+  // «POST /orders/checkout» и т.п. и SHA-256 тела запроса: тот же ключ с
+  // другим запросом — ошибка клиента, а не повтор.
+  route       String
+  requestHash String   @map("request_hash")
+  // id созданного заказа, платежа или прихода — по нему повтор и отвечает.
+  resourceId  String?  @map("resource_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@id([tenantId, key])
+  @@index([createdAt])
+  @@map("idempotency_keys")
 }
 
 model OrderItem {

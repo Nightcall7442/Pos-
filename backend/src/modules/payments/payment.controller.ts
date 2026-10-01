@@ -2,11 +2,22 @@ import { Request, Response } from "express";
 import { paymentService } from "./payment.service.js";
 import { sendSuccess, sendCreated, sendPaginated } from "../../utils/response.js";
 import { handleError } from "../../utils/errors.js";
+import prisma from "../../config/database.js";
+import { idempotencyFrom, withIdempotency } from "../../utils/idempotency.js";
 
 export class PaymentController {
   async create(req: Request, res: Response) {
     try {
-      const payment = await paymentService.create(req.user!.tenantId, req.body, req.user!.id);
+      const tenantId = req.user!.tenantId;
+      const idem = idempotencyFrom(req, "POST /payments");
+      // Повтор с тем же Idempotency-Key отвечает тем, что создал первый запрос.
+      const { value: payment, replayed } = await withIdempotency(
+        tenantId,
+        idem,
+        () => paymentService.create(tenantId, req.body, req.user!.id, idem),
+        (id) => prisma.payment.findFirstOrThrow({ where: { id, tenantId } })
+      );
+      if (replayed) res.setHeader("Idempotent-Replayed", "true");
       sendCreated(res, payment);
     } catch (error) {
       handleError(res, error);

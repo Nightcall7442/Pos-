@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { orderService, OrderTotalChangedError } from "./order.service.js";
 import { sendSuccess, sendCreated, sendPaginated } from "../../utils/response.js";
 import { handleError } from "../../utils/errors.js";
+import { idempotencyFrom, withIdempotency } from "../../utils/idempotency.js";
 import type { OrderQueryInput } from "./order.schema.js";
 
 export class OrderController {
@@ -27,7 +28,16 @@ export class OrderController {
 
   async create(req: Request, res: Response) {
     try {
-      const order = await orderService.create(req.user!.tenantId, req.user!.id, req.body);
+      const tenantId = req.user!.tenantId;
+      const idem = idempotencyFrom(req, "POST /orders");
+      // Повтор с тем же Idempotency-Key отвечает тем, что создал первый запрос.
+      const { value: order, replayed } = await withIdempotency(
+        tenantId,
+        idem,
+        () => orderService.create(tenantId, req.user!.id, req.body, idem),
+        (id) => orderService.findById(tenantId, id)
+      );
+      if (replayed) res.setHeader("Idempotent-Replayed", "true");
       sendCreated(res, order);
     } catch (error) {
       handleError(res, error);
@@ -36,7 +46,16 @@ export class OrderController {
 
   async checkout(req: Request, res: Response) {
     try {
-      const order = await orderService.checkout(req.user!.tenantId, req.user!.id, req.body);
+      const tenantId = req.user!.tenantId;
+      const idem = idempotencyFrom(req, "POST /orders/checkout");
+      // Повтор с тем же Idempotency-Key отвечает тем, что создал первый запрос.
+      const { value: order, replayed } = await withIdempotency(
+        tenantId,
+        idem,
+        () => orderService.checkout(tenantId, req.user!.id, req.body, idem),
+        (id) => orderService.findById(tenantId, id)
+      );
+      if (replayed) res.setHeader("Idempotent-Replayed", "true");
       sendCreated(res, order);
     } catch (error) {
       if (error instanceof OrderTotalChangedError) {

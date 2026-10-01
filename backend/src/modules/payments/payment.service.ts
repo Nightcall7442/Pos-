@@ -4,14 +4,16 @@ import { deductTechCardIngredients, round2 } from "../inventory/stock.helpers.js
 import { optionalDateFilter, tenantTimeZone } from "../../utils/dates.js";
 import { AppError, ConflictError, NotFoundError } from "../../utils/errors.js";
 import { inTransaction } from "../../utils/transaction.js";
+import { attachIdempotencyResource, claimIdempotencyKey, type IdempotencyContext } from "../../utils/idempotency.js";
 import { lockOrder } from "../orders/order.locks.js";
 
 export class PaymentService {
-  async create(tenantId: string, data: CreatePaymentInput, userId?: string) {
+  async create(tenantId: string, data: CreatePaymentInput, userId?: string, idem?: IdempotencyContext | null) {
     // Всё — внутри одной транзакции под блокировкой строки заказа. Раньше
     // статус и остаток к оплате проверялись до транзакции, и пять одновременных
     // оплат одного заказа проходили все пять (тест concurrency.test.ts).
     return inTransaction(async (tx) => {
+      await claimIdempotencyKey(tx, tenantId, idem);
       const order = await lockOrder(tx, tenantId, data.orderId);
       if (!order) throw new NotFoundError("Заказ не найден");
       if (order.status === "cancelled") throw new ConflictError("Нельзя оплатить отменённый заказ");
@@ -62,6 +64,7 @@ export class PaymentService {
         }
       }
 
+      await attachIdempotencyResource(tx, tenantId, idem, payment.id);
       return payment;
     });
   }

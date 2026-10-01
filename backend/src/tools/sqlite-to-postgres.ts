@@ -31,7 +31,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { PrismaClient as PgClient } from "@prisma/client";
+import { PrismaClient as PgClient, Prisma as PgPrisma } from "@prisma/client";
 import { PrismaClient as SqliteClient, Prisma as SqlitePrisma } from "../../prisma/generated/cutover-sqlite/index.js";
 
 type Row = Record<string, unknown>;
@@ -237,7 +237,9 @@ async function checkTarget(target: PgClient, plans: ModelPlan[], truncate: boole
   }
   if (!env.folds) problems.push("локаль Postgres не складывает кириллицу (LC_CTYPE=C?) — поиск товаров будет промахиваться");
 
-  const tables = [...plans.map((p) => p.table), "order_counters"];
+  // Все таблицы Postgres, а не только перенесённые: и те, которых в SQLite не
+  // было (счётчики номеров, ключи идемпотентности), должны быть пусты.
+  const tables = PgPrisma.dmmf.datamodel.models.map((m) => m.dbName ?? m.name);
   if (truncate) {
     log("Очищаю таблицы цели (--truncate)");
     await target.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t}"`).join(", ")} CASCADE`);

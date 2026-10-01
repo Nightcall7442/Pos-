@@ -40,7 +40,10 @@ export function auditLog(action: string, entityType?: string) {
     const originalJson = res.json.bind(res);
 
     res.json = function (body: any) {
-      if (req.user && res.statusCode >= 200 && res.statusCode < 300 && body?.success !== false) {
+      // Повтор по Idempotency-Key ничего не меняет — в журнал он не пишется,
+      // иначе одна продажа выглядела бы в журнале двумя.
+      const replayed = res.getHeader("Idempotent-Replayed") === "true";
+      if (req.user && !replayed && res.statusCode >= 200 && res.statusCode < 300 && body?.success !== false) {
         auditService
           .log({
             tenantId: req.user.tenantId,

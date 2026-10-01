@@ -3,6 +3,7 @@ import { logger } from "../../utils/logger.js";
 import { releaseStock, stockUnitsFor, type Reservation } from "../inventory/stock.helpers.js";
 import { inTransaction } from "../../utils/transaction.js";
 import { lockOrder } from "./order.locks.js";
+import { purgeIdempotencyKeys } from "../../utils/idempotency.js";
 
 // Creating an order reserves stock. A terminal that crashes (or a cashier who
 // walks away) between the order and its payment would otherwise hold that
@@ -66,6 +67,13 @@ export function startStaleOrderSweeper(maxAgeMinutes: number, intervalMs = 5 * 6
   const timer = setInterval(() => {
     cancelStalePendingOrders(maxAgeMinutes).catch((error) =>
       logger.error("Stale order sweep failed", {
+        message: error instanceof Error ? error.message : String(error),
+      })
+    );
+    // Ключи идемпотентности старше суток больше не нужны: повтор приходит
+    // через секунды или минуты, а не на следующий день.
+    purgeIdempotencyKeys().catch((error) =>
+      logger.error("Idempotency key purge failed", {
         message: error instanceof Error ? error.message : String(error),
       })
     );

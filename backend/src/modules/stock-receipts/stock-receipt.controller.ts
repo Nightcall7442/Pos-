@@ -2,15 +2,21 @@ import { Request, Response } from "express";
 import { stockReceiptService } from "./stock-receipt.service.js";
 import { sendSuccess, sendPaginated } from "../../utils/response.js";
 import { handleError } from "../../utils/errors.js";
+import { idempotencyFrom, withIdempotency } from "../../utils/idempotency.js";
 
 export class StockReceiptController {
   async create(req: Request, res: Response) {
     try {
-      const receipt = await stockReceiptService.create(
-        req.user!.tenantId,
-        req.user!.id,
-        req.body
+      const tenantId = req.user!.tenantId;
+      const idem = idempotencyFrom(req, "POST /stock-receipts");
+      // Повтор с тем же Idempotency-Key отвечает тем, что создал первый запрос.
+      const { value: receipt, replayed } = await withIdempotency(
+        tenantId,
+        idem,
+        () => stockReceiptService.create(tenantId, req.user!.id, req.body, idem),
+        (id) => stockReceiptService.findById(tenantId, id)
       );
+      if (replayed) res.setHeader("Idempotent-Replayed", "true");
       sendSuccess(res, receipt, "Приход создан", 201);
     } catch (error) {
       handleError(res, error);

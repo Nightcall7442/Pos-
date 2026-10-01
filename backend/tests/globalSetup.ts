@@ -2,8 +2,7 @@ import { spawn, execSync, type ChildProcess } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import http from "node:http";
-import { PrismaClient } from "@prisma/client";
-import { TEST_DATABASE_URL, assertSafeTestDatabase } from "./testDatabase.js";
+import { TEST_DATABASE_URL, resetTestDatabase } from "./testDatabase.js";
 
 // The suite talks to a real HTTP server. It used to expect one already running
 // on the development port and wiped the development database as it went; now
@@ -14,42 +13,6 @@ const root = path.resolve(__dirname, "..");
 const DATABASE_URL = TEST_DATABASE_URL;
 const PORT = Number(process.env.TEST_PORT || 3100);
 
-// Стирает тестовую базу и создаёт её заново. `prisma migrate reset` здесь не
-// годится: он требует подтверждения, когда его запускает не человек, а схема
-// public целиком — это и есть вся база приложения.
-async function resetTestDatabase(url: string): Promise<void> {
-  const { dbName } = assertSafeTestDatabase(url);
-
-  const maintenance = new URL(url);
-  maintenance.pathname = "/postgres";
-  maintenance.search = "";
-  const admin = new PrismaClient({ datasourceUrl: maintenance.toString() });
-  try {
-    const exists = await admin.$queryRaw<{ n: number }[]>`SELECT 1 AS n FROM pg_database WHERE datname = ${dbName}`;
-    // Имя уже проверено регуляркой в assertSafeTestDatabase.
-    if (exists.length === 0) await admin.$executeRawUnsafe(`CREATE DATABASE "${dbName}"`);
-  } catch (error) {
-    const reason = error instanceof Error ? error.message.split("\n")[0] : String(error);
-    throw new Error(`Не удалось подключиться к тестовому Postgres (${maintenance.host}): ${reason}. Локально: docker compose up -d --wait postgres, или задайте TEST_DATABASE_URL`);
-  } finally {
-    await admin.$disconnect();
-  }
-
-  const db = new PrismaClient({ datasourceUrl: url });
-  try {
-    await db.$executeRawUnsafe(`DROP SCHEMA IF EXISTS public CASCADE`);
-    await db.$executeRawUnsafe(`CREATE SCHEMA public`);
-    // Поиск без учёта регистра (ILIKE) складывает кириллицу, только если у
-    // базы правильная локаль. С локалью C «Молоко» не находится по «молоко»,
-    // и тесты поиска падали бы с непонятной причиной.
-    const [locale] = await db.$queryRaw<{ ok: boolean }[]>`SELECT lower('МОЛОКО') = 'молоко' AND 'Молоко' ILIKE 'молоко' AS ok`;
-    if (!locale?.ok) {
-      throw new Error("Локаль тестовой базы не складывает кириллицу (LC_CTYPE=C?). Нужен Postgres с ICU или en_US.UTF-8, как в проде");
-    }
-  } finally {
-    await db.$disconnect();
-  }
-}
 
 let server: ChildProcess | undefined;
 let offStub: http.Server | undefined;

@@ -39,6 +39,8 @@ export default tseslint.config(
       "**/build/**",
       "backend/uploads/**",
       "backend/prisma/migrations/**",
+      // Клиент Prisma для переноса данных из SQLite — сгенерированный код.
+      "backend/prisma/generated/**",
       "landing/**",
       "**/*.d.ts",
     ],

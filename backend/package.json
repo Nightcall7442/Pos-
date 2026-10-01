@@ -8,7 +8,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "db:generate": "prisma generate",
+    "db:generate": "prisma generate && prisma generate --schema prisma/cutover/sqlite.prisma",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
@@ -16,7 +16,8 @@
     "check-inventory": "tsx scripts/check-inventory.ts",
     "test": "vitest",
     "test:run": "vitest run",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "db:migrate-from-sqlite": "tsx src/tools/sqlite-to-postgres.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.2.0",

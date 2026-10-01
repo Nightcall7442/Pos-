@@ -4,6 +4,8 @@ build
 package-lock.json
 backend/uploads
 backend/prisma/migrations
+backend/prisma/generated
+backend/prisma/cutover
 backend/catalog
 landing
 *.min.*

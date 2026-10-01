@@ -3,7 +3,10 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install
 COPY . .
-RUN npx prisma generate
+# Два клиента: основной (Postgres) и замороженный SQLite — для одноразового
+# переноса данных (src/tools/sqlite-to-postgres.ts). Второй ложится в
+# prisma/generated и уезжает в образ вместе с папкой prisma.
+RUN npm run db:generate
 RUN npm run build
 
 FROM node:20-alpine AS runner
@@ -24,4 +27,5 @@ EXPOSE 3000
 # drops data — an incompatible schema fails the deploy instead of silently
 # wiping the volume, which `db push --accept-data-loss` used to do on every
 # container start.
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+# exec — чтобы SIGTERM от Railway получил node, а не sh, и сервер закрылся штатно.
+CMD ["sh", "-c", "npx prisma migrate deploy && exec node dist/index.js"]

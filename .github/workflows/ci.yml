@@ -86,6 +86,11 @@ jobs:
           --shadow-database-url "postgresql://qwik:qwik@localhost:5432/qwik_shadow"
           --exit-code
 
+      # Юнит-тесты фронтендов: корзина и деньги кассы, вес, остатки на полке,
+      # права по ролям в панели, хук сокета. Базы не требуют.
+      - name: Frontend tests
+        run: npm run test:frontend
+
       # Тесты сами поднимают свой сервер на своей базе qwik_test
       # (backend/tests/globalSetup.ts) и заглушки вместо внешних API.
       - name: Tests

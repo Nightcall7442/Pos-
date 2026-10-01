@@ -7,7 +7,8 @@ npm run lint          # eslint по всем трём пакетам
 npm run lint:fix      # то, что исправляется автоматически
 npm run lint:budget   # lint + ограничение на число предупреждений (как в CI)
 npm run typecheck     # tsc --noEmit: backend, панель, касса
-npm test              # тесты бэкенда (vitest)
+npm test              # тесты бэкенда (vitest, нужен Postgres)
+npm run test:frontend # юнит-тесты панели и кассы (vitest + jsdom, без базы)
 npm run format        # prettier по репозиторию
 npm run ci            # всё вместе, как на PR
 ```

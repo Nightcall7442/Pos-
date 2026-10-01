@@ -3,7 +3,12 @@ import { z } from "zod";
 const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  DATABASE_URL: z.string(),
+  // С 2026-10 база — PostgreSQL. Старая строка file:./dev.db от SQLite теперь
+  // приводила бы к непонятной ошибке Prisma при первом запросе — лучше
+  // сказать прямо при старте.
+  DATABASE_URL: z
+    .string()
+    .regex(/^postgres(ql)?:\/\//, "DATABASE_URL должен быть postgresql://… — SQLite (file:…) больше не поддерживается, см. RAILWAY.md"),
   REDIS_URL: z.string().default("redis://localhost:6379"),
   JWT_SECRET: z.string().min(16),
   JWT_EXPIRES_IN: z.string().default("15m"),

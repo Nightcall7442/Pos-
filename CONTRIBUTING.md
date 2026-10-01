@@ -12,8 +12,11 @@ npm run format        # prettier по репозиторию
 npm run ci            # всё вместе, как на PR
 ```
 
-Перед первым запуском: `npm install` в корне и `npm run setup` (установка трёх
-пакетов, миграции, demo-данные).
+Перед первым запуском: `npm install` в корне, `docker compose up -d --wait postgres`
+(PostgreSQL 16 на localhost:5432) и `npm run setup` (установка трёх пакетов,
+миграции, demo-данные). Тесты сами создают и стирают свою базу `qwik_test` в том
+же Postgres; другое место — через `TEST_DATABASE_URL` (имя базы обязано
+кончаться на `_test`).
 
 ## Политика линтера
 

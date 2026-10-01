@@ -106,6 +106,20 @@ async function main() {
     await prisma.$connect();
     logger.info("Database connected");
 
+    // Две вещи, которые Postgres делает «по настройке», а SQLite не делал вовсе.
+    // Локаль: поиск без учёта регистра (ILIKE) складывает кириллицу, только
+    // если у базы UTF-8-локаль, а не C — иначе «молоко» не найдёт «Молоко».
+    // Часовой пояс сессии: Prisma пишет время в UTC, а значения по умолчанию
+    // (CURRENT_TIMESTAMP) база считает в поясе сессии — они должны совпадать.
+    const [dbCheck] = await prisma.$queryRaw<{ folds: boolean; tz: string }[]>`
+      SELECT lower('МОЛОКО') = 'молоко' AND 'Молоко' ILIKE 'молоко' AS folds, current_setting('TimeZone') AS tz`;
+    if (!dbCheck?.folds) {
+      logger.error("Database locale does not fold Cyrillic case — product search will miss matches. Use a UTF-8 locale (en_US.UTF-8 or ICU)");
+    }
+    if (dbCheck && !["UTC", "Etc/UTC"].includes(dbCheck.tz)) {
+      logger.warn("Database session TimeZone is not UTC — add options=-c%20TimeZone%3DUTC to DATABASE_URL", { timeZone: dbCheck.tz });
+    }
+
     startStaleOrderSweeper(env.PENDING_ORDER_TTL_MINUTES);
 
     // Приватная сеть Railway (и её домены *.railway.internal) работает только

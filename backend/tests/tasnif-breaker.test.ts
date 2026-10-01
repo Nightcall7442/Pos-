@@ -5,7 +5,7 @@ import { describe, it, expect } from "vitest";
 describe("national catalogue, from a server that is turned away", () => {
   it("stops asking after it cannot get through, and then costs a scan nothing", async () => {
     // the settings the module reads on load (this file starts no server and builds no database client)
-    process.env.DATABASE_URL ??= "file:./test.db";
+    process.env.DATABASE_URL ??= "postgresql://qwik:qwik@127.0.0.1:5432/qwik_test";
     process.env.JWT_SECRET ??= "test-jwt-secret-value-0123456789";
     process.env.JWT_REFRESH_SECRET ??= "test-refresh-secret-value-0123456789";
     process.env.TASNIF_BASE_URL = "http://127.0.0.1:9"; // nothing listens there: refused at once

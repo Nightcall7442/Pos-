@@ -1,4 +1,5 @@
 import { defineConfig } from "vitest/config";
+import { TEST_DATABASE_URL } from "./tests/testDatabase.js";
 
 export default defineConfig({
   test: {
@@ -7,11 +8,11 @@ export default defineConfig({
     testTimeout: 20000,
     hookTimeout: 60000,
     fileParallelism: false,
-    // Starts a dedicated API server on its own SQLite file (prisma/test.db)
-    // so the suite never touches the development database.
+    // Starts a dedicated API server on its own Postgres database (qwik_test,
+    // see tests/testDatabase.ts) so the suite never touches the development one.
     globalSetup: ["./tests/globalSetup.ts"],
     env: {
-      DATABASE_URL: "file:./test.db",
+      DATABASE_URL: TEST_DATABASE_URL,
       TEST_BASE_URL: "http://127.0.0.1:3100",
       // Часть тестов импортирует код приложения напрямую (catalog.test.ts →
       // catalog.import.ts → logger.ts), а logger вызывает getEnv() на уровне

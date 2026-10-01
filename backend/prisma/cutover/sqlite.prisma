@@ -1,12 +1,16 @@
+// Замороженная схема SQLite — ровно та, что была в проде до переезда на
+// Postgres (последняя миграция: 20261001181706_user_token_version).
+// Нужна только инструменту переноса данных (src/tools/sqlite-to-postgres.ts):
+// он читает старый файл базы этим клиентом и пишет в Postgres основным.
+// Не редактировать: модели здесь должны совпадать с файлом базы в проде.
 generator client {
   provider = "prisma-client-js"
+  output   = "../generated/cutover-sqlite"
 }
 
-// PostgreSQL 16. До 2026-10 база была SQLite: её миграции и замороженная
-// схема лежат в prisma/cutover/ — для переноса данных и отката.
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = env("SQLITE_URL")
 }
 
 model Tenant {
@@ -38,7 +42,6 @@ model Tenant {
   categories   Category[]
   products     Product[]
   orders       Order[]
-  orderCounter OrderCounter?
   payments     Payment[]
   inventory    InventoryMovement[]
   tables       Table[]
@@ -188,9 +191,6 @@ model Product {
   inventory      InventoryMovement[]
   stockReceiptItems StockReceiptItem[]
 
-  @@index([tenantId, categoryId])
-  @@index([tenantId, barcode])
-  @@index([tenantId, sku])
   @@map("products")
 }
 
@@ -291,29 +291,10 @@ model Order {
   payments  Payment[]
   receipts  Receipt[]
 
-  // Номер заказа уникален в пределах точки. На SQLite это держалось на том,
-  // что писатель в базе один; на Postgres — на счётчике OrderCounter, а это
-  // ограничение — страховка от любой будущей ошибки в выдаче номеров.
-  @@unique([tenantId, orderNumber])
-  @@index([tenantId, createdAt])
-  // Для фоновой отмены неоплаченных заказов (order.cleanup.ts).
-  @@index([status, createdAt])
+  @@index([tenantId])
+  @@index([status])
   @@index([cashShiftId])
   @@map("orders")
-}
-
-// Счётчик номеров заказов по точке. На SQLite номер брался как max+1 внутри
-// транзакции, и гонки не было: писатель в базе один. На Postgres две
-// одновременные продажи прочитали бы один и тот же max и получили одинаковый
-// номер. Теперь номер выдаёт один INSERT ... ON CONFLICT DO UPDATE ... RETURNING
-// по строке точки: строка заблокирована до конца транзакции, так что номера
-// уникальны и идут без пропусков (откат продажи возвращает номер).
-model OrderCounter {
-  tenantId   String @id @map("tenant_id")
-  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  lastNumber Int    @map("last_number")
-
-  @@map("order_counters")
 }
 
 model OrderItem {
@@ -333,8 +314,6 @@ model OrderItem {
 
   modifiers OrderItemModifier[]
 
-  @@index([orderId])
-  @@index([productId])
   @@map("order_items")
 }
 
@@ -347,7 +326,6 @@ model OrderItemModifier {
   price           Float        @default(0)
   createdAt       DateTime     @default(now()) @map("created_at")
 
-  @@index([orderItemId])
   @@map("order_item_modifiers")
 }
 
@@ -368,8 +346,6 @@ model Payment {
   processedAt          DateTime? @map("processed_at")
   createdAt            DateTime @default(now()) @map("created_at")
 
-  @@index([orderId])
-  @@index([tenantId, createdAt])
   @@map("payments")
 }
 
@@ -387,8 +363,6 @@ model InventoryMovement {
   user       User?    @relation(fields: [userId], references: [id])
   createdAt  DateTime @default(now()) @map("created_at")
 
-  @@index([tenantId, createdAt])
-  @@index([productId])
   @@map("inventory_movements")
 }
 
@@ -520,7 +494,6 @@ model CashShift {
 
   orders Order[]
 
-  @@index([tenantId, status])
   @@map("cash_shifts")
 }
 

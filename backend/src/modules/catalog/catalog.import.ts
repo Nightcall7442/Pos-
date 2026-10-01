@@ -24,15 +24,28 @@ interface SnapshotRow {
 
 async function writeBatch(db: PrismaClient, rows: Map<string, SnapshotRow>, now: number): Promise<void> {
   const entries = Array.from(rows.entries());
-  const placeholders = entries.map(() => "(?, ?, ?, ?, ?, 'snapshot', 1, ?, ?)").join(", ");
-  const params = entries.flatMap(([barcode, row]) => [barcode, row.n, row.br ?? null, row.q ?? null, row.c ?? null, now, now]);
+  // Postgres: нумерованные параметры ($1, $2, …) вместо «?» из SQLite, и одна
+  // метка времени на всю пачку. Prisma хранит DateTime как UTC без часового
+  // пояса, поэтому ISO-строка приводится к timestamptz и переводится в UTC —
+  // так результат не зависит от TimeZone сессии. В SQLite сюда раньше шло
+  // число миллисекунд — Postgres такое в timestamp не примет.
+  const at = `$${entries.length * 5 + 1}::timestamptz AT TIME ZONE 'UTC'`;
+  const placeholders = entries
+    .map((_, i) => `($${i * 5 + 1}, $${i * 5 + 2}, $${i * 5 + 3}, $${i * 5 + 4}, $${i * 5 + 5}, 'snapshot', 1, ${at}, ${at})`)
+    .join(", ");
+  const params: unknown[] = entries.flatMap(([barcode, row]) => [barcode, row.n, row.br ?? null, row.q ?? null, row.c ?? null]);
+  params.push(new Date(now).toISOString());
   // Rows a shop or the live lookup added are not the snapshot's to overwrite.
+  // Неизменившиеся строки не переписываем: в Postgres каждое UPDATE — новая
+  // версия строки, и повторный импорт того же снимка раздувал бы таблицу.
   await db.$executeRawUnsafe(
     `INSERT INTO catalog_products (barcode, name, brand, quantity, category, source, confirmations, created_at, updated_at)
      VALUES ${placeholders}
-     ON CONFLICT(barcode) DO UPDATE SET name = excluded.name, brand = excluded.brand, quantity = excluded.quantity,
+     ON CONFLICT (barcode) DO UPDATE SET name = excluded.name, brand = excluded.brand, quantity = excluded.quantity,
        category = excluded.category, updated_at = excluded.updated_at
-     WHERE catalog_products.source = 'snapshot'`,
+     WHERE catalog_products.source = 'snapshot'
+       AND (catalog_products.name, catalog_products.brand, catalog_products.quantity, catalog_products.category)
+           IS DISTINCT FROM (excluded.name, excluded.brand, excluded.quantity, excluded.category)`,
     ...params
   );
 }

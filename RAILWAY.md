@@ -94,9 +94,13 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 каталог (`backend/catalog/catalog.jsonl.gz`, ~137 тыс. позиций, около 20 МБ на
 томе, несколько секунд; следующие старты ничего не делают). В логах —
 «Barcode catalogue loaded» (первая загрузка) или «Barcode catalogue already
-loaded» (уже есть). Необязательные переменные: `CATALOG_LIVE_LOOKUP=off` — не
-спрашивать Open Food Facts про неизвестные коды; `OFF_BASE_URL` — другой
-сервер вместо него.
+loaded» (уже есть), затем «Barcode sources reachable» с флагами
+`openFoodFacts` и `nationalCatalogue` — достучался ли сервер до Open Food Facts и до
+национального каталога Узбекистана (`tasnif.soliq.uz`) со своего адреса. Если
+`nationalCatalogue: false` — каталог не пускает облачный адрес: узбекские товары
+по-прежнему находятся в поставке, но без кода ИКПУ. Необязательные переменные:
+`CATALOG_LIVE_LOOKUP=off` — не ходить за неизвестными кодами в сеть вовсе;
+`OFF_BASE_URL`, `TASNIF_BASE_URL` — другие серверы вместо них.
 
 ---
 

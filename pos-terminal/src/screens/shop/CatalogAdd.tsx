@@ -18,7 +18,9 @@ export interface CatalogHit {
   quantity: string | null;
   category: string | null;
   displayName: string;
-  source: "snapshot" | "off" | "crowd";
+  /** the 17-digit code of the national tax catalogue (tasnif.soliq.uz) — what an invoice and a receipt need */
+  ikpu: string | null;
+  source: "snapshot" | "off" | "crowd" | "tasnif";
 }
 
 interface CatalogAddProps {
@@ -33,6 +35,7 @@ interface CatalogAddProps {
 const SOURCE_NOTE: Record<CatalogHit["source"], string> = {
   snapshot: "Название взято из общей базы товаров — проверьте и введите цену",
   off: "Название найдено в открытой базе Open Food Facts — проверьте и введите цену",
+  tasnif: "Данные из национального каталога товаров Узбекистана — проверьте название и введите цену",
   crowd: "Это название внесли другие магазины — проверьте его и введите цену",
 };
 
@@ -115,6 +118,12 @@ export default function CatalogAdd({ code, hit, symbol, onAdded, onClose }: Cata
         <p className={`sh-cnote${hit ? "" : " none"}`}>
           {hit ? SOURCE_NOTE[hit.source] : `Этого штрихкода нет в общей базе. Введите название${shareNote ? " — оно попадёт в базу и поможет другим магазинам" : ""}`}
         </p>
+
+        {hit?.ikpu && (
+          <p className="sh-cikpu">
+            ИКПУ <b className="tab">{hit.ikpu}</b> — код для чека и счёта-фактуры
+          </p>
+        )}
 
         <label className="sh-field">
           <span>Название</span>

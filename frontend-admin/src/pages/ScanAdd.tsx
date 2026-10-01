@@ -27,6 +27,7 @@ interface Added {
 const SOURCE_NOTE: Record<CatalogHit["source"], string> = {
   snapshot: "Нашли в общей базе: название, объём и полка подставлены — осталось ввести цену.",
   off: "Нашли в открытой базе Open Food Facts: название, объём и полка подставлены — осталось ввести цену.",
+  tasnif: "Нашли в национальном каталоге товаров Узбекистана: название, объём, полка и код ИКПУ подставлены — осталось ввести цену.",
   crowd: "Это название внесли другие магазины — проверьте его и введите цену.",
 };
 
@@ -237,6 +238,12 @@ export default function ScanAdd() {
                 : "Штрихкод не похож на заводской (внутренний код или опечатка) — товар добавится только в ваш магазин."}
           </p>
 
+          {step.hit?.ikpu && (
+            <p className="-mt-1 text-xs text-gray-500">
+              Код ИКПУ для счёта-фактуры и чека: <span className="font-mono text-gray-700">{step.hit.ikpu}</span>
+            </p>
+          )}
+
           <div>
             <label className="label">Название *</label>
             <input value={name} onChange={(e) => setName(e.target.value)} className="input" maxLength={160} autoFocus={!step.hit} />
@@ -346,7 +353,7 @@ export default function ScanAdd() {
 
       <p className="text-xs leading-relaxed text-gray-400">
         {stats ? `Товаров в общей базе: ${stats.total.toLocaleString("ru-RU")}. ` : ""}
-        Данные о товарах — Open Food Facts, Open Beauty Facts, Open Products Facts (© участники проектов, лицензия ODbL) и магазины Qwik. Название из базы — подсказка: проверьте его перед добавлением.
+        Данные о товарах — национальный каталог товаров Узбекистана (tasnif.soliq.uz, Налоговый комитет), Open Food Facts, Open Beauty Facts, Open Products Facts (© участники проектов, лицензия ODbL) и магазины Qwik. Название из базы — подсказка: проверьте его перед добавлением.
       </p>
     </div>
   );

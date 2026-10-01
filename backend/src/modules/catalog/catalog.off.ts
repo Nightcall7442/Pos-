@@ -84,3 +84,10 @@ export async function liveLookup(code: string): Promise<{ product: LiveProduct |
   if (found) return { product: found.product, complete: true };
   return { product: null, complete: food.ok && rest.every((answer) => answer.ok) };
 }
+
+/** Is Open Food Facts reachable from here? Asked once at start, so the logs say so before anyone scans. */
+export async function probeOff(): Promise<boolean> {
+  const env = getEnv();
+  if (env.CATALOG_LIVE_LOOKUP === "off") return false;
+  return (await ask(env.OFF_BASE_URL ?? SOURCES[0], "5449000000996")).ok;
+}

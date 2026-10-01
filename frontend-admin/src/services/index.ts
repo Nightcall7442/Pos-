@@ -171,7 +171,9 @@ export interface CatalogHit {
   quantity: string | null;
   category: string | null;
   displayName: string;
-  source: "snapshot" | "off" | "crowd";
+  /** the 17-digit code of the national tax catalogue (tasnif.soliq.uz) — what an invoice and a receipt need */
+  ikpu: string | null;
+  source: "snapshot" | "off" | "crowd" | "tasnif";
 }
 export type CatalogAnswer = CatalogHit | { found: false; barcode: string; valid: boolean };
 

@@ -307,6 +307,8 @@
 
 /* новый товар по штрихкоду */
 .sh-cnote { margin: -4px 0 16px; padding: 10px 14px; border-radius: 4px; background: var(--accent-soft); color: var(--ink); font-size: 13.5px; line-height: 1.45; }
+.sh-cikpu { margin: -8px 0 16px; padding: 0 2px; color: var(--muted); font-size: 12.5px; }
+.sh-cikpu b { color: var(--ink); font-weight: 600; letter-spacing: 0.02em; }
 .sh-cnote.none { background: var(--paper); border: 1px dashed var(--line); color: var(--muted); }
 .sh-cgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .sh-field span em { font-style: normal; color: var(--faint); }

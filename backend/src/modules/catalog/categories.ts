@@ -57,11 +57,11 @@ const NAME_RULES: [string, string[]][] = [
   ["Консервы", ["консерв", "тушёнк", "тушенк", "шпроты", "canned", "konserve"]],
   ["Мясо и птица", ["колбас", "сосиск", "сардельк", "ветчин", "бекон", "мясо=", "мясн", "курица=", "куриц", "говядин", "свинин", "баранин", "фарш", "sausage", "chicken", "beef", "sucuk", "sosis", "tavuk", "kıyma", "go'sht"]],
   ["Рыба и морепродукты", ["рыба=", "рыбн", "лосос", "сельд", "тунец", "икра=", "креветк", "salmon", "tuna", "shrimp", "balık", "balik"]],
-  ["Молочные продукты", ["молоко=", "молока=", "молочн", "кефир", "йогурт", "творог", "творож", "сметан", "сыр=", "сыры=", "сыра=", "сливк", "ряженк", "простокваш", "масло сливочное", "milk", "yogurt", "yoghurt", "cheese", "peynir", "yoğurt", "ayran", "tereyağ", "kaymak", "süt=", "sut=", "qatiq"]],
+  ["Молочные продукты", ["молоко=", "молока=", "молочн", "кефир", "йогурт", "творог", "творож", "сметан", "сырок", "сырки", "сыр=", "сыры=", "сыра=", "сливк", "ряженк", "простокваш", "масло сливочное", "milk", "yogurt", "yoghurt", "cheese", "peynir", "yoğurt", "ayran", "tereyağ", "kaymak", "süt=", "sut=", "qatiq"]],
   ["Хлеб и выпечка", ["хлеб=", "хлеба=", "хлебц", "батон=", "лепёшк", "лепешк", "булочк", "булка=", "круассан", "багет", "bread=", "croissant", "ekmek", "simit", "non="]],
-  ["Сладости", ["шоколад", "конфет", "печенье", "печеньк", "вафл", "мармелад", "зефир", "карамел", "жевательн", "жвачк", "пряник", "торт=", "торты=", "торта=", "пирожн", "халва", "chocolate", "candy", "biscuit", "cookie", "wafer", "gummy", "gum=", "çikolata", "cikolata", "bisküvi", "biskuvi", "gofret", "lokum", "helva"]],
+  ["Сладости", ["шоколад", "конфет", "кондитерск", "печенье", "печеньк", "джем=", "варенье", "вафл", "мармелад", "зефир", "карамел", "жевательн", "жвачк", "пряник", "торт=", "торты=", "торта=", "пирожн", "халва", "chocolate", "candy", "biscuit", "cookie", "wafer", "gummy", "gum=", "çikolata", "cikolata", "bisküvi", "biskuvi", "gofret", "lokum", "helva"]],
   ["Снеки", ["чипсы", "сухарик", "семечк", "попкорн", "крекер", "кириешк", "chips=", "cracker", "popcorn", "çerez", "cerez"]],
-  ["Напитки", ["вода=", "воды=", "сок=", "соки=", "нектар", "лимонад", "газированн", "кола=", "пепси", "фанта=", "спрайт", "чай=", "кофе=", "напиток", "морс=", "квас=", "энергетик", "water=", "juice", "soda=", "cola=", "tea=", "coffee=", "drink=", "beverage", "meyve suyu", "içecek", "icecek", "gazoz", "çay=", "kahve", "nescafe", "suv=", "choy="]],
+  ["Напитки", ["вода=", "воды=", "сок=", "соки=", "нектар", "лимонад", "газированн", "кола=", "пепси", "фанта=", "спрайт", "чай=", "кофе=", "напитк", "минеральн", "сокосодержащ", "морс=", "квас=", "энергетик", "water=", "juice", "soda=", "cola=", "tea=", "coffee=", "drink=", "beverage", "meyve suyu", "içecek", "icecek", "gazoz", "çay=", "kahve", "nescafe", "suv=", "choy="]],
   ["Бакалея", ["макарон", "крупа=", "крупы=", "гречк", "гречнев", "рис=", "риса=", "мука=", "муки=", "сахар", "соль=", "соли=", "масло подсолнечн", "масло растительн", "кетчуп", "майонез", "соус", "специи", "приправ", "лапша=", "вермишел", "спагетти", "pasta=", "rice=", "flour=", "sugar=", "salt=", "sauce", "ketchup", "mayonnaise", "noodle", "makarna", "pirinç", "pirinc", "salça", "mayonez", "ketçap", "qand=", "guruch"]],
 ];
 
@@ -90,4 +90,32 @@ export function shelfFromName(name: string | null | undefined): string | null {
     if (hit && (!best || hit.index < best.at)) best = { shelf, at: hit.index };
   }
   return best?.shelf ?? null;
+}
+
+// The national tax catalogue (IKPU) is built on the customs nomenclature: the first
+// digits say what kind of goods it is. Only a fallback for when the words of the
+// description name no shelf.
+const IKPU_SHELVES: [RegExp, string][] = [
+  [/^0220[3-9]/, "Алкоголь"], // beer, wine, cider, spirits
+  [/^022/, "Напитки"],
+  [/^02009/, "Напитки"], // juices
+  [/^004/, "Молочные продукты"],
+  [/^002/, "Мясо и птица"],
+  [/^003/, "Рыба и морепродукты"],
+  [/^016/, "Мясо и птица"],
+  [/^018/, "Сладости"],
+  [/^0170[2-4]/, "Сладости"],
+  [/^019/, "Хлеб и выпечка"],
+  [/^020/, "Консервы"],
+  [/^00[789]/, "Овощи и фрукты"],
+  [/^01[0-5]/, "Бакалея"],
+  [/^017/, "Бакалея"],
+  [/^021/, "Бакалея"],
+  [/^033/, "Гигиена и косметика"],
+  [/^034/, "Бытовая химия"],
+];
+
+/** The shelf for goods of the national catalogue: what the description says, then the class digits, then the wider position. */
+export function shelfFromIkpu(ikpu: string, description: string, position = ""): string | null {
+  return shelfFromName(description) ?? IKPU_SHELVES.find(([pattern]) => pattern.test(ikpu))?.[1] ?? shelfFromName(position);
 }

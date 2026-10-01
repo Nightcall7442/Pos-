@@ -495,8 +495,11 @@ model CatalogProduct {
   quantity      String?
   category      String?
   // "snapshot" — поставляется вместе с приложением (Open Food Facts),
-  // "off" — найден вживую и запомнен, "crowd" — внесён магазином.
+  // "off" — найден вживую и запомнен, "tasnif" — из национального каталога
+  // Узбекистана (tasnif.soliq.uz), "crowd" — внесён магазином.
   source        String   @default("snapshot")
+  // Код ИКПУ из национального каталога — он обязателен в счёте-фактуре и чеке.
+  ikpu          String?
   // Сколько магазинов внесли такое же название (только для source = "crowd").
   confirmations Int      @default(1)
   createdAt     DateTime @default(now()) @map("created_at")

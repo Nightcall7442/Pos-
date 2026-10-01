@@ -45,7 +45,13 @@ const JUNK_BRANDS = new Set(["null", "none", "unknown", "n/a", "na", "no brand",
 
 /** The first brand of "Nestlé, Kit Kat", or null when the field holds only a placeholder. */
 export function cleanBrand(raw: string | null | undefined): string | null {
-  const brand = cleanName(String(raw ?? "").split(",")[0]).slice(0, 60);
+  const first = decodeEntities(String(raw ?? "").split(",")[0]).replace(/\s+/g, " ").trim();
+  const letters = first.replace(/[^\p{L}]/gu, "");
+  // A brand typed in capitals — "COCA-COLA" — reads better as "Coca-Cola" than as "Coca-cola".
+  const brand = (letters.length > 3 && letters === letters.toUpperCase() && letters !== letters.toLowerCase()
+    ? first.toLowerCase().replace(/(^|[\s\-'’.])(\p{L})/gu, (_m, sep: string, ch: string) => sep + ch.toUpperCase())
+    : cleanName(first)
+  ).slice(0, 60);
   if (brand.length < 2 || JUNK_BRANDS.has(brand.toLowerCase()) || /^[\d\s.,-]+$/.test(brand)) return null;
   return brand;
 }

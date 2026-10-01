@@ -23,13 +23,31 @@ const OFF_PORT = Number(process.env.TEST_OFF_PORT || 3199);
 const OFF_KNOWN = "4607000000014";
 const offHits = new Map<string, number>();
 
+// …and the national catalogue of Uzbekistan (tasnif.soliq.uz), at /tasnif. It knows three codes:
+// a dairy product nobody else has described, a beer (the shipped snapshot calls it just "viking"),
+// and the one Open Food Facts knows too — to show whose words win.
+const TASNIF_RECORDS: Record<string, Record<string, string>> = {
+  "4780000000014": { mxikCode: "00403999008070006", brandName: "Pure-Milk", attributeName: "сметана жирность 20%, полипропиленовый стакан 180±5 г.", subPositionName: "Сметана", positionName: "Прочие кисломолочные продукты" },
+  "4780000000021": { mxikCode: "02203001001286001", brandName: "VIKING", attributeName: "Пастеризованное фильтрованное крепость 4,4% стеклянная бутылка 0,65 л", subPositionName: "Пиво", positionName: "Пиво" },
+  [OFF_KNOWN]: { mxikCode: "01905012001444068", brandName: "ACME", attributeName: "шоколадное, пакет 250 г", subPositionName: "Печенье разных видов", positionName: "Печенье" },
+};
+const tasnifHits = new Map<string, number>();
+
 function startOffStub(): Promise<void> {
   offStub = http.createServer((req, res) => {
     const url = req.url ?? "";
-    const counted = url.match(/^\/__hits\/(\d+)$/);
+    const counted = url.match(/^\/__hits\/(tasnif\/)?(\d+)$/);
     if (counted) {
       res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify({ hits: offHits.get(counted[1]) ?? 0 }));
+      res.end(JSON.stringify({ hits: (counted[1] ? tasnifHits : offHits).get(counted[2]) ?? 0 }));
+      return;
+    }
+    const national = url.match(/^\/tasnif\/mxik\/search\/by-params\?.*gtin=(\d+)/);
+    if (national) {
+      tasnifHits.set(national[1], (tasnifHits.get(national[1]) ?? 0) + 1);
+      const record = TASNIF_RECORDS[national[1]];
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ success: true, code: 0, reason: "ok", data: { content: record ? [{ internationalCode: national[1], ...record }] : [], totalElements: record ? 1 : 0 } }));
       return;
     }
     const asked = url.match(/^\/api\/v2\/product\/(\d+)\.json/);
@@ -87,6 +105,7 @@ export async function setup(): Promise<void> {
     JWT_REFRESH_SECRET: "test-refresh-secret-value-0123456789",
     LOG_LEVEL: "error",
     OFF_BASE_URL: `http://127.0.0.1:${OFF_PORT}`,
+    TASNIF_BASE_URL: `http://127.0.0.1:${OFF_PORT}/tasnif`,
   };
 
   await startOffStub();

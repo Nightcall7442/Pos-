@@ -7,6 +7,8 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { setupTestData, getTokens, cleanupTestData, prisma, testTenantId, BASE_URL } from "./helpers.js";
 import { importSnapshot } from "../src/modules/catalog/catalog.import.js";
 import { isCatalogBarcode, isValidGtin } from "../src/modules/catalog/gtin.js";
+import { toTasnifProduct } from "../src/modules/catalog/catalog.tasnif.js";
+import { displayName } from "../src/modules/catalog/names.js";
 
 const OFF_BASE = `http://127.0.0.1:${process.env.TEST_OFF_PORT || 3199}`;
 
@@ -25,6 +27,8 @@ const withCheck = (prefix12: string) => {
     .reduce((acc, digit, index) => acc + Number(digit) * (index % 2 === 0 ? 3 : 1), 0);
   return prefix12 + ((10 - (sum % 10)) % 10);
 };
+const UZ_NEW = "4780000000014"; // only the national catalogue of Uzbekistan describes it
+const UZ_JUNK = "4780000000021"; // the shipped snapshot calls it "viking"; the national catalogue knows better
 const NO_SHELF = "4607000000021"; // in the catalogue without a shelf — the name has to say which
 const CUSTOM_SHELF = withCheck("460300000003");
 const IN_STORE_LABEL = withCheck("210010082891"); // GS1 200–299: a shop's own label
@@ -40,6 +44,7 @@ const api = (path: string, token: string | null, init: RequestInit = {}) =>
 
 const lookup = async (code: string, token = cashierToken) => ((await (await api(`/catalog/lookup?code=${code}`, token)).json()) as any).data;
 const upstreamHits = async (code: string) => ((await (await fetch(`${OFF_BASE}/__hits/${code}`)).json()) as any).hits as number;
+const nationalHits = async (code: string) => ((await (await fetch(`${OFF_BASE}/__hits/tasnif/${code}`)).json()) as any).hits as number;
 const add = (token: string, body: Record<string, unknown>) => api("/catalog/add", token, { method: "POST", body: JSON.stringify(body) });
 
 async function waitFor<T>(read: () => Promise<T | null | undefined>, timeoutMs = 3000): Promise<T | null> {
@@ -64,6 +69,7 @@ describe("Barcode catalogue", () => {
         { barcode: SNAPSHOT_CODE, name: "Coca-Cola Classic", brand: "Coca-Cola", quantity: "1,5 л", category: "Напитки", source: "snapshot" },
         { barcode: "0" + UPC_A, name: "Sparkling water", quantity: "0,5 л", category: "Напитки", source: "snapshot" },
         { barcode: NO_SHELF, name: "Молоко Простоквашино 3,2%", quantity: "930 мл", source: "snapshot" },
+        { barcode: UZ_JUNK, name: "viking", source: "snapshot" },
       ],
     });
   });
@@ -128,6 +134,71 @@ describe("Barcode catalogue", () => {
     expect(await upstreamHits(LIVE_MISS)).toBe(1);
   });
 
+  // ── национальный каталог Узбекистана ─────────────────────────────────────
+
+  it("takes a code nobody else describes from the national catalogue of Uzbekistan, with its IKPU", async () => {
+    const hit = await lookup(UZ_NEW);
+    expect(hit).toMatchObject({
+      found: true,
+      source: "tasnif",
+      name: "Pure-Milk сметана жирность 20%",
+      brand: "Pure-Milk",
+      quantity: "180 г",
+      category: "Молочные продукты",
+      ikpu: "00403999008070006",
+      displayName: "Pure-Milk сметана жирность 20% 180 г",
+    });
+    expect(await prisma.catalogProduct.findUnique({ where: { barcode: UZ_NEW } })).toMatchObject({ source: "tasnif", ikpu: "00403999008070006" });
+
+    await lookup(UZ_NEW);
+    expect(await nationalHits(UZ_NEW)).toBe(1); // asked once, remembered
+  });
+
+  it("replaces what volunteers typed about an Uzbek code with the national catalogue's description — once", async () => {
+    const hit = await lookup(UZ_JUNK);
+    expect(hit).toMatchObject({ source: "tasnif", name: "Пиво Viking Пастеризованное фильтрованное крепость 4,4%", quantity: "0,65 л", category: "Алкоголь", ikpu: "02203001001286001" });
+    await lookup(UZ_JUNK);
+    expect(await nationalHits(UZ_JUNK)).toBe(1);
+  });
+
+  it("leaves an Uzbek snapshot record alone when the national catalogue does not know the code, and does not ask again", async () => {
+    expect(await lookup(SNAPSHOT_CODE)).toMatchObject({ source: "snapshot", name: "Coca-Cola Classic", ikpu: null });
+    await lookup(SNAPSHOT_CODE);
+    expect(await nationalHits(SNAPSHOT_CODE)).toBe(1);
+  });
+
+  it("uses Open Food Facts' words for a non-Uzbek code, but still brings the IKPU from the national catalogue", async () => {
+    // LIVE_HIT was first looked up in the live tests above: both public catalogues know it, and disagree about the name
+    const hit = await lookup(LIVE_HIT);
+    expect(hit).toMatchObject({ source: "off", name: "Choco & Nuts", ikpu: "01905012001444068" });
+  });
+
+  describe("records of the national catalogue", () => {
+    const record = (brandName: string, attributeName: string, subPositionName: string, mxikCode = "02202002001010009", positionName = "") => ({ mxikCode, brandName, attributeName, subPositionName, positionName });
+    const shop = (r: Record<string, string>) => {
+      const p = toTasnifProduct(r)!;
+      return displayName(p.name, p.quantity, p.brand);
+    };
+
+    it("become names a cashier recognises: brand first, pack size last, packaging dropped", () => {
+      expect(shop(record("COCA-COLA", "сладкий, ПЭТ бутылка 1,5 л.", "Безалкогольные напитки (газированные и негазированные)"))).toBe("Coca-Cola сладкий 1,5 л");
+      expect(shop(record("Сочная долина", "Яблоко Тетра Пак 1 л", "Фруктовые и овощные соки, в т.ч. потока (всех видов)", "02009001006076066"))).toBe("Сочная долина Яблоко 1 л");
+      expect(shop(record("Hydrolife", "ПЭТ бутылка 0,5 л", "Негазированная вода", "02201001001011003"))).toBe("Негазированная вода Hydrolife 0,5 л");
+      expect(shop(record("FANTA", "Fanta Orange Vitamin C сладкий, ПЭТ бутылка 1,5 л.", "Безалкогольные напитки (газированные и негазированные)"))).toBe("Fanta Orange Vitamin C сладкий 1,5 л"); // the brand is not said twice
+      expect(shop(record("Tegen", "Перец стручковый острый с овощами Стеклянная банка твист-офф крышка 720 мл", "Овощи, фрукты, орехи, консервированные", "02001001005017002"))).toBe("Tegen Перец стручковый острый с овощами 720 мл");
+    });
+
+    it("name a shelf from the description, not from a flavour or from the wider position", () => {
+      expect(toTasnifProduct(record("Mega", "Семечки подсолнуха жаренные полосатые солёные Бумажный пакет 100 г.", "Жареные семечки подсолнечника", "02008001001040020", "Овощи, фрукты, орехи, консервированные или приготовленные"))!.category).toBe("Снеки");
+      expect(toTasnifProduct(record("Milliy Cola", "со вкусом Колы пэт бутылка 1,5 л", "Безалкогольные напитки (газированные и негазированные)", "02202002001444002"))!.category).toBe("Напитки");
+      expect(toTasnifProduct(record("Surhan", "Белое сухое, Крепость 12%, Стеклянная бутылка 0,75 л", "Вино", "02204001001636002"))!.category).toBe("Алкоголь");
+    });
+
+    it("are ignored when they carry no usable IKPU code", () => {
+      expect(toTasnifProduct({ mxikCode: "123", brandName: "X", attributeName: "y", subPositionName: "z" })).toBeNull();
+    });
+  });
+
   // ── добавление сканером ──────────────────────────────────────────────────
 
   it("puts a scanned product on the shelf: the catalogue's name, the shop's price, its own shelf", async () => {
@@ -137,6 +208,7 @@ describe("Barcode catalogue", () => {
     expect(res.status).toBe(201);
     expect(body.data).toMatchObject({ name: "Acme Choco & Nuts 250 г", barcode: LIVE_HIT, price: 18000, trackInventory: false, saleUnit: null });
     expect(body.data.category).toMatchObject({ name: "Сладости", markupPercent: 20 }); // created, with the shop's default markup
+    expect(JSON.parse(body.data.metadata)).toEqual({ ikpu: "01905012001444068" }); // the code the invoice and the receipt need
 
     // the register now finds it by its barcode, like any product
     const found = await api(`/products/lookup?code=${LIVE_HIT}`, cashierToken);
@@ -165,6 +237,7 @@ describe("Barcode catalogue", () => {
     const data = ((await res.json()) as any).data;
     expect(res.status).toBe(201);
     expect(data).toMatchObject({ name: "Acme Choco & Nuts 250 г", price: 19000, isActive: true });
+    expect(JSON.parse(data.metadata)).toEqual({ ikpu: "01905012001444068" }); // the IKPU survives the round trip
     expect(await prisma.product.count({ where: { tenantId: testTenantId, barcode: LIVE_HIT } })).toBe(1);
   });
 

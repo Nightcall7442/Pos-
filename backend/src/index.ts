@@ -36,6 +36,7 @@ import cashShiftRoutes from "./api/cash-shifts.routes.js";
 import techCardRoutes from "./api/tech-cards.routes.js";
 import catalogRoutes from "./api/catalog.routes.js";
 import { importSnapshot } from "./modules/catalog/catalog.import.js";
+import { catalogService } from "./modules/catalog/catalog.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -115,6 +116,10 @@ async function main() {
     // lookups simply find more as the import proceeds. Tests seed their own rows.
     if (env.NODE_ENV !== "test") {
       importSnapshot().catch((error) => logger.error("Barcode catalogue import failed", { message: error instanceof Error ? error.message : String(error) }));
+      catalogService
+        .probeSources()
+        .then((reachable) => (reachable.openFoodFacts && reachable.nationalCatalogue ? logger.info : logger.warn)("Barcode sources reachable", reachable))
+        .catch(() => undefined);
     }
   } catch (error) {
     logger.error("Failed to start server", error);

@@ -27,6 +27,8 @@ const envSchema = z.object({
   // one server instead — the tests stand a stub in for the real thing.
   CATALOG_LIVE_LOOKUP: z.enum(["on", "off"]).default("on"),
   OFF_BASE_URL: z.string().url().optional(),
+  // The national catalogue of Uzbekistan (tasnif.soliq.uz) is asked the same way; tests stub it too.
+  TASNIF_BASE_URL: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -77,6 +77,16 @@ export default function ProductEdit() {
   };
 
   const loadedProductIdRef = useRef<string | null>(null);
+  // The IKPU code the catalogue brought along when the product was added by scanning.
+  const ikpu = (() => {
+    try {
+      const value = JSON.parse(product?.metadata || "{}").ikpu;
+      return typeof value === "string" ? value : undefined;
+    } catch {
+      return undefined;
+    }
+  })();
+
   useEffect(() => {
     if (product && loadedProductIdRef.current !== product.id) {
       loadedProductIdRef.current = product.id;
@@ -456,6 +466,11 @@ export default function ProductEdit() {
             <div>
               <label className="label">Штрихкод</label>
               <input type="text" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} className="input" placeholder="Штрихкод" />
+              {ikpu && (
+                <p className="mt-1 text-xs text-gray-500">
+                  ИКПУ (национальный каталог): <span className="font-mono text-gray-700">{ikpu}</span>
+                </p>
+              )}
               <p className="mt-1 text-xs text-gray-400">Кассир сканирует его — товар сразу попадает в чек.</p>
             </div>
           </div>

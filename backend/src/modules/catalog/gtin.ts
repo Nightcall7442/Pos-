@@ -51,6 +51,12 @@ export function hasTradePrefix(code: string): boolean {
   return TRADE_PREFIXES.some((prefix) => ean13.startsWith(prefix));
 }
 
+/** Issued by GS1 Uzbekistan (prefix 478) — goods that carry it are made or packed in Uzbekistan. */
+export function hasUzbekPrefix(code: string): boolean {
+  const ean = code.length === 8 ? code : code.length <= 13 ? code.padStart(13, "0") : code.slice(-13);
+  return ean.startsWith("478");
+}
+
 export function hasRegionalPrefix(code: string): boolean {
   const ean13 = code.length <= 13 ? code.padStart(13, "0") : code.slice(-13);
   return REGIONAL_PREFIXES.some((prefix) => ean13.startsWith(prefix));

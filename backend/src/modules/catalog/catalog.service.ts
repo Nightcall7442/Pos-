@@ -1,10 +1,11 @@
 import prisma from "../../config/database.js";
 import { ConflictError, NotFoundError } from "../../utils/errors.js";
 import { logger } from "../../utils/logger.js";
-import { liveLookup } from "./catalog.off.js";
+import { liveLookup, probeOff } from "./catalog.off.js";
 import type { CatalogAddInput } from "./catalog.schema.js";
+import { liveTasnif, probeTasnif } from "./catalog.tasnif.js";
 import { SHELF_NAMES, shelfFromName } from "./categories.js";
-import { barcodeVariants, canonicalBarcode, isCatalogBarcode } from "./gtin.js";
+import { barcodeVariants, canonicalBarcode, hasUzbekPrefix, isCatalogBarcode } from "./gtin.js";
 import { cleanName, displayName } from "./names.js";
 
 export interface CatalogHit {
@@ -16,7 +17,9 @@ export interface CatalogHit {
   category: string | null;
   /** brand + name + pack size, ready to become the product's name */
   displayName: string;
-  /** snapshot — shipped with the app; off — found live and remembered; crowd — entered by a shop */
+  /** the 17-digit IKPU code of the national tax catalogue, when it is known */
+  ikpu: string | null;
+  /** snapshot — shipped with the app; off — found on Open Food Facts; tasnif — the national catalogue of Uzbekistan; crowd — entered by a shop */
   source: string;
 }
 
@@ -33,6 +36,7 @@ interface Row {
   brand: string | null;
   quantity: string | null;
   category: string | null;
+  ikpu: string | null;
   source: string;
 }
 
@@ -45,6 +49,7 @@ const toHit = (row: Row): CatalogHit => ({
   // Where the record names no shelf, the name itself often does ("Молоко Простоквашино").
   category: row.category ?? shelfFromName(row.name),
   displayName: displayName(row.name, row.quantity, row.brand),
+  ikpu: row.ikpu,
   source: row.source,
 });
 
@@ -54,6 +59,11 @@ const MISS_TTL_MS = 12 * 60 * 60 * 1000;
 const MISS_LIMIT = 20_000;
 const misses = new Map<string, number>();
 const inflight = new Map<string, Promise<CatalogHit | null>>();
+const upgrading = new Map<string, Promise<Row>>();
+
+// What volunteers typed into Open Food Facts about an Uzbek code is often a word or two; the
+// national catalogue has the brand and the pack. Asking it must not hold a scan up for long.
+const UPGRADE_TIMEOUT_MS = 2500;
 
 function knownMiss(code: string): boolean {
   const until = misses.get(code);
@@ -74,6 +84,15 @@ const PALETTE = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899
 const colorFor = (name: string) => PALETTE[Array.from(name).reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % PALETTE.length];
 const same = (a: string, b: string) => a.toLowerCase().replace(/\s+/g, " ").trim() === b.toLowerCase().replace(/\s+/g, " ").trim();
 
+function parseMetadata(text: string | null): Record<string, unknown> {
+  try {
+    const value = JSON.parse(text || "{}");
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  } catch {
+    return {};
+  }
+}
+
 let statsCache: { at: number; value: { total: number; crowd: number } } | null = null;
 
 export class CatalogService {
@@ -84,11 +103,38 @@ export class CatalogService {
     const canonical = canonicalBarcode(code);
 
     const stored = await prisma.catalogProduct.findFirst({ where: { barcode: { in: barcodeVariants(code) } } });
-    if (stored) return toHit(stored);
+    if (stored) return toHit(this.worthAskingNationalCatalogue(stored) ? await this.upgradeFromNational(stored) : stored);
     if (knownMiss(canonical)) return { found: false, barcode: canonical, valid: true };
 
     const live = await this.askLive(canonical);
     return live ?? { found: false, barcode: canonical, valid: true };
+  }
+
+  // An Uzbek code (478…) whose record came from Open Food Facts rather than from a shop or the
+  // national catalogue: that catalogue knows Uzbek goods better, so it is asked — once.
+  private worthAskingNationalCatalogue(row: Row): boolean {
+    return hasUzbekPrefix(row.barcode) && (row.source === "snapshot" || row.source === "off") && !row.ikpu && !knownMiss("uz:" + row.barcode);
+  }
+
+  private upgradeFromNational(row: Row): Promise<Row> {
+    let pending = upgrading.get(row.barcode);
+    if (!pending) {
+      pending = this.askNational(row).finally(() => upgrading.delete(row.barcode));
+      upgrading.set(row.barcode, pending);
+    }
+    return pending;
+  }
+
+  private async askNational(row: Row): Promise<Row> {
+    const { product, complete } = await liveTasnif(row.barcode, UPGRADE_TIMEOUT_MS);
+    if (!product) {
+      if (complete) rememberMiss("uz:" + row.barcode);
+      return row;
+    }
+    return prisma.catalogProduct.update({
+      where: { barcode: row.barcode },
+      data: { name: product.name, brand: product.brand, quantity: product.quantity, category: product.category, ikpu: product.ikpu, source: "tasnif" },
+    });
   }
 
   // Simultaneous scans of one unknown code share a single trip to the network.
@@ -101,18 +147,37 @@ export class CatalogService {
     return pending;
   }
 
+  // A code nobody here has described: Open Food Facts and the national catalogue of Uzbekistan are
+  // asked together. For an Uzbek code the national catalogue's words win, for any other the open
+  // catalogue's (they read better); what only one of them knows — the IKPU, the shelf — is kept.
   private async fetchLive(code: string): Promise<CatalogHit | null> {
-    const { product, complete } = await liveLookup(code);
-    if (!product) {
-      if (complete) rememberMiss(code);
+    const [national, open] = await Promise.all([liveTasnif(code), liveLookup(code)]);
+    const chosen = hasUzbekPrefix(code) ? national.product ?? open.product : open.product ?? national.product;
+    if (!chosen) {
+      if (national.complete && open.complete) rememberMiss(code);
       return null;
     }
+    const other = chosen === national.product ? open.product : national.product;
     const row = await prisma.catalogProduct.upsert({
       where: { barcode: code },
-      create: { barcode: code, ...product, source: "off" },
+      create: {
+        barcode: code,
+        name: chosen.name,
+        brand: chosen.brand ?? other?.brand ?? null,
+        quantity: chosen.quantity ?? other?.quantity ?? null,
+        category: chosen.category ?? other?.category ?? null,
+        ikpu: national.product?.ikpu ?? null,
+        source: chosen === national.product ? "tasnif" : "off",
+      },
       update: {},
     });
     return toHit(row);
+  }
+
+  /** Which of the public catalogues can this server reach? Logged at start, since a cloud address may be turned away. */
+  async probeSources(): Promise<{ openFoodFacts: boolean; nationalCatalogue: boolean }> {
+    const [openFoodFacts, nationalCatalogue] = await Promise.all([probeOff(), probeTasnif()]);
+    return { openFoodFacts, nationalCatalogue };
   }
 
   /**
@@ -151,12 +216,19 @@ export class CatalogService {
   /** Creates the shop's product from a scan: the catalogue supplied the name, the shop supplies the price. */
   async add(tenantId: string, input: CatalogAddInput) {
     const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { defaultMarkupPercent: true } });
+    // The IKPU the invoice and the receipt will need travels with the product — read here, not taken from the client.
+    const known = await prisma.catalogProduct.findFirst({ where: { barcode: { in: barcodeVariants(input.barcode) } }, select: { ikpu: true } });
 
     const product = await prisma.$transaction(async (tx) => {
-      const duplicate = await tx.product.findFirst({ where: { tenantId, barcode: { in: barcodeVariants(input.barcode) } }, select: { id: true, name: true, isActive: true } });
+      const duplicate = await tx.product.findFirst({ where: { tenantId, barcode: { in: barcodeVariants(input.barcode) } }, select: { id: true, name: true, isActive: true, metadata: true } });
       if (duplicate?.isActive) throw new ConflictError(`Товар с этим штрихкодом уже есть: «${duplicate.name}»`);
-      // Archived earlier: adding it again means bringing it back, at the price just entered.
-      if (duplicate) return tx.product.update({ where: { id: duplicate.id }, data: { isActive: true, price: input.price }, include: { category: true } });
+      // Archived earlier: adding it again means bringing it back, at the price just entered —
+      // and with the IKPU, if the catalogue has learnt it since.
+      if (duplicate) {
+        const metadata = parseMetadata(duplicate.metadata);
+        if (known?.ikpu && !metadata.ikpu) metadata.ikpu = known.ikpu;
+        return tx.product.update({ where: { id: duplicate.id }, data: { isActive: true, price: input.price, metadata: JSON.stringify(metadata) }, include: { category: true } });
+      }
 
       let categoryId: string | null = null;
       if (input.categoryId) {
@@ -183,6 +255,7 @@ export class CatalogService {
           saleUnit: input.weighed ? "кг" : null,
           trackInventory: input.stock !== undefined,
           currentStock: input.stock ?? 0,
+          metadata: known?.ikpu ? JSON.stringify({ ikpu: known.ikpu }) : undefined,
         },
         include: { category: true },
       });

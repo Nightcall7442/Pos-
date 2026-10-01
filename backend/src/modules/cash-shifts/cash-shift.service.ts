@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import prisma from "../../config/database.js";
 import { ConflictError, ForbiddenError, NotFoundError } from "../../utils/errors.js";
 
@@ -8,20 +9,28 @@ export class CashShiftService {
     });
     if (activeShift) throw new ConflictError("У вас уже есть открытая смена");
 
-    const shift = await prisma.cashShift.create({
-      data: {
-        tenantId,
-        userId,
-        openingCash,
-        notes,
-        status: "open",
-      },
-      include: {
-        user: { select: { id: true, firstName: true, lastName: true } },
-      },
-    });
-
-    return shift;
+    try {
+      return await prisma.cashShift.create({
+        data: {
+          tenantId,
+          userId,
+          openingCash,
+          notes,
+          status: "open",
+        },
+        include: {
+          user: { select: { id: true, firstName: true, lastName: true } },
+        },
+      });
+    } catch (error) {
+      // Два одновременных открытия оба проходят проверку выше; второе
+      // отбивает уникальный индекс cash_shifts_one_open_per_user — и кассир
+      // должен увидеть то же понятное сообщение, а не «запись уже существует».
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        throw new ConflictError("У вас уже есть открытая смена");
+      }
+      throw error;
+    }
   }
 
   // Totals for a shift are computed live from its own orders' payments —
@@ -52,7 +61,13 @@ export class CashShiftService {
     const totalRefunds = refunds.reduce((sum, p) => sum + p.amount, 0);
 
     const totalSales = totalCashSales + totalCardSales + totalQrSales;
-    const expectedCash = openingCash + totalCashSales - totalRefunds;
+    // Возврат не создаёт новой записи, а переводит платёж в «refunded», и тот
+    // выпадает из продаж выше. Поэтому в ящике — начальная сумма плюс
+    // невозвращённые продажи наличными, и только. Раньше отсюда ещё раз
+    // вычиталась сумма всех возвратов: возврат наличных учитывался дважды
+    // (ложный излишек при закрытии), а возврат по карте или QR забирал из
+    // ящика деньги, которых там никогда не было (ложная недостача).
+    const expectedCash = openingCash + totalCashSales;
 
     return { totalSales, totalCashSales, totalCardSales, totalQrSales, totalTips, totalRefunds, expectedCash };
   }

@@ -1,4 +1,5 @@
 import prisma from "../../config/database.js";
+import { ci } from "../../utils/search.js";
 import type { CreateStockReceiptInput } from "./stock-receipt.schema.js";
 import { optionalDateFilter, tenantTimeZone } from "../../utils/dates.js";
 import { AppError, NotFoundError } from "../../utils/errors.js";
@@ -192,7 +193,7 @@ export class StockReceiptService {
     const where: any = { tenantId };
     const createdAt = optionalDateFilter(dateFrom, dateTo, await tenantTimeZone(tenantId));
     if (createdAt) where.createdAt = createdAt;
-    if (supplierName) where.supplierName = { contains: supplierName };
+    if (supplierName) where.supplierName = ci(supplierName);
 
     const [receipts, total] = await Promise.all([
       prisma.stockReceipt.findMany({

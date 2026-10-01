@@ -1,4 +1,5 @@
 import prisma from "../../config/database.js";
+import { ci } from "../../utils/search.js";
 import type { CreateOrderInput, CheckoutInput, UpdateOrderStatusInput, OrderQueryInput } from "./order.schema.js";
 import { Server as SocketIOServer } from "socket.io";
 import {
@@ -44,7 +45,7 @@ export class OrderService {
     if (createdAt) where.createdAt = createdAt;
     if (search) {
       where.OR = [
-        { customerName: { contains: search } },
+        { customerName: ci(search) },
         { customerPhone: { contains: search } },
       ];
     }

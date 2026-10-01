@@ -1,4 +1,5 @@
 import prisma from "../../config/database.js";
+import { ci } from "../../utils/search.js";
 import { round2 } from "./stock.helpers.js";
 import { AppError, NotFoundError } from "../../utils/errors.js";
 
@@ -11,8 +12,8 @@ export class InventoryService {
     if (categoryId) where.categoryId = categoryId;
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { sku: { contains: search } },
+        { name: ci(search) },
+        { sku: ci(search) },
       ];
     }
 

@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { ci } from "../../utils/search.js";
 import prisma from "../../config/database.js";
 import type { CreateUserInput, UpdateUserInput } from "./user.schema.js";
 import { ConflictError, ForbiddenError, NotFoundError } from "../../utils/errors.js";
@@ -11,9 +12,9 @@ export class UserService {
     const where: any = { tenantId };
     if (search) {
       where.OR = [
-        { firstName: { contains: search } },
-        { lastName: { contains: search } },
-        { email: { contains: search } },
+        { firstName: ci(search) },
+        { lastName: ci(search) },
+        { email: ci(search) },
       ];
     }
     if (role) where.role = role;

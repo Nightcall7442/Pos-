@@ -216,6 +216,16 @@ describe("Retail: weighted goods, lookup, search, business type", () => {
       expect(await names("search=M32")).toContain("Молоко «Лактис» 3,2% 1 л");
     });
 
+    // На SQLite LIKE не различал регистр латиницы сам по себе, а кириллицу
+    // выручали варианты написания (utils/search.ts). В Postgres LIKE
+    // чувствителен к регистру целиком — без ILIKE артикул, набранный
+    // строчными, перестал бы находиться.
+    it("ignores case in short codes and in any mix of letters", async () => {
+      expect(await names("search=m32")).toContain("Молоко «Лактис» 3,2% 1 л");
+      expect(await names("search=" + encodeURIComponent("фАнТа"))).toContain("ФАНТА апельсин");
+      expect(await names("search=" + encodeURIComponent("кока-кола"))).toContain("Кока-Кола 1,5 л");
+    });
+
     it("filters weighed goods and tagged goods", async () => {
       const weighed = await names("weighted=true");
       expect(weighed).toEqual(expect.arrayContaining(["Яблоки", "Сыр", "Чай на развес"]));

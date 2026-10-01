@@ -1,7 +1,7 @@
 import prisma from "../../config/database.js";
 import type { CreateProductInput, UpdateProductInput, ProductQueryInput } from "./product.schema.js";
 import { AppError, NotFoundError } from "../../utils/errors.js";
-import { caseVariants, searchTokens } from "../../utils/search.js";
+import { ci, searchTokens } from "../../utils/search.js";
 import { catalogService } from "../catalog/catalog.service.js";
 
 // saleUnit values that mean "sold by weight" — see gramsPerUnit().
@@ -22,8 +22,8 @@ export class ProductService {
     for (const token of searchTokens(search || "")) {
       and.push({
         OR: [
-          ...caseVariants(token).map((variant) => ({ name: { contains: variant } })),
-          { sku: { contains: token } },
+          { name: ci(token) },
+          { sku: ci(token) },
           { barcode: { contains: token } },
         ],
       });

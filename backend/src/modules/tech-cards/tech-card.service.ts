@@ -1,4 +1,5 @@
 import prisma from "../../config/database.js";
+import { ci } from "../../utils/search.js";
 import type { CreateTechCardInput, UpdateTechCardInput, TechCardQueryInput } from "./tech-card.schema.js";
 import { NotFoundError } from "../../utils/errors.js";
 
@@ -9,7 +10,7 @@ export class TechCardService {
 
     const where: any = { tenantId };
     if (search) {
-      where.name = { contains: search };
+      where.name = ci(search);
     }
     if (isActive !== undefined) where.isActive = isActive;
 

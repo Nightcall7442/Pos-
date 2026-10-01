@@ -1,15 +1,11 @@
-// SQLite's LIKE ignores case only for Latin letters: "молоко" does not match
-// "Молоко", and lower()/upper() are ASCII-only as well, so the database cannot
-// fold Cyrillic itself. A search term is therefore expanded into the spellings
-// a name is realistically stored in — as typed, lower, UPPER, "Capitalised" and
-// "Title-Case" (after spaces, hyphens and quotes) — and matched against each.
-
-export function caseVariants(term: string): string[] {
-  const lower = term.toLowerCase();
-  const upper = term.toUpperCase();
-  const capitalised = lower.charAt(0).toUpperCase() + lower.slice(1);
-  const title = lower.replace(/(^|[\s\-«"(])(\p{L})/gu, (_m, sep: string, ch: string) => sep + ch.toUpperCase());
-  return Array.from(new Set([term, lower, upper, capitalised, title]));
+// Поиск без учёта регистра. На SQLite LIKE складывал только латиницу, и
+// кириллицу приходилось искать перебором написаний («молоко», «Молоко»,
+// «МОЛОКО»…), а смешанный регистр не находился вовсе. В Postgres LIKE
+// чувствителен к регистру целиком, зато ILIKE (mode: "insensitive")
+// складывает любые буквы — при UTF-8-локали базы, которую сервер проверяет
+// при старте (src/index.ts).
+export function ci(value: string) {
+  return { contains: value, mode: "insensitive" as const };
 }
 
 // "молоко лактис" finds "Молоко «Лактис» 3,2%": every word must match somewhere,

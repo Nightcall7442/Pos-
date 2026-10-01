@@ -67,8 +67,10 @@ function Avatar({ member }: { member: StaffMember }) {
 }
 
 export default function LoginScreen({ onLogin }: LoginScreenProps) {
-  const [stage, setStage] = useState<Stage>("loading");
   const [tenant, setTenant] = useState<string | null>(readTenant);
+  // Непривязанный планшет сразу показывает привязку — без лишнего рендера
+  // «загрузки» и записи стадии из эффекта.
+  const [stage, setStage] = useState<Stage>(() => (readTenant() ? "loading" : "pairing"));
   const [tenantName, setTenantName] = useState("");
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [selected, setSelected] = useState<StaffMember | null>(null);
@@ -95,10 +97,9 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
   // При запуске: если планшет уже привязан — сразу плитки.
   useEffect(() => {
-    if (!tenant) {
-      setStage("pairing");
-      return;
-    }
+    if (!tenant) return;
+    // loadStaff пишет состояние после ответа сервера (await), а не синхронно.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- загрузка по сети
     loadStaff(tenant)
       .then(() => setStage("staff"))
       .catch((error) => {

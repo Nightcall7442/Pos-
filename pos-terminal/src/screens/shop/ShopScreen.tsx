@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Lock, LogOut, Moon, PackagePlus, PauseCircle, Sun, Volume2, VolumeX } from "lucide-react";
 import toast from "react-hot-toast";
@@ -117,7 +117,13 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
   // The list is kept from the previous word while the next one loads, so it can
   // be shown — but Enter may only pick from a list that belongs to what is typed now.
   const suggestFresh = suggestOn && debouncedTerm === term && !suggestFetching;
-  useEffect(() => setSuggestIndex(0), [debouncedTerm]);
+  // Новое слово — выделение подсказки снова с первой строки. Поправка во время
+  // рендера (так советует React), а не эффектом с лишним проходом.
+  const [indexFor, setIndexFor] = useState(debouncedTerm);
+  if (indexFor !== debouncedTerm) {
+    setIndexFor(debouncedTerm);
+    setSuggestIndex(0);
+  }
 
   // ── добавление товара ────────────────────────────────────────────────────
   const fail = useCallback((message: string, duration = 2600) => {
@@ -254,8 +260,13 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
     [canAddProducts, fail]
   );
 
+  // Обработчики клавиатуры читают последние значения отсюда. Пишутся они после
+  // фиксации рендера (useLayoutEffect — раньше любых событий и эффектов), а не во
+  // время рендера: рендер, который React отбросит, не должен их перезаписать.
   const live = useRef({ query, armed, suggestions, suggestFresh, suggestIndex, items, modalOpen, selectedId, payMethod });
-  live.current = { query, armed, suggestions, suggestFresh, suggestIndex, items, modalOpen, selectedId, payMethod };
+  useLayoutEffect(() => {
+    live.current = { query, armed, suggestions, suggestFresh, suggestIndex, items, modalOpen, selectedId, payMethod };
+  });
 
   const submit = useCallback(async () => {
     const state = live.current;

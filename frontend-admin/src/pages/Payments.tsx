@@ -5,7 +5,7 @@ import Badge from "../components/Badge";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { DollarSign, CreditCard, Banknote } from "lucide-react";
+import { CreditCard, Banknote } from "lucide-react";
 import { useMoney } from "../hooks/useMoney";
 
 const methodLabels: Record<string, string> = { cash: "Наличные", card: "Карта", online: "Онлайн" };
@@ -42,7 +42,7 @@ export default function Payments() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {payments.map((payment: any) => (
+              {payments.map((payment) => (
                 <tr key={payment.id} className="hover:bg-gray-50">
                   <td className="p-4">
                     <div className="flex items-center gap-2">

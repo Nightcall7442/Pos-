@@ -86,12 +86,16 @@ export default tseslint.config(
     },
     rules: {
       ...common,
-      // Нарушение порядка хуков — это баг, а не замечание.
-      "react-hooks/rules-of-hooks": "error",
-      // 28 useEffect написаны без всякой проверки зависимостей. Включаем
-      // предупреждением и разбираем по задаче FE-1; в error переведём, когда
-      // счётчик дойдёт до нуля.
-      "react-hooks/exhaustive-deps": "warn",
+      // Планка как у Warehouse Pro: any и неиспользуемые переменные — ошибки,
+      // правила хуков — полный рекомендованный набор eslint-plugin-react-hooks 7
+      // (порядок хуков, зависимости, setState в эффекте, чтение ref при
+      // рендере, мутация состояния и т.п.).
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "none" },
+      ],
+      ...reactHooks.configs.flat.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       // Доступность: берём ровно то, что включено в recommended (правила,
       // выключенные там специально — например устаревшее label-has-for, — не

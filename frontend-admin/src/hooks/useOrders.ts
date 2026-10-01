@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { orderService } from "../services";
+import { apiErrorMessage } from "../utils/apiError";
 
-export function useOrders(params?: any) {
+export function useOrders(params?: Record<string, string | number | boolean | undefined>) {
   return useQuery({
     queryKey: ["orders", params],
     queryFn: () => orderService.list(params).then((r) => r.data),
@@ -34,8 +35,8 @@ export function useUpdateOrderStatus() {
       qc.invalidateQueries({ queryKey: ["orders"] });
       toast.success("Статус заказа обновлён");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Не удалось обновить статус");
+    onError: (error) => {
+      toast.error(apiErrorMessage(error, "Не удалось обновить статус"));
     },
   });
 }
@@ -48,8 +49,8 @@ export function useCancelOrder() {
       qc.invalidateQueries({ queryKey: ["orders"] });
       toast.success("Заказ отменён");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Не удалось отменить заказ");
+    onError: (error) => {
+      toast.error(apiErrorMessage(error, "Не удалось отменить заказ"));
     },
   });
 }

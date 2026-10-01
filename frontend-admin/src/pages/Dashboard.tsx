@@ -120,7 +120,7 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {stats.recentOrders.map((order: any) => {
+              {stats.recentOrders.map((order) => {
                 const badge = statusBadge(order.status);
                 return (
                   <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">

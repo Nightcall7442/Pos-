@@ -7,6 +7,8 @@ import Badge from "../components/Badge";
 import Modal from "../components/Modal";
 import toast from "react-hot-toast";
 import { Plus, Pencil } from "lucide-react";
+import { apiErrorMessage } from "../utils/apiError";
+import type { User } from "../services";
 
 const roles = ["admin", "manager", "cashier", "waiter", "kitchen"];
 const roleLabels: Record<string, string> = { admin: "Администратор", manager: "Менеджер", cashier: "Кассир", waiter: "Официант", kitchen: "Кухня" };
@@ -31,7 +33,7 @@ export default function Users() {
   const createMutation = useMutation({
     mutationFn: (data: typeof form) => userService.create(data.pin ? data : { ...data, pin: undefined }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["users"] }); setShowCreate(false); setForm(emptyCreateForm); toast.success("Сотрудник добавлен"); },
-    onError: (error: any) => { toast.error(error.response?.data?.error || "Ошибка"); },
+    onError: (error) => { toast.error(apiErrorMessage(error, "Ошибка")); },
   });
   const toggleMutation = useMutation({
     mutationFn: (id: string) => userService.toggleActive(id),
@@ -49,7 +51,7 @@ export default function Users() {
       return userService.update(data.id, payload);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["users"] }); setEditingId(null); toast.success("Сотрудник обновлён"); },
-    onError: (error: any) => { toast.error(error.response?.data?.error || "Ошибка"); },
+    onError: (error) => { toast.error(apiErrorMessage(error, "Ошибка")); },
   });
   const clearPinMutation = useMutation({
     mutationFn: (id: string) => userService.update(id, { pin: "" }),
@@ -59,7 +61,7 @@ export default function Users() {
   const users = data?.data || [];
   const roleColors: Record<string, "info" | "success" | "warning" | "gray"> = { manager: "info", cashier: "success", waiter: "warning", kitchen: "gray" };
 
-  const openEdit = (user: any) => {
+  const openEdit = (user: User) => {
     setEditingId(user.id);
     setEditForm({ firstName: user.firstName || "", lastName: user.lastName || "", phone: user.phone || "", role: user.role, password: "", pin: "" });
   };
@@ -81,7 +83,7 @@ export default function Users() {
               <th className="p-4">Сотрудник</th><th className="p-4">Роль</th><th className="p-4">Email</th><th className="p-4">Касса</th><th className="p-4">Статус</th><th className="p-4 text-right">Действия</th>
             </tr></thead>
             <tbody className="divide-y divide-gray-100">
-              {users.map((user: any) => (
+              {users.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50">
                   <td className="p-4"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700">{user.firstName?.[0]}{user.lastName?.[0]}</div><span className="font-medium text-gray-900">{user.firstName} {user.lastName}</span></div></td>
                   <td className="p-4"><Badge variant={roleColors[user.role] || "gray"}>{roleLabels[user.role] || user.role}</Badge></td>

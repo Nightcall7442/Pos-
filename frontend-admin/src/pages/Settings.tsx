@@ -4,6 +4,7 @@ import { settingsService } from "../services";
 import LoadingSpinner from "../components/LoadingSpinner";
 import toast from "react-hot-toast";
 import { Save, Plus, X } from "lucide-react";
+import { apiErrorMessage } from "../utils/apiError";
 
 const DEFAULT_UNITS = [
   { key: "piece", label: "Штука" },
@@ -35,8 +36,12 @@ export default function Settings() {
   const [newUnitKey, setNewUnitKey] = useState("");
   const [catalogSharing, setCatalogSharing] = useState(true);
 
+  // Форма редактируемая: при загрузке настроек с сервера её поля заполняются
+  // один раз из ответа. Это синхронизация с внешними данными, а не производное
+  // состояние, — исключение из правила осознанное (так же в Warehouse Pro).
   useEffect(() => {
     if (settings) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- заполнение формы из ответа сервера
       setCatalogSharing(settings.catalogSharing !== false);
       setForm({ name: settings.name || "", businessType: settings.businessType || "cafe", phone: settings.phone || "", email: settings.email || "", address: settings.address || "", timezone: settings.timezone || "UTC", currency: settings.currency || "USD", taxRate: Number(settings.taxRate) || 0, defaultMarkupPercent: Number(settings.defaultMarkupPercent) || 0 });
       try {
@@ -52,9 +57,9 @@ export default function Settings() {
   }, [settings]);
 
   const updateMutation = useMutation({
-    mutationFn: (data: any) => settingsService.update(data),
+    mutationFn: (data: Record<string, unknown>) => settingsService.update(data),
     onSuccess: () => toast.success("Настройки сохранены"),
-    onError: (error: any) => toast.error(error.response?.data?.error || "Ошибка"),
+    onError: (error) => toast.error(apiErrorMessage(error, "Ошибка")),
   });
 
   const handleAddUnit = () => {

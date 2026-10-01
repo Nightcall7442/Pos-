@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Save, ChefHat, Plus, ExternalLink } from "lucide-react";
-import { useProduct, useCreateProduct, useUpdateProduct, useCategories, useIngredients } from "../hooks/useProducts";
+import { useProduct, useCreateProduct, useUpdateProduct, useCategories } from "../hooks/useProducts";
 import { useTechCards } from "../hooks/useTechCards";
 import { settingsService } from "../services";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useMoney } from "../hooks/useMoney";
+import type { ProductInput, TechCardItem } from "../services";
 
 // Быстрые кнопки на кассе магазина — товары с этим тегом.
 const QUICK_TAG = "quick";
@@ -28,18 +29,13 @@ export default function ProductEdit() {
 
   const { data: product, isLoading } = useProduct(id || "");
   const { data: categories } = useCategories();
-  const { data: ingredients } = useIngredients();
   const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: () => settingsService.get().then((r) => r.data.data) });
   const { data: techCardsData } = useTechCards({ limit: 100 });
   const techCardsList = techCardsData || [];
 
-  let units = [{ key: "piece", label: "Штука" }];
   let defaultUnit = "piece";
   try {
     const parsed = JSON.parse(settings?.settings || "{}");
-    if (parsed.units && Array.isArray(parsed.units) && parsed.units.length > 0) {
-      units = parsed.units;
-    }
     if (parsed.defaultUnit) {
       defaultUnit = parsed.defaultUnit;
     }
@@ -92,9 +88,9 @@ export default function ProductEdit() {
       loadedProductIdRef.current = product.id;
       const vol = product.volume || "";
       const isGram = vol.includes("г") || vol.includes("g");
-      const purchaseUnit = (product as any).purchaseUnit || "";
-      const saleUnit = (product as any).saleUnit || "";
-      const conversionFactor = (product as any).conversionFactor;
+      const purchaseUnit = product.purchaseUnit || "";
+      const saleUnit = product.saleUnit || "";
+      const conversionFactor = product.conversionFactor ?? undefined;
       const costPrice = Number(product.costPrice) || 0;
       const purchaseCost = conversionFactor ? costPrice * conversionFactor : 0;
       setForm({
@@ -111,14 +107,14 @@ export default function ProductEdit() {
         minStock: Math.round((product.minStock || 0) * 1000) / 1000, currentStock: Math.round((product.currentStock || 0) * 1000) / 1000,
         trackInventory: product.trackInventory || false, categoryId: product.categoryId || "",
         imageUrl: product.imageUrl || "", isActive: product.isActive ?? true,
-        isIngredient: (product as any).isIngredient || false,
-        techCardId: (product as any).techCardId || "",
-        preparationArea: (product as any).preparationArea || "",
-        cookingMethod: (product as any).cookingMethod || "",
-        noDiscounts: (product as any).noDiscounts || false,
-        quick: parseTags((product as any).tags).includes(QUICK_TAG),
+        isIngredient: product.isIngredient || false,
+        techCardId: product.techCardId || "",
+        preparationArea: product.preparationArea || "",
+        cookingMethod: product.cookingMethod || "",
+        noDiscounts: product.noDiscounts || false,
+        quick: parseTags(product.tags).includes(QUICK_TAG),
       });
-      setOtherTags(parseTags((product as any).tags).filter((t) => t !== QUICK_TAG));
+      setOtherTags(parseTags(product.tags).filter((t) => t !== QUICK_TAG));
     }
   }, [product]);
 
@@ -134,8 +130,8 @@ export default function ProductEdit() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const { purchaseCost, volumeType, quick, ...submitForm } = form;
-    const submitData: any = {
+    const { purchaseCost: _purchaseCost, volumeType: _volumeType, quick, ...submitForm } = form;
+    const submitData: ProductInput = {
       ...submitForm,
       techCardId: form.techCardId || null,
       tags: quick ? [...otherTags, QUICK_TAG] : otherTags,
@@ -238,7 +234,7 @@ export default function ProductEdit() {
               <label className="label">Категория</label>
               <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="input">
                 <option value="">Без категории</option>
-                {categories?.map((cat: any) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                {categories?.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
               </select>
             </div>
             <div>
@@ -395,16 +391,16 @@ export default function ProductEdit() {
               className="input"
             >
               <option value="">Без техкарты</option>
-              {techCardsList.map((tc: any) => (
+              {techCardsList.map((tc) => (
                 <option key={tc.id} value={tc.id}>{tc.name}</option>
               ))}
             </select>
           </div>
 
           {form.techCardId && (() => {
-            const selected = techCardsList.find((tc: any) => tc.id === form.techCardId);
+            const selected = techCardsList.find((tc) => tc.id === form.techCardId);
             if (!selected) return null;
-            let ingredients: any[] = [];
+            let ingredients: TechCardItem[] = [];
             try { ingredients = JSON.parse(selected.ingredients || "[]"); } catch {}
             const markup = form.price > 0 && selected.totalCost > 0
               ? Math.round(((form.price - selected.totalCost) / selected.totalCost) * 100)

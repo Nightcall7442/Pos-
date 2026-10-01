@@ -48,9 +48,23 @@ function Workspace({ user, shift, onLogout, onCheckout, onCloseShift }: Workspac
   return <MenuScreen user={user} shift={shift} onLogout={onLogout} onCheckout={onCheckout} onCloseShift={onCloseShift} />;
 }
 
+// Сохранённая сессия планшета: читается один раз при запуске, в начальном
+// значении состояния, а не эффектом после первого рендера.
+function savedSession(): { token: string; user: UserData } | null {
+  const token = localStorage.getItem("pos-token");
+  const user = localStorage.getItem("pos-user");
+  if (!token || !user) return null;
+  try {
+    return { token, user: JSON.parse(user) as UserData };
+  } catch {
+    localStorage.removeItem("pos-user");
+    return null;
+  }
+}
+
 function App() {
-  const [user, setUser] = useState<UserData | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<UserData | null>(() => savedSession()?.user ?? null);
+  const [token, setToken] = useState<string | null>(() => savedSession()?.token ?? null);
   const [showPayment, setShowPayment] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
@@ -59,22 +73,12 @@ function App() {
   const [showCloseShift, setShowCloseShift] = useState(false);
   const clearCart = useCartStore((s) => s.clearCart);
 
-  useEffect(() => {
-    const savedToken = localStorage.getItem("pos-token");
-    const savedUser = localStorage.getItem("pos-user");
-    if (savedToken && savedUser) {
-      try {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem("pos-user");
-      }
-    }
-  }, []);
-
   // Check for active shift after login
   useEffect(() => {
     if (!token || !user) return;
+    // Флаг загрузки ставится вместе с запуском запроса; смену дальше меняют и
+    // обработчики открытия/закрытия, поэтому она в состоянии, а не в useQuery.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- начало загрузки при входе
     setShiftLoading(true);
     api
       .get("/cash-shifts/current")

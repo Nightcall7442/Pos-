@@ -4,6 +4,7 @@ import { Clock, Check, ChefHat, Bell, Volume2 } from "lucide-react";
 import api from "../services/api";
 import { useSocket } from "../services/socketService";
 import toast from "react-hot-toast";
+import type { ApiResponse, Order } from "../services";
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
   pending: { label: "Новый", color: "text-yellow-700", bg: "bg-yellow-100 border-yellow-300" },
@@ -12,6 +13,16 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
   ready: { label: "Готов", color: "text-green-700", bg: "bg-green-100 border-green-300" },
 };
 
+// Сигнал нового заказа. Функция модуля, а не компонента: эффект подписки на
+// сокет вызывал её раньше, чем она была объявлена в теле компонента.
+function playNotificationSound() {
+  try {
+    const audio = new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVggoKIaGBGP3+DhHJfRUJ/hYJyXkNBf4eCd2REQX6Hg3hlREB+iIN3ZkRAfoiDeGVEQH6Ig3hlREB+iIN4ZURAfoiDeGVEQH6Ig3hlREB+iIN4ZURAfo==");
+    audio.volume = 0.5;
+    audio.play().catch(() => {});
+  } catch {}
+}
+
 export default function Kitchen() {
   const queryClient = useQueryClient();
   const socket = useSocket();
@@ -19,7 +30,7 @@ export default function Kitchen() {
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["kitchen-orders"],
-    queryFn: () => api.get("/orders/active").then((r) => r.data.data),
+    queryFn: () => api.get<ApiResponse<Order[]>>("/orders/active").then((r) => r.data.data),
     refetchInterval: 5000,
   });
 
@@ -34,7 +45,7 @@ export default function Kitchen() {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("order:created", (order: any) => {
+    socket.on("order:created", (order) => {
       toast.success(`Новый заказ №${order.orderNumber}`);
       queryClient.invalidateQueries({ queryKey: ["kitchen-orders"] });
 
@@ -58,41 +69,16 @@ export default function Kitchen() {
     };
   }, [socket, queryClient, soundEnabled]);
 
-  const playNotificationSound = () => {
-    try {
-      const audio = new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVggoKIaGBGP3+DhHJfRUJ/hYJyXkNBf4eCd2REQX6Hg3hlREB+iIN3ZkRAfoiDeGVEQH6Ig3hlREB+iIN4ZURAfoiDeGVEQH6Ig3hlREB+iIN4ZURAfo==");
-      audio.volume = 0.5;
-      audio.play().catch(() => {});
-    } catch {}
-  };
 
-  const getNextStatus = (currentStatus: string): string | null => {
-    const flow: Record<string, string> = {
-      pending: "confirmed",
-      confirmed: "preparing",
-      preparing: "ready",
-    };
-    return flow[currentStatus] || null;
-  };
-
-  const getNextStatusLabel = (currentStatus: string): string => {
-    const labels: Record<string, string> = {
-      pending: "Принять",
-      confirmed: "Начать готовить",
-      preparing: "Готово",
-    };
-    return labels[currentStatus] || "";
-  };
-
-  const activeOrders = (orders || []).filter((o: any) =>
+  const activeOrders = (orders || []).filter((o) =>
     ["pending", "confirmed", "preparing", "ready"].includes(o.status)
   );
 
   const groupedOrders = {
-    pending: activeOrders.filter((o: any) => o.status === "pending"),
-    confirmed: activeOrders.filter((o: any) => o.status === "confirmed"),
-    preparing: activeOrders.filter((o: any) => o.status === "preparing"),
-    ready: activeOrders.filter((o: any) => o.status === "ready"),
+    pending: activeOrders.filter((o) => o.status === "pending"),
+    confirmed: activeOrders.filter((o) => o.status === "confirmed"),
+    preparing: activeOrders.filter((o) => o.status === "preparing"),
+    ready: activeOrders.filter((o) => o.status === "ready"),
   };
 
   if (isLoading) {
@@ -134,7 +120,7 @@ export default function Kitchen() {
             </h2>
           </div>
           <div className="space-y-4">
-            {groupedOrders.pending.map((order: any) => (
+            {groupedOrders.pending.map((order) => (
               <OrderCard
                 key={order.id}
                 order={order}
@@ -157,7 +143,7 @@ export default function Kitchen() {
             </h2>
           </div>
           <div className="space-y-4">
-            {groupedOrders.confirmed.map((order: any) => (
+            {groupedOrders.confirmed.map((order) => (
               <OrderCard
                 key={order.id}
                 order={order}
@@ -180,7 +166,7 @@ export default function Kitchen() {
             </h2>
           </div>
           <div className="space-y-4">
-            {groupedOrders.preparing.map((order: any) => (
+            {groupedOrders.preparing.map((order) => (
               <OrderCard
                 key={order.id}
                 order={order}
@@ -203,7 +189,7 @@ export default function Kitchen() {
             </h2>
           </div>
           <div className="space-y-4">
-            {groupedOrders.ready.map((order: any) => (
+            {groupedOrders.ready.map((order) => (
               <OrderCard
                 key={order.id}
                 order={order}
@@ -230,22 +216,21 @@ function OrderCard({
   isUpdating,
   isReady,
 }: {
-  order: any;
+  order: Order;
   onNext: () => void;
   nextLabel: string;
   isUpdating: boolean;
   isReady?: boolean;
 }) {
-  const [elapsed, setElapsed] = useState(0);
-
+  // Минуты ожидания считаются из текущего времени при каждом рендере, а таймер
+  // лишь двигает «сейчас» раз в 10 секунд. Раньше эффект синхронно записывал
+  // минуты в состояние — лишний рендер на каждую карточку при появлении.
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const start = new Date(order.createdAt).getTime();
-    const interval = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - start) / 1000 / 60));
-    }, 10000);
-    setElapsed(Math.floor((Date.now() - start) / 1000 / 60));
+    const interval = setInterval(() => setNow(Date.now()), 10000);
     return () => clearInterval(interval);
-  }, [order.createdAt]);
+  }, []);
+  const elapsed = Math.max(0, Math.floor((now - new Date(order.createdAt).getTime()) / 1000 / 60));
 
   const status = statusConfig[order.status] || statusConfig.pending;
 
@@ -281,15 +266,15 @@ function OrderCard({
       </div>
 
       <div className="mb-4 space-y-2">
-        {order.items?.map((item: any) => (
+        {order.items?.map((item) => (
           <div key={item.id} className="flex items-start justify-between">
             <div>
               <span className="font-medium text-white">
                 {item.quantity}x {item.product?.name}
               </span>
-              {item.modifiers?.length > 0 && (
+              {!!item.modifiers?.length && (
                 <div className="ml-4 text-xs text-gray-400">
-                  {item.modifiers.map((m: any) => m.modifierItem?.name).filter(Boolean).join(", ")}
+                  {item.modifiers?.map((m) => m.modifierItem?.name).filter(Boolean).join(", ")}
                 </div>
               )}
               {item.notes && (

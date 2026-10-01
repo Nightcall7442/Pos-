@@ -16,7 +16,7 @@ export default function Tables() {
 
   const { data: tables, isLoading } = useQuery({ queryKey: ["tables"], queryFn: () => tableService.list().then((r) => r.data.data) });
   const { data: stats } = useQuery({ queryKey: ["table-stats"], queryFn: () => tableService.getStats().then((r) => r.data.data) });
-  const createMutation = useMutation({ mutationFn: (data: any) => tableService.create(data), onSuccess: () => { qc.invalidateQueries({ queryKey: ["tables"] }); setShowCreate(false); setForm({ number: "", capacity: 4, zone: "" }); toast.success("Стол добавлен"); } });
+  const createMutation = useMutation({ mutationFn: (data: { number: string; capacity: number; zone: string }) => tableService.create(data), onSuccess: () => { qc.invalidateQueries({ queryKey: ["tables"] }); setShowCreate(false); setForm({ number: "", capacity: 4, zone: "" }); toast.success("Стол добавлен"); } });
   const statusMutation = useMutation({ mutationFn: ({ id, status }: { id: string; status: string }) => tableService.updateStatus(id, status), onSuccess: () => { qc.invalidateQueries({ queryKey: ["tables"] }); toast.success("Статус обновлён"); } });
 
   const statusColors: Record<string, string> = { available: "border-green-300 bg-green-50", occupied: "border-red-300 bg-red-50", reserved: "border-blue-300 bg-blue-50", maintenance: "border-yellow-300 bg-yellow-50" };
@@ -39,7 +39,7 @@ export default function Tables() {
 
       {isLoading ? <LoadingSpinner /> : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {tables?.map((table: any) => {
+          {tables?.map((table) => {
             const badge = statusBadge(table.status);
             return (
               <div key={table.id} className={`rounded-xl border-2 p-4 text-center transition-all hover:shadow-md ${statusColors[table.status] || "border-gray-200"}`}>
@@ -49,7 +49,7 @@ export default function Tables() {
                 <p className="mt-2 text-sm text-gray-500">{table.capacity} мест</p>
                 {table.zone && <p className="text-xs text-gray-400">{table.zone}</p>}
                 <Badge variant={badge.variant} className="mt-2">{badge.label}</Badge>
-                {table.orders?.length > 0 && <p className="mt-1 text-xs font-medium text-red-600">{money(table.orders[0].total)}</p>}
+                {table.orders?.[0] && <p className="mt-1 text-xs font-medium text-red-600">{money(table.orders[0].total)}</p>}
                 <div className="mt-2 flex gap-1 justify-center">
                   {["available", "occupied", "reserved", "maintenance"].map((s) => (
                     <button key={s} onClick={() => statusMutation.mutate({ id: table.id, status: s })} className={`h-2 w-2 rounded-full ${s === "available" ? "bg-green-500" : s === "occupied" ? "bg-red-500" : s === "reserved" ? "bg-blue-500" : "bg-yellow-500"}`} title={s === "available" ? "Свободен" : s === "occupied" ? "Занят" : s === "reserved" ? "Забронирован" : "Обслуживание"} />

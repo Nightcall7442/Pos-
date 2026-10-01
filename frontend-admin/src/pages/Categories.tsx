@@ -72,7 +72,7 @@ export default function Categories() {
       description: cat.description || "",
       color: cat.color || "#3b82f6",
       imageUrl: cat.imageUrl || "",
-      isIngredient: (cat as any).isIngredient || false,
+      isIngredient: cat.isIngredient || false,
       markupPercent: Number(cat.markupPercent) || 0,
     });
   };
@@ -124,7 +124,7 @@ export default function Categories() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-gray-900">{cat.name}</h3>
-                    {(cat as any).isIngredient && (
+                    {cat.isIngredient && (
                       <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-medium text-orange-700">Ингредиенты</span>
                     )}
                   </div>

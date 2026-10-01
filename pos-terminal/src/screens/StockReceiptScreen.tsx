@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import type { Category, Product } from "../types";
 import { useMoney } from "../hooks/useMoney";
 import { weightUnitOf } from "../utils/weight";
+import { apiErrorMessage } from "../utils/apiError";
 
 interface StockReceiptScreenProps {
   onClose: () => void;
@@ -42,7 +43,7 @@ function computeSalePrice(costPrice: number, markupPercent: number): number {
 }
 
 export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps) {
-  const { money, symbol } = useMoney();
+  const { money } = useMoney();
   const qc = useQueryClient();
 
   const [supplierName, setSupplierName] = useState("");
@@ -99,7 +100,11 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
     return 0;
   }, [costPrice, effectiveMarkup, productMode, selectedProduct]);
 
+  // Пока кассир не трогал цену продажи, поле следует за подсказкой (наценка
+  // от себестоимости). Поле при этом редактируемое, поэтому значение живёт в
+  // состоянии, а не вычисляется.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- поле следует за подсказкой, пока его не правили
     if (!salePriceTouched) setSalePrice(suggestedPrice > 0 ? String(suggestedPrice) : "");
   }, [suggestedPrice, salePriceTouched]);
 
@@ -205,8 +210,8 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
       toast.success("Приход оформлен");
       onClose();
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Не удалось оформить приход");
+    onError: (error) => {
+      toast.error(apiErrorMessage(error, "Не удалось оформить приход"));
     },
   });
 

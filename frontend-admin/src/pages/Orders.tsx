@@ -29,16 +29,6 @@ const statusFlow: Record<string, string[]> = {
   served: ["completed"],
 };
 
-const statusLabels: Record<string, string> = {
-  pending: "Ожидает",
-  confirmed: "Подтверждён",
-  preparing: "Готовится",
-  ready: "Готов",
-  served: "Подан",
-  completed: "Завершён",
-  cancelled: "Отменён",
-};
-
 export default function Orders() {
   const { money } = useMoney();
   const [status, setStatus] = useState("");
@@ -105,7 +95,7 @@ export default function Orders() {
         />
       ) : (
         <div className="space-y-3">
-          {orders.map((order: any) => {
+          {orders.map((order) => {
             const badge = statusBadge(order.status);
             const nextStatuses = statusFlow[order.status] || [];
             return (

@@ -5,13 +5,12 @@ import {
   Copy, Pencil,
 } from "lucide-react";
 import { productService } from "../services";
-import type { TechCardItem, Ingredient } from "../services";
+import type { TechCard, TechCardItem } from "../services";
 import {
   useTechCards, useCreateTechCard, useUpdateTechCard,
   useDeleteTechCard, useCopyTechCard,
 } from "../hooks/useTechCards";
 import LoadingSpinner from "../components/LoadingSpinner";
-import toast from "react-hot-toast";
 
 export default function TechCards() {
   const [search, setSearch] = useState("");
@@ -35,14 +34,14 @@ export default function TechCards() {
   const deleteMutation = useDeleteTechCard();
   const copyMutation = useCopyTechCard();
 
-  const getIngName = (id: string) => (ingredients as any[])?.find((i) => i.id === id)?.name || "—";
-  const getIngCost = (id: string) => (ingredients as any[])?.find((i) => i.id === id)?.costPrice || 0;
+  const getIngName = (id: string) => ingredients?.find((i) => i.id === id)?.name || "—";
+  const getIngCost = (id: string) => ingredients?.find((i) => i.id === id)?.costPrice || 0;
   const calcTotal = (items: TechCardItem[]) =>
     items.reduce((s, i) => s + getIngCost(i.ingredientId) * i.quantity, 0);
   const calcOutput = (items: TechCardItem[]) =>
     items.reduce((s, i) => s + (i.netWeight || i.quantity || 0), 0);
 
-  const startEdit = (tc: any) => {
+  const startEdit = (tc: TechCard) => {
     let items: TechCardItem[] = [];
     try { items = JSON.parse(tc.ingredients || "[]"); } catch {}
     setEditingId(tc.id);
@@ -97,8 +96,8 @@ export default function TechCards() {
         </div>
       ) : (
         <div className="space-y-3">
-          {techCards.map((tc: any) => {
-            let items: any[] = [];
+          {techCards.map((tc) => {
+            let items: TechCardItem[] = [];
             try { items = JSON.parse(tc.ingredients || "[]"); } catch {}
             const isExpanded = expandedId === tc.id;
             const isEditing = editingId === tc.id;
@@ -120,7 +119,7 @@ export default function TechCards() {
                       <p className="font-semibold text-gray-900 dark:text-gray-100">{tc.name}</p>
                       <p className="text-xs text-gray-500">
                         {items.length} ингред. · Выход: {output} {tc.unit}
-                        {tc.products?.length > 0 && ` · Товаров: ${tc.products.length}`}
+                        {!!tc.products?.length && ` · Товаров: ${tc.products.length}`}
                       </p>
                     </div>
                   </div>
@@ -173,7 +172,7 @@ export default function TechCards() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                        {items.map((item: any, idx: number) => (
+                        {items.map((item, idx) => (
                           <tr key={idx}>
                             <td className="py-2 text-gray-500">{idx + 1}</td>
                             <td className="py-2 font-medium text-gray-900 dark:text-gray-100">{getIngName(item.ingredientId)}</td>
@@ -193,11 +192,11 @@ export default function TechCards() {
                         </tr>
                       </tfoot>
                     </table>
-                    {tc.products?.length > 0 && (
+                    {!!tc.products?.length && (
                       <div className="mt-3 rounded-lg bg-gray-50 p-3 text-sm">
                         <p className="font-medium text-gray-700 mb-1">Используется в товарах:</p>
                         <div className="flex flex-wrap gap-2">
-                          {tc.products.map((p: any) => (
+                          {tc.products?.map((p) => (
                             <span key={p.id} className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-600 border">
                               {p.name}
                             </span>
@@ -226,13 +225,13 @@ export default function TechCards() {
                       <span className="text-center">Ед.</span><span className="text-center">Стоимость</span><span></span>
                     </div>
                     {editForm.map((item, index) => {
-                      const ing = (ingredients as any[])?.find((i) => i.id === item.ingredientId);
+                      const ing = ingredients?.find((i) => i.id === item.ingredientId);
                       const lineCost = ing ? ing.costPrice * item.quantity : 0;
                       return (
                         <div key={index} className="grid grid-cols-[1fr_90px_90px_70px_90px_36px] gap-2 items-center rounded-lg bg-gray-50 p-2">
                           <select value={item.ingredientId} onChange={(e) => { const a = [...editForm]; a[index] = { ...item, ingredientId: e.target.value }; setEditForm(a); }} className="input text-sm">
                             <option value="">Выберите ингредиент</option>
-                            {(ingredients as any[])?.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
+                            {ingredients?.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
                           </select>
                           <input type="number" step="0.01" min="0" value={item.grossWeight || ""} onChange={(e) => { const a = [...editForm]; a[index] = { ...item, grossWeight: parseFloat(e.target.value) || 0 }; setEditForm(a); }} className="input text-sm text-center" placeholder="0" />
                           <input type="number" step="0.01" min="0" value={item.netWeight || ""} onChange={(e) => { const v = parseFloat(e.target.value) || 0; const a = [...editForm]; a[index] = { ...item, netWeight: v, quantity: v }; setEditForm(a); }} className="input text-sm text-center" placeholder="0" />
@@ -300,7 +299,7 @@ export default function TechCards() {
                   <div key={idx} className="flex gap-2 mb-2">
                     <select value={item.ingredientId} onChange={(e) => { const a = [...newCard.ingredients]; a[idx] = { ...item, ingredientId: e.target.value }; setNewCard({ ...newCard, ingredients: a }); }} className="input text-sm flex-1">
                       <option value="">Ингредиент</option>
-                      {(ingredients as any[])?.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
+                      {ingredients?.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
                     </select>
                     <input type="number" step="0.01" min="0" value={item.grossWeight || ""} onChange={(e) => { const a = [...newCard.ingredients]; a[idx] = { ...item, grossWeight: parseFloat(e.target.value) || 0 }; setNewCard({ ...newCard, ingredients: a }); }} className="input text-sm w-20" placeholder="Брутто" />
                     <input type="number" step="0.01" min="0" value={item.netWeight || ""} onChange={(e) => { const v = parseFloat(e.target.value) || 0; const a = [...newCard.ingredients]; a[idx] = { ...item, netWeight: v, quantity: v }; setNewCard({ ...newCard, ingredients: a }); }} className="input text-sm w-20" placeholder="Нетто" />

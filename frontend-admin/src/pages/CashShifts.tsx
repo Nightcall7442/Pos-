@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { cashShiftService } from "../services";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Badge from "../components/Badge";
 import Modal from "../components/Modal";
-import toast from "react-hot-toast";
-import { Calendar, User, Clock, DollarSign, Eye, TrendingUp, TrendingDown } from "lucide-react";
+import { User, Clock, Eye } from "lucide-react";
 import { useMoney } from "../hooks/useMoney";
 
 
@@ -32,7 +31,6 @@ interface CashShift {
 export default function CashShifts() {
   const { money } = useMoney();
   const [showDetail, setShowDetail] = useState<CashShift | null>(null);
-  const qc = useQueryClient();
 
   const { data: shiftsData, isLoading } = useQuery({
     queryKey: ["cash-shifts"],

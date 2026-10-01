@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Search,
@@ -17,8 +17,6 @@ import {
   Hash,
   Phone,
   AlertCircle,
-  Rows3,
-  LayoutGrid,
   Lock,
   PackagePlus,
   Sun,
@@ -67,7 +65,6 @@ function categoryEmoji(name: string): string {
   return "🍽";
 }
 
-type VolumePickerStyle = "compact" | "modal";
 
 function useCurrentTime() {
   const [time, setTime] = useState(new Date());
@@ -89,8 +86,11 @@ function groupProductsByName(products: Product[]): Product[][] {
   return Array.from(groups.values());
 }
 
-export default function MenuScreen({ user, shift, onLogout, onCheckout, onCloseShift }: MenuScreenProps) {
-  const { money, symbol } = useMoney();
+// Синтетическая плитка «Без категории».
+const UNCATEGORIZED = "__none__";
+
+export default function MenuScreen({ user, onLogout, onCheckout, onCloseShift }: MenuScreenProps) {
+  const { money } = useMoney();
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [showTablePicker, setShowTablePicker] = useState(false);
@@ -98,14 +98,9 @@ export default function MenuScreen({ user, shift, onLogout, onCheckout, onCloseS
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [volumePickerProduct, setVolumePickerProduct] = useState<Product[] | null>(null);
-  const [volumePickerStyle, setVolumePickerStyle] = useState<VolumePickerStyle>(
-    () => (localStorage.getItem("volume-picker-style") as VolumePickerStyle) || "modal"
-  );
-  const [compactPosition, setCompactPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [portionPickerProduct, setPortionPickerProduct] = useState<Product | null>(null);
   const [showStockReceipt, setShowStockReceipt] = useState(false);
   const { theme, toggleTheme } = useThemeStore();
-  const compactRef = useRef<HTMLDivElement>(null);
   const time = useCurrentTime();
 
   const portionOptions = [5, 10, 50, 100];
@@ -155,30 +150,23 @@ export default function MenuScreen({ user, shift, onLogout, onCheckout, onCloseS
       }).then((r) => r.data),
   });
 
-  const allProducts: Product[] = allProductsData?.data || [];
+  const allProducts: Product[] = useMemo(() => allProductsData?.data || [], [allProductsData]);
 
-  const UNCATEGORIZED = "__none__";
-
-  const matchesCategory = (p: Product): boolean =>
-    selectedCategory === UNCATEGORIZED ? !p.categoryId : p.categoryId === selectedCategory;
-
-  const filteredProducts: Product[] = search
-    ? allProducts.filter((p) => !selectedCategory || matchesCategory(p))
-    : selectedCategory
-    ? allProducts.filter(matchesCategory)
-    : [];
+  // Отбор — в useMemo: раньше массив собирался заново на каждой перерисовке, и
+  // useMemo группировки ниже, зависящий от него, пересчитывался каждый раз.
+  const filteredProducts: Product[] = useMemo(() => {
+    const matchesCategory = (p: Product): boolean =>
+      selectedCategory === UNCATEGORIZED ? !p.categoryId : p.categoryId === selectedCategory;
+    if (search) return allProducts.filter((p) => !selectedCategory || matchesCategory(p));
+    if (selectedCategory) return allProducts.filter(matchesCategory);
+    return [];
+  }, [allProducts, search, selectedCategory]);
 
   // Products that belong to no category are reachable through a synthetic
   // tile; without it they could only be found by typing their name.
   const uncategorizedCount = allProducts.filter((p) => !p.categoryId).length;
 
   const groupedProducts = useMemo(() => groupProductsByName(filteredProducts), [filteredProducts]);
-
-  const togglePickerStyle = () => {
-    const next = volumePickerStyle === "compact" ? "modal" : "compact";
-    setVolumePickerStyle(next);
-    localStorage.setItem("volume-picker-style", next);
-  };
 
   // Stock already committed to the cart counts as taken: the backend will
   // refuse the sale anyway, so the terminal refuses it up front instead of
@@ -191,10 +179,10 @@ export default function MenuScreen({ user, shift, onLogout, onCheckout, onCloseS
     return Number(product.currentStock) - inCart;
   };
 
-  const handleProductClick = (variants: Product[], event: React.MouseEvent): void => {
+  const handleProductClick = (variants: Product[], _event: React.MouseEvent): void => {
     if (variants.length === 1) {
       const product = variants[0];
-      const saleUnit = (product as any).saleUnit;
+      const saleUnit = product.saleUnit;
       if (saleUnit === "г") {
         if (availableStock(product) <= 0) {
           toast.error(`«${product.name}» нет в наличии`, { duration: 1500 });

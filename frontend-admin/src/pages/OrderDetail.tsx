@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useOrder } from "../hooks/useOrders";
@@ -37,7 +36,7 @@ export default function OrderDetail() {
       <div className="card">
         <h2 className="mb-4 text-lg font-semibold text-gray-900">Позиции</h2>
         <div className="space-y-3">
-          {order.items?.map((item: any) => (
+          {order.items?.map((item) => (
             <div key={item.id} className="flex items-center justify-between border-b border-gray-100 py-3 last:border-0">
               <div className="flex items-center gap-3">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-sm font-medium">{item.quantity}x</span>

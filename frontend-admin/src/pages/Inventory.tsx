@@ -21,9 +21,9 @@ interface StockProduct {
   price: number;
   imageUrl?: string;
   trackInventory: boolean;
-  purchaseUnit?: string;
-  saleUnit?: string;
-  conversionFactor?: number;
+  purchaseUnit?: string | null;
+  saleUnit?: string | null;
+  conversionFactor?: number | null;
   category?: Category;
 }
 

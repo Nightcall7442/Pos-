@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { reportService } from "../services";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { format, subDays } from "date-fns";
-import { ru } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { TrendingUp, DollarSign, ShoppingCart, Users } from "lucide-react";
 import { useMoney } from "../hooks/useMoney";
@@ -37,7 +36,7 @@ export default function Reports() {
         <div className="card"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50"><DollarSign className="h-5 w-5 text-green-600" /></div><div><p className="text-sm text-gray-500">Выручка</p><p className="text-xl font-bold text-gray-900">{money(salesData?.totalRevenue || 0)}</p></div></div></div>
         <div className="card"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50"><ShoppingCart className="h-5 w-5 text-blue-600" /></div><div><p className="text-sm text-gray-500">Транзакции</p><p className="text-xl font-bold text-gray-900">{salesData?.totalTransactions || 0}</p></div></div></div>
         <div className="card"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-50"><TrendingUp className="h-5 w-5 text-yellow-600" /></div><div><p className="text-sm text-gray-500">Чаевые</p><p className="text-xl font-bold text-gray-900">{money(salesData?.totalTips || 0)}</p></div></div></div>
-        <div className="card"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50"><Users className="h-5 w-5 text-purple-600" /></div><div><p className="text-sm text-gray-500">Средний чек</p><p className="text-xl font-bold text-gray-900">{money(salesData?.totalTransactions > 0 ? salesData.totalRevenue / salesData.totalTransactions : 0)}</p></div></div></div>
+        <div className="card"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50"><Users className="h-5 w-5 text-purple-600" /></div><div><p className="text-sm text-gray-500">Средний чек</p><p className="text-xl font-bold text-gray-900">{money(salesData && salesData.totalTransactions > 0 ? salesData.totalRevenue / salesData.totalTransactions : 0)}</p></div></div></div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -58,7 +57,7 @@ export default function Reports() {
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie data={salesData?.ordersByType || []} dataKey="_count" nameKey="type" cx="50%" cy="50%" outerRadius={100} label={({ type, _count }) => `${typeLabels[type] || type}: ${_count}`}>
-                {(salesData?.ordersByType || []).map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                {(salesData?.ordersByType || []).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
               <Tooltip />
             </PieChart>
@@ -75,7 +74,7 @@ export default function Reports() {
                 <th className="pb-3">Сотрудник</th><th className="pb-3">Роль</th><th className="pb-3 text-right">Заказов</th><th className="pb-3 text-right">Продажи</th>
               </tr></thead>
               <tbody className="divide-y divide-gray-100">
-                {employeeData.map((emp: any) => (
+                {employeeData.map((emp) => (
                   <tr key={emp.id}>
                     <td className="py-3 font-medium text-gray-900">{emp.name}</td>
                     <td className="py-3 text-sm capitalize text-gray-500">{emp.role === "admin" ? "Администратор" : emp.role === "cashier" ? "Кассир" : emp.role}</td>

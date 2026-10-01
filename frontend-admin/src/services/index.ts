@@ -60,6 +60,10 @@ export interface Product {
   createdAt: string;
   updatedAt: string;
   category?: Category;
+  // Единицы и пересчёт закупки в продажу: «покупаем кг, продаём г».
+  purchaseUnit?: string | null;
+  saleUnit?: string | null;
+  conversionFactor?: number | null;
 }
 
 export interface Ingredient {
@@ -104,6 +108,13 @@ export interface Order {
   payments?: { id: string; method: string; amount: number; status: string }[];
   createdAt: string;
   items: OrderItem[];
+  user?: { id: string; firstName: string; lastName?: string } | null;
+}
+
+export interface OrderItemModifier {
+  id: string;
+  price: number;
+  modifierItem?: { id: string; name: string } | null;
 }
 
 export interface OrderItem {
@@ -115,6 +126,7 @@ export interface OrderItem {
   unitPrice: number;
   totalPrice: number;
   notes?: string | null;
+  modifiers?: OrderItemModifier[];
 }
 
 export interface User {
@@ -124,6 +136,66 @@ export interface User {
   email: string;
   role: string;
   isActive: boolean;
+  phone?: string | null;
+  // Есть ли вход на кассе по PIN; сам PIN (хеш) сервер не отдаёт.
+  hasPin?: boolean;
+  lastLoginAt?: string | null;
+  createdAt?: string;
+}
+
+export interface Payment {
+  id: string;
+  orderId: string;
+  method: string;
+  amount: number;
+  tipAmount: number;
+  status: string;
+  createdAt: string;
+  order?: { id: string; orderNumber: string | number } | null;
+}
+
+export interface Table {
+  id: string;
+  number: string;
+  capacity: number;
+  zone?: string | null;
+  status: string;
+  orders?: Order[];
+}
+
+export interface TableStats {
+  total: number;
+  available: number;
+  occupied: number;
+  reserved: number;
+}
+
+export interface DashboardStats {
+  todayOrders: number;
+  todayRevenue: number;
+  weekRevenue: number;
+  monthRevenue: number;
+  activeOrders: number;
+  totalProducts: number;
+  lowStockProducts: number;
+  recentOrders: Order[];
+}
+
+export interface SalesReport {
+  totalRevenue: number;
+  totalTips: number;
+  totalTransactions: number;
+  ordersByType: { type: string; _count: number; _sum: { total: number | null } }[];
+  topProducts: { productId: string; _count: number; _sum: { quantity: number | null; totalPrice: number | null } }[];
+  salesByHour: { hour: string; order_count: number; revenue: number }[];
+}
+
+export interface EmployeeReportRow {
+  id: string;
+  name: string;
+  role: string;
+  ordersCount: number;
+  totalSales: number;
 }
 
 export interface ApiResponse<T> {
@@ -150,11 +222,19 @@ export const authService = {
   me: () => api.get("/auth/me"),
 };
 
+// Что панель отправляет при создании и правке товара: теги — массивом (сервер
+// хранит их JSON-строкой), техкарту можно отвязать (null).
+export type ProductInput = Omit<Partial<Product>, "tags" | "techCardId"> & {
+  tags?: string[];
+  techCardId?: string | null;
+  techCard?: string;
+};
+
 export const productService = {
   list: (params?: Record<string, string | number | boolean | undefined>) => api.get<ApiResponse<Product[]>>("/products", { params }),
   get: (id: string) => api.get<ApiResponse<Product>>(`/products/${id}`),
-  create: (data: Partial<Product> & { techCard?: string }) => api.post<ApiResponse<Product>>("/products", data),
-  update: (id: string, data: Partial<Product> & { techCard?: string }) => api.put<ApiResponse<Product>>(`/products/${id}`, data),
+  create: (data: ProductInput) => api.post<ApiResponse<Product>>("/products", data),
+  update: (id: string, data: ProductInput) => api.put<ApiResponse<Product>>(`/products/${id}`, data),
   delete: (id: string) => api.delete(`/products/${id}`),
   adjustStock: (id: string, data: { quantity: number; reason: string }) =>
     api.post(`/products/${id}/stock`, data),
@@ -207,7 +287,7 @@ export const orderService = {
 };
 
 export const paymentService = {
-  list: (params?: Record<string, string | number | boolean | undefined>) => api.get("/payments", { params }),
+  list: (params?: Record<string, string | number | boolean | undefined>) => api.get<ApiResponse<Payment[]>>("/payments", { params }),
   getSummary: (params?: Record<string, string | number | boolean | undefined>) => api.get("/payments/summary", { params }),
 };
 
@@ -237,19 +317,19 @@ export const inventoryService = {
 };
 
 export const reportService = {
-  getDashboard: () => api.get("/reports/dashboard"),
-  getSales: (params: Record<string, string>) => api.get("/reports/sales", { params }),
-  getEmployees: (params: Record<string, string>) => api.get("/reports/employees", { params }),
+  getDashboard: () => api.get<ApiResponse<DashboardStats>>("/reports/dashboard"),
+  getSales: (params: Record<string, string>) => api.get<ApiResponse<SalesReport>>("/reports/sales", { params }),
+  getEmployees: (params: Record<string, string>) => api.get<ApiResponse<EmployeeReportRow[]>>("/reports/employees", { params }),
 };
 
 export const tableService = {
-  list: () => api.get("/tables"),
-  get: (id: string) => api.get(`/tables/${id}`),
+  list: () => api.get<ApiResponse<Table[]>>("/tables"),
+  get: (id: string) => api.get<ApiResponse<Table>>(`/tables/${id}`),
   create: (data: { number: string; capacity: number; zone: string }) => api.post("/tables", data),
   update: (id: string, data: Record<string, unknown>) => api.put(`/tables/${id}`, data),
   updateStatus: (id: string, status: string) => api.patch(`/tables/${id}/status`, { status }),
   delete: (id: string) => api.delete(`/tables/${id}`),
-  getStats: () => api.get("/tables/stats"),
+  getStats: () => api.get<ApiResponse<TableStats>>("/tables/stats"),
 };
 
 export const settingsService = {

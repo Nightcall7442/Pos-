@@ -28,20 +28,24 @@ npm run ci            # всё вместе, как на PR
 `==` вместо `===`, `var`, лишние escape-последовательности в регулярках.
 Такой PR не вмёрджить.
 
-**Бэкенд — на уровне Warehouse Pro:** `any` и неиспользуемые переменные там —
-ошибки, а не предупреждения (`eslint.config.mjs`), в `backend/tsconfig.json`
-включены `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`.
-Сейчас на бэкенде 0 предупреждений, и новое `any` не пройдёт CI. Вместо `any` —
-типы Prisma (`Prisma.ProductWhereInput` и т.п.) и типы схем валидации
-(`z.infer<typeof …QuerySchema>`).
+**Весь код — на уровне Warehouse Pro.** `any` и неиспользуемые переменные —
+ошибки линтера в бэкенде и в обоих фронтендах; во фронтендах ещё и полный
+рекомендованный набор `eslint-plugin-react-hooks` 7 (setState в эффекте, чтение
+ref во время рендера, мутация и т.п.). Во всех трёх `tsconfig.json` включены
+`noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`. Вместо
+`any`: на бэкенде — типы Prisma и `z.infer` схем, во фронтендах — типы ответов
+API из `services/index.ts`, ошибки запросов — `apiErrorMessage(error, "…")`.
 
-**Предупреждение** — накопленный долг фронтендов. Сегодня его 313 (панель 249,
-касса 64): подписи полей без связи с полем (`jsx-a11y`), `any`, неиспользуемые
-переменные. 185 из них — про подписи: `<label className="label">` написан
-рядом с `<input className="input">`, но без `htmlFor` и `id`. Почти все эти
-предупреждения снимет один компонент `FormField` (задача D-5).
+Исключение из правила (`eslint-disable-next-line`) — только с объяснением
+после `--`, почему здесь иначе нельзя. Сейчас их 6 (у Warehouse Pro — 28).
 
-CI запускает `lint:budget`, то есть `eslint . --max-warnings 313`. **Число в
+**Предупреждения** — 215, и все про доступность (`jsx-a11y`): чаще всего
+`<label className="label">` рядом с `<input className="input">` без `htmlFor` и
+`id` — подпись видна глазом, но не существует для скринридера и для клика по
+тексту. Почти все снимет один компонент `FormField` (задача D-5 в плане
+дизайна).
+
+CI запускает `lint:budget`, то есть `eslint . --max-warnings 215`. **Число в
 `package.json` разрешено только уменьшать.** PR, добавляющий новое
 предупреждение, станет красным; PR, убирающий долг, опускает планку.
 

@@ -1,8 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { authService, type RegisterInput } from "../services";
 import { useAuthStore } from "../store/authStore";
 import { canOpenPanel, PanelAccessError, posUrl } from "../utils/access";
+import { apiErrorMessage } from "../utils/apiError";
 
 export function useLogin() {
   const login = useAuthStore((s) => s.login);
@@ -19,7 +20,7 @@ export function useLogin() {
       login(data.user, data.accessToken, data.refreshToken);
       toast.success("Добро пожаловать!");
     },
-    onError: (error: any) => {
+    onError: (error) => {
       // Кассир пришёл не туда, но пароль ввёл верный — не заставляем его
       // искать адрес кассы, а отправляем сразу. Пауза нужна, чтобы человек
       // успел прочитать, почему его перебросило: иначе переход выглядит
@@ -31,7 +32,7 @@ export function useLogin() {
         }, 1800);
         return;
       }
-      toast.error(error.response?.data?.error || "Ошибка входа");
+      toast.error(apiErrorMessage(error, "Ошибка входа"));
     },
   });
 }
@@ -45,8 +46,8 @@ export function useRegister() {
       login(data.user, data.accessToken, data.refreshToken);
       toast.success("Заведение создано");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Не удалось зарегистрироваться");
+    onError: (error) => {
+      toast.error(apiErrorMessage(error, "Не удалось зарегистрироваться"));
     },
   });
 }

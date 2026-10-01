@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { techCardService } from "../services";
-import type { TechCard, TechCardItem, ApiResponse } from "../services";
+import type { TechCardItem } from "../services";
 
 interface TechCardParams {
   search?: string;

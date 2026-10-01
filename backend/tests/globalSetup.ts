@@ -111,16 +111,38 @@ export async function setup(): Promise<void> {
   await startOffStub();
   execSync("npx prisma migrate deploy", { cwd: root, env, stdio: "ignore" });
 
-  // `npx` spawns tsx as a child of its own, so the whole process group is
-  // signalled on teardown — killing only the wrapper used to leave a server
-  // behind that the next run then talked to instead of its own.
-  server = spawn("npx", ["tsx", "src/index.ts"], { cwd: root, env, stdio: "ignore", detached: true });
+  // Запускаем tsx напрямую через node, а не через npx: на Windows `spawn("npx")`
+  // падает с ENOENT (npx — это npx.cmd, и без shell его не найти), из-за чего
+  // весь набор тестов на Windows вообще не стартовал. Прямой запуск к тому же
+  // убирает лишний процесс-обёртку: гасить на teardown нужно ровно один pid.
+  const tsxCli = path.join(root, "node_modules", "tsx", "dist", "cli.mjs");
+  server = spawn(process.execPath, [tsxCli, "src/index.ts"], {
+    cwd: root,
+    env,
+    stdio: "ignore",
+    // POSIX: своя группа процессов, чтобы teardown погасил всё дерево разом.
+    // На Windows групп процессов нет — там дерево обходит taskkill /T.
+    detached: process.platform !== "win32",
+  });
   await waitForHealth(`http://127.0.0.1:${PORT}/health`);
 }
 
 export async function teardown(): Promise<void> {
   offStub?.close();
   if (!server?.pid) return;
+
+  // На Windows process.kill(-pid) не работает: отрицательный pid там не
+  // означает группу, вызов падает, и сервер остаётся слушать тестовый порт —
+  // следующий запуск упёрся бы в «Port 3100 is already in use».
+  if (process.platform === "win32") {
+    try {
+      execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: "ignore" });
+    } catch {
+      // уже завершился
+    }
+    return;
+  }
+
   const pgid = -server.pid;
   try {
     process.kill(pgid, "SIGTERM");

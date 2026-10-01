@@ -14,7 +14,7 @@
 
 | Папка            | Что это                    | Стек                                                            | Порт (dev) |
 |------------------|----------------------------|-----------------------------------------------------------------|-----------|
-| `backend/`       | API и база                 | Express 4, Prisma 6, SQLite, Socket.IO, Zod, JWT                | 3000      |
+| `backend/`       | API и база                 | Express 4, Prisma 6, PostgreSQL 16, Socket.IO, Zod, JWT         | 3000      |
 | `frontend-admin/`| панель управления          | React 18, Vite 6, Tailwind 4, React Query, Zustand, Recharts    | 5173      |
 | `pos-terminal/`  | POS-терминал (касса)       | React 18, Vite 6, Tailwind 4, React Query, Zustand              | 5174      |
 | `landing/`       | сайт-визитка               | статика + nginx                                                  | —         |
@@ -80,10 +80,11 @@ RUB, KZT), интерфейс — русский.
 
 ## Локальный запуск
 
-Нужен Node.js 20+.
+Нужен Node.js 20+ и PostgreSQL 16 — проще всего из docker-compose.
 
 ```bash
 cd qwik
+docker compose up -d --wait postgres     # PostgreSQL 16 на localhost:5432
 cp backend/.env.example backend/.env     # затем отредактировать секреты
 npm run setup                            # установка, миграции, demo-данные
 npm run dev                              # backend + панель + касса
@@ -148,8 +149,10 @@ npm run preview  # просмотр собранного
 
 ## База данных
 
-Prisma + SQLite. Схема — `backend/prisma/schema.prisma`, миграции —
-`backend/prisma/migrations/`. В продакшене они применяются автоматически при
+Prisma + PostgreSQL 16 (локально — `docker compose up -d --wait postgres`).
+Схема — `backend/prisma/schema.prisma`, миграции — `backend/prisma/migrations/`.
+До октября 2026 база была SQLite; перенос данных и откат — в `RAILWAY.md`,
+раздел «Переезд с SQLite на Postgres». В продакшене они применяются автоматически при
 старте контейнера (`prisma migrate deploy`), данные при этом не стираются.
 
 Основные таблицы: `tenants`, `users`, `products`, `categories`, `tech_cards`,

@@ -3,6 +3,10 @@
 # выглядит как полная переписка.
 * text=auto eol=lf
 
+# Батники Windows — с CRLF, иначе cmd.exe в отдельных случаях путается.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
 # Бинарные файлы не трогать
 *.png binary
 *.jpg binary

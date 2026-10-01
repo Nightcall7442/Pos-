@@ -5,7 +5,7 @@
 Multi-tenant POS (Point of Sale) system for restaurants and retail.
 
 **Stack:**
-- Backend: Express + TypeScript + Prisma + SQLite (dev) / PostgreSQL (prod)
+- Backend: Express + TypeScript + Prisma + PostgreSQL 16 (и в разработке, и в проде)
 - Frontend Admin: React + TypeScript + Tailwind CSS v4 + Zustand + React Query
 - POS Terminal: React + TypeScript + Tailwind CSS v4 (touch-optimized)
 - Real-time: Socket.IO

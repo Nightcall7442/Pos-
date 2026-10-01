@@ -3,7 +3,8 @@ import { ci } from "../../utils/search.js";
 import type { CreateStockReceiptInput } from "./stock-receipt.schema.js";
 import { optionalDateFilter, tenantTimeZone } from "../../utils/dates.js";
 import { AppError, NotFoundError } from "../../utils/errors.js";
-import { round2, roundStock } from "../inventory/stock.helpers.js";
+import { lockStockRows, round2, roundStock } from "../inventory/stock.helpers.js";
+import { inTransaction } from "../../utils/transaction.js";
 
 function computeSalePrice(costPrice: number, markupPercent: number): number {
   const price = costPrice * (1 + markupPercent / 100);
@@ -52,7 +53,7 @@ export class StockReceiptService {
     const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
     const defaultMarkup = tenant?.defaultMarkupPercent ?? 0;
 
-    const receiptId = await prisma.$transaction(async (tx) => {
+    const receiptId = await inTransaction(async (tx) => {
       const newCategoryCache = new Map<string, string>();
       const lines: {
         productId: string;
@@ -157,6 +158,12 @@ export class StockReceiptService {
         },
       });
 
+      // Остатки пересчитываются под блокировкой строк (см. lockStockRows):
+      // без неё приход, совпавший с продажей, перезаписывал её списание —
+      // остаток после «100 − 10 продаж + 50 пришло» выходил 141, а не 140.
+      // Блокировка берётся только здесь, в конце, чтобы кассы ждали её как
+      // можно меньше: разбор строк и создание новых товаров выше идут без неё.
+      await lockStockRows(tx, tenantId, lines.map((l) => l.productId));
       for (const line of lines) {
         const current = await tx.product.findUniqueOrThrow({ where: { id: line.productId }, select: { currentStock: true } });
         await tx.product.update({
@@ -181,7 +188,9 @@ export class StockReceiptService {
       }
 
       return receipt.id;
-    });
+    // Большой приход (сотни строк, новые товары) не должен упираться в
+    // общий таймаут транзакции в 10 с.
+    }, { timeout: 30000 });
 
     return this.findById(tenantId, receiptId);
   }
@@ -233,15 +242,18 @@ export class StockReceiptService {
   }
 
   async delete(tenantId: string, id: string, userId?: string) {
-    const receipt = await prisma.stockReceipt.findFirst({ where: { id, tenantId } });
-    if (!receipt) throw new NotFoundError("Приход не найден");
-
-    const items = await prisma.stockReceiptItem.findMany({ where: { receiptId: id } });
-
     // Reversing a receipt is a stock movement of its own: the decrement is
     // recorded so the movement journal still reconciles with the balance
     // (and is allowed to go negative if the goods were already sold).
-    await prisma.$transaction(async (tx) => {
+    // Всё — в одной транзакции под блокировкой самого прихода и строк товаров:
+    // две одновременные отмены одного прихода иначе обе вычли бы его со склада.
+    await inTransaction(async (tx) => {
+      const locked = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id FROM stock_receipts WHERE id = ${id} AND tenant_id = ${tenantId} FOR UPDATE`;
+      if (locked.length === 0) throw new NotFoundError("Приход не найден");
+
+      const items = await tx.stockReceiptItem.findMany({ where: { receiptId: id } });
+      await lockStockRows(tx, tenantId, items.map((i) => i.productId));
       for (const item of items) {
         const current = await tx.product.findUniqueOrThrow({ where: { id: item.productId }, select: { currentStock: true } });
         await tx.product.update({

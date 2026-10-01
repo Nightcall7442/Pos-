@@ -6,6 +6,8 @@ import {
   deductTechCardIngredients,
   gramsPerUnit,
   hasEnough,
+  lockStockRows,
+  recipeFor,
   releaseStock,
   reserveStock,
   round2,
@@ -17,6 +19,8 @@ import {
 } from "../inventory/stock.helpers.js";
 import { optionalDateFilter, tenantTimeZone } from "../../utils/dates.js";
 import { AppError, ConflictError, NotFoundError } from "../../utils/errors.js";
+import { inTransaction } from "../../utils/transaction.js";
+import { lockOrder } from "./order.locks.js";
 
 export class OrderTotalChangedError extends Error {
   constructor(public readonly actualTotal: number) {
@@ -183,8 +187,8 @@ export class OrderService {
   }
 
   // Creates the order row, then reserves stock against it — all on the caller's
-  // transaction. Order numbers are taken inside the transaction so two orders
-  // created at the same instant can't share one (SQLite serialises writers).
+  // transaction. The order number comes from the per-tenant counter
+  // (nextOrderNumber), so two orders created at the same instant can't share one.
   private async createOrderInTx(tx: Tx, tenantId: string, userId: string, data: CreateOrderInput, status: string) {
     // Referenced rows must belong to the caller's tenant.
     if (data.tableId) {
@@ -204,12 +208,24 @@ export class OrderService {
     const discountAmount = Math.min(data.discountAmount || 0, subtotal);
     const total = round2(subtotal - discountAmount);
 
-    const lastOrder = await tx.order.findFirst({
-      where: { tenantId },
-      orderBy: { orderNumber: "desc" },
-      select: { orderNumber: true },
-    });
-    const orderNumber = (lastOrder?.orderNumber || 0) + 1;
+    const orderNumber = await nextOrderNumber(tx, tenantId);
+
+    // Продажа на кассе (status "completed") в той же транзакции списывает
+    // ингредиенты по техкарте. Товары и ингредиенты блокируются здесь разом,
+    // одним отсортированным списком: если бы сначала брались товары, а потом
+    // ингредиенты, две продажи, у которых товар одной — ингредиент другой,
+    // могли бы ждать друг друга. Дальнейшие блокировки тех же строк в
+    // reserveStock и deductTechCardIngredients мгновенны.
+    if (status === "completed" && reservations.length > 0) {
+      const recipes = await tx.product.findMany({
+        where: { id: { in: data.items.map((i) => i.productId) }, tenantId },
+        select: { techCard: true, techCardRef: { select: { ingredients: true } } },
+      });
+      await lockStockRows(tx, tenantId, [
+        ...reservations.map((r) => r.productId),
+        ...recipes.flatMap((p) => recipeFor(p).map((line) => line.ingredientId)),
+      ]);
+    }
 
     const created = await tx.order.create({
       data: {
@@ -239,7 +255,7 @@ export class OrderService {
   }
 
   async create(tenantId: string, userId: string, data: CreateOrderInput) {
-    const created = await prisma.$transaction(async (tx) => {
+    const created = await inTransaction(async (tx) => {
       const row = await this.createOrderInTx(tx, tenantId, userId, data, "pending");
       if (data.tableId) {
         await tx.table.update({ where: { id: data.tableId }, data: { status: "occupied" } });
@@ -262,7 +278,7 @@ export class OrderService {
   // differs from what the cashier collected, so the terminal can re-price the
   // cart instead of recording an underpaid "completed" sale.
   async checkout(tenantId: string, userId: string, data: CheckoutInput) {
-    const created = await prisma.$transaction(async (tx) => {
+    const created = await inTransaction(async (tx) => {
       const row = await this.createOrderInTx(tx, tenantId, userId, data, "completed");
 
       if (Math.abs(row.total - data.expectedTotal) > 0.01) {
@@ -299,28 +315,33 @@ export class OrderService {
   }
 
   async updateStatus(tenantId: string, id: string, data: UpdateOrderStatusInput) {
-    const order = await prisma.order.findFirst({ where: { id, tenantId } });
-    if (!order) throw new NotFoundError("Заказ не найден");
+    // Под блокировкой строки заказа: смена статуса, отмена, оплата и фоновая
+    // отмена неоплаченных заказов идут по очереди и видят состояние друг друга.
+    const updated = await inTransaction(async (tx) => {
+      const order = await lockOrder(tx, tenantId, id);
+      if (!order) throw new NotFoundError("Заказ не найден");
 
-    const updateData: any = { status: data.status };
-    if (data.status === "completed") updateData.completedAt = new Date();
+      const updateData: any = { status: data.status };
+      if (data.status === "completed") updateData.completedAt = new Date();
 
-    const updated = await prisma.order.update({
-      where: { id },
-      data: updateData,
-      include: {
-        items: { include: { product: true } },
-        user: { select: { id: true, firstName: true, lastName: true } },
-        table: true,
-      },
-    });
-
-    if (data.status === "completed" && order.tableId) {
-      await prisma.table.update({
-        where: { id: order.tableId },
-        data: { status: "available" },
+      const row = await tx.order.update({
+        where: { id },
+        data: updateData,
+        include: {
+          items: { include: { product: true } },
+          user: { select: { id: true, firstName: true, lastName: true } },
+          table: true,
+        },
       });
-    }
+
+      if (data.status === "completed" && order.tableId) {
+        await tx.table.update({
+          where: { id: order.tableId },
+          data: { status: "available" },
+        });
+      }
+      return row;
+    });
 
     if (io) {
       io.to(`tenant:${tenantId}`).emit("order:updated", updated);
@@ -331,33 +352,36 @@ export class OrderService {
 
 
   async cancel(tenantId: string, id: string, userId: string) {
-    const order = await prisma.order.findFirst({
-      where: { id, tenantId },
-      include: { items: { include: { product: true } } },
-    });
-    if (!order) throw new NotFoundError("Заказ не найден");
-    if (["completed", "cancelled"].includes(order.status)) {
-      throw new ConflictError("Этот заказ нельзя отменить");
-    }
+    // Статус проверяется под блокировкой строки заказа и в той же транзакции,
+    // что и возврат остатка. Раньше проверка шла до транзакции: отмена,
+    // совпавшая по времени с оплатой или с другой отменой, возвращала резерв
+    // на склад дважды или отменяла уже оплаченный заказ.
+    const updated = await inTransaction(async (tx) => {
+      const locked = await lockOrder(tx, tenantId, id);
+      if (!locked) throw new NotFoundError("Заказ не найден");
+      if (["completed", "cancelled"].includes(locked.status)) {
+        throw new ConflictError("Этот заказ нельзя отменить");
+      }
 
-    const reservations: Reservation[] = order.items
-      .filter((item) => item.product.trackInventory)
-      .map((item) => ({ productId: item.productId, name: item.product.name, units: stockUnitsFor(item, item.product.saleUnit) }));
+      const items = await tx.orderItem.findMany({ where: { orderId: id }, include: { product: true } });
+      const reservations: Reservation[] = items
+        .filter((item) => item.product.trackInventory)
+        .map((item) => ({ productId: item.productId, name: item.product.name, units: stockUnitsFor(item, item.product.saleUnit) }));
 
-    const updated = await prisma.$transaction(async (tx) => {
       await releaseStock(tx, { tenantId, userId, orderId: id, reservations });
-      return tx.order.update({
+      const row = await tx.order.update({
         where: { id },
         data: { status: "cancelled" },
       });
-    });
 
-    if (order.tableId) {
-      await prisma.table.update({
-        where: { id: order.tableId },
-        data: { status: "available" },
-      });
-    }
+      if (locked.tableId) {
+        await tx.table.update({
+          where: { id: locked.tableId },
+          data: { status: "available" },
+        });
+      }
+      return row;
+    });
 
     if (io) {
       io.to(`tenant:${tenantId}`).emit("order:cancelled", updated);
@@ -391,3 +415,19 @@ export class OrderService {
 }
 
 export const orderService = new OrderService();
+
+// Номер следующего заказа точки. Один INSERT ... ON CONFLICT DO UPDATE ...
+// RETURNING: строка счётчика остаётся заблокированной до конца транзакции,
+// поэтому две одновременные продажи получают разные номера, а откат продажи
+// возвращает номер — пропусков нет. Если строки счётчика ещё нет (новая точка
+// или база, перенесённая из SQLite без счётчиков), она создаётся от текущего
+// максимума номеров; одновременная первая вставка ждёт на первичном ключе и
+// уходит в ветку DO UPDATE.
+async function nextOrderNumber(tx: Tx, tenantId: string): Promise<number> {
+  const [row] = await tx.$queryRaw<{ last_number: number }[]>`
+    INSERT INTO order_counters (tenant_id, last_number)
+    VALUES (${tenantId}, (SELECT COALESCE(MAX(order_number), 0) + 1 FROM orders WHERE tenant_id = ${tenantId}))
+    ON CONFLICT (tenant_id) DO UPDATE SET last_number = order_counters.last_number + 1
+    RETURNING last_number`;
+  return row.last_number;
+}

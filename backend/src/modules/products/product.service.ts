@@ -3,6 +3,8 @@ import type { CreateProductInput, UpdateProductInput, ProductQueryInput } from "
 import { AppError, NotFoundError } from "../../utils/errors.js";
 import { ci, searchTokens } from "../../utils/search.js";
 import { catalogService } from "../catalog/catalog.service.js";
+import { lockStockRows } from "../inventory/stock.helpers.js";
+import { inTransaction } from "../../utils/transaction.js";
 
 // saleUnit values that mean "sold by weight" — see gramsPerUnit().
 const WEIGHT_UNITS = ["г", "кг", "g", "kg"];
@@ -249,18 +251,22 @@ export class ProductService {
   }
 
   async adjustStock(tenantId: string, productId: string, quantity: number, reason: string, userId: string) {
-    const product = await prisma.product.findFirst({ where: { id: productId, tenantId } });
-    if (!product) throw new NotFoundError("Товар не найден");
+    // Под блокировкой строки товара (lockStockRows) и в одной транзакции:
+    // раньше остаток читался до транзакции, и корректировка, совпавшая с
+    // продажей, затирала её списание.
+    return inTransaction(async (tx) => {
+      await lockStockRows(tx, tenantId, [productId]);
+      const product = await tx.product.findFirst({ where: { id: productId, tenantId } });
+      if (!product) throw new NotFoundError("Товар не найден");
 
-    const newStock = product.currentStock + quantity;
-    if (newStock < 0) throw new AppError("Недостаточно остатка");
+      const newStock = product.currentStock + quantity;
+      if (newStock < 0) throw new AppError("Недостаточно остатка");
 
-    const [updated] = await prisma.$transaction([
-      prisma.product.update({
+      const updated = await tx.product.update({
         where: { id: productId },
         data: { currentStock: newStock },
-      }),
-      prisma.inventoryMovement.create({
+      });
+      await tx.inventoryMovement.create({
         data: {
           tenantId,
           productId,
@@ -269,10 +275,10 @@ export class ProductService {
           reason,
           userId,
         },
-      }),
-    ]);
+      });
 
-    return updated;
+      return updated;
+    });
   }
 }
 

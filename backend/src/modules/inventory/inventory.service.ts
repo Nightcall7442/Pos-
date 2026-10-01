@@ -1,6 +1,7 @@
 import prisma from "../../config/database.js";
 import { ci } from "../../utils/search.js";
-import { round2 } from "./stock.helpers.js";
+import { lockStockRows, round2 } from "./stock.helpers.js";
+import { inTransaction } from "../../utils/transaction.js";
 import { AppError, NotFoundError } from "../../utils/errors.js";
 
 export class InventoryService {
@@ -76,25 +77,29 @@ export class InventoryService {
   }
 
   async adjustStock(tenantId: string, productId: string, quantity: number, reason: string, userId: string) {
-    const product = await prisma.product.findFirst({ where: { id: productId, tenantId } });
-    if (!product) throw new NotFoundError("Товар не найден");
+    // Под блокировкой строки товара (lockStockRows) и в одной транзакции:
+    // раньше остаток читался до транзакции, и корректировка, совпавшая с
+    // продажей, затирала её списание.
+    return inTransaction(async (tx) => {
+      await lockStockRows(tx, tenantId, [productId]);
+      const product = await tx.product.findFirst({ where: { id: productId, tenantId } });
+      if (!product) throw new NotFoundError("Товар не найден");
 
-    // Stock is kept in sale units. When the product is bought in a larger unit
-    // (kg → g), the adjustment is expressed in the purchase unit and converted
-    // in both directions — converting only additions used to make "+2 kg" add
-    // 2000 g while "-2 kg" removed just 2 g.
-    const factor = product.conversionFactor && product.purchaseUnit && product.saleUnit ? product.conversionFactor : 1;
-    const adjustedQuantity = round2(quantity * factor);
+      // Stock is kept in sale units. When the product is bought in a larger unit
+      // (kg → g), the adjustment is expressed in the purchase unit and converted
+      // in both directions — converting only additions used to make "+2 kg" add
+      // 2000 g while "-2 kg" removed just 2 g.
+      const factor = product.conversionFactor && product.purchaseUnit && product.saleUnit ? product.conversionFactor : 1;
+      const adjustedQuantity = round2(quantity * factor);
 
-    const newStock = round2(product.currentStock + adjustedQuantity);
-    if (newStock < 0) throw new AppError("Остаток не может стать отрицательным");
+      const newStock = round2(product.currentStock + adjustedQuantity);
+      if (newStock < 0) throw new AppError("Остаток не может стать отрицательным");
 
-    const [updated] = await prisma.$transaction([
-      prisma.product.update({
+      const updated = await tx.product.update({
         where: { id: productId },
         data: { currentStock: newStock },
-      }),
-      prisma.inventoryMovement.create({
+      });
+      await tx.inventoryMovement.create({
         data: {
           tenantId,
           productId,
@@ -103,10 +108,10 @@ export class InventoryService {
           reason,
           userId,
         },
-      }),
-    ]);
+      });
 
-    return updated;
+      return updated;
+    });
   }
 
   async getLowStockAlerts(tenantId: string) {

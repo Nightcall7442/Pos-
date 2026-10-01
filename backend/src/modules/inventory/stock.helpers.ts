@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 // Everything here runs inside a caller-supplied transaction so that an order,
 // its stock movements and its payment either all land or none do.
@@ -50,6 +50,34 @@ export function stockUnitsFor(
   return (item.weightGrams * item.quantity) / per;
 }
 
+/**
+ * Блокирует строки товаров до конца транзакции. После неё остаток, прочитанный
+ * следующими запросами, — последний зафиксированный, и никакая другая
+ * транзакция не изменит его, пока эта не завершится.
+ *
+ * На SQLite этого не требовалось: писатель в базе один, и «прочитать остаток →
+ * проверить → записать» никогда не перемежалось с чужой продажей. На Postgres
+ * транзакции идут параллельно, и без блокировки две кассы, пробившие последнюю
+ * единицу одновременно, обе прочитали бы «1» и обе продали бы.
+ *
+ * - Порядок блокировки один для всех (по id, побайтно — COLLATE "C"), иначе две
+ *   продажи одних и тех же товаров в разном порядке ждали бы друг друга вечно.
+ * - FOR NO KEY UPDATE, а не FOR UPDATE: вставка строк заказа и движений склада
+ *   со ссылкой на товар берёт на нём KEY SHARE, и FOR UPDATE с ней конфликтовал
+ *   бы без всякой нужды.
+ * - Повторная блокировка уже своих строк мгновенна, поэтому звать можно
+ *   несколько раз за транзакцию.
+ */
+export async function lockStockRows(tx: Tx, tenantId: string, productIds: string[]): Promise<void> {
+  const ids = [...new Set(productIds)].sort();
+  if (ids.length === 0) return;
+  await tx.$queryRaw`
+    SELECT id FROM products
+    WHERE tenant_id = ${tenantId} AND id IN (${Prisma.join(ids)})
+    ORDER BY id COLLATE "C"
+    FOR NO KEY UPDATE`;
+}
+
 export interface Reservation {
   productId: string;
   name: string;
@@ -63,6 +91,7 @@ export async function reserveStock(
   params: { tenantId: string; userId?: string; orderId: string; reservations: Reservation[] }
 ): Promise<void> {
   const { tenantId, userId, orderId, reservations } = params;
+  await lockStockRows(tx, tenantId, reservations.map((r) => r.productId));
   for (const r of reservations) {
     const fresh = await tx.product.findUnique({ where: { id: r.productId } });
     if (!fresh || !hasEnough(fresh.currentStock, r.units)) {
@@ -70,9 +99,9 @@ export async function reserveStock(
         `Недостаточно товара «${fresh?.name || r.name}» на складе: осталось ${fresh ? roundStock(fresh.currentStock) : 0}${stockUnitLabel(fresh?.saleUnit)}`
       );
     }
-    // Written as a value, not a decrement, so it can be rounded. The balance
-    // was just re-read inside this transaction, which is what stops two
-    // terminals from both selling the last unit.
+    // Written as a value, not a decrement, so it can be rounded. The row is
+    // locked (lockStockRows above) and the balance re-read after the lock,
+    // which is what stops two terminals from both selling the last unit.
     await tx.product.update({
       where: { id: r.productId },
       data: { currentStock: roundStock(fresh.currentStock - r.units) },
@@ -97,6 +126,7 @@ export async function releaseStock(
   params: { tenantId: string; userId?: string; orderId: string; reservations: Reservation[] }
 ): Promise<void> {
   const { tenantId, userId, orderId, reservations } = params;
+  await lockStockRows(tx, tenantId, reservations.map((r) => r.productId));
   for (const r of reservations) {
     const fresh = await tx.product.findUniqueOrThrow({ where: { id: r.productId } });
     await tx.product.update({
@@ -125,7 +155,7 @@ interface TechCardLine {
 // A product's recipe lives either in the linked TechCard entity (what the admin
 // UI writes via `techCardId`) or in the legacy per-product `techCard` JSON.
 // Both are honoured; the linked card wins when present.
-function recipeFor(product: { techCard: string | null; techCardRef?: { ingredients: string } | null }): TechCardLine[] {
+export function recipeFor(product: { techCard: string | null; techCardRef?: { ingredients: string } | null }): TechCardLine[] {
   const raw = product.techCardRef?.ingredients ?? product.techCard ?? "[]";
   try {
     const parsed = JSON.parse(raw);
@@ -149,6 +179,14 @@ export async function deductTechCardIngredients(
     where: { orderId },
     include: { product: { include: { techCardRef: { select: { ingredients: true } } } } },
   });
+
+  // Все ингредиенты заказа блокируются разом и в одном порядке — до первого
+  // списания (см. lockStockRows).
+  await lockStockRows(
+    tx,
+    tenantId,
+    items.flatMap((item) => recipeFor(item.product).map((line) => line.ingredientId))
+  );
 
   for (const item of items) {
     for (const line of recipeFor(item.product)) {

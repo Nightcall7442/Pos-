@@ -1,6 +1,6 @@
 import prisma from "../../config/database.js";
 import { ci } from "../../utils/search.js";
-import { lockStockRows, round2 } from "./stock.helpers.js";
+import { lockStockRows, roundStock } from "./stock.helpers.js";
 import { inTransaction } from "../../utils/transaction.js";
 import { AppError, NotFoundError } from "../../utils/errors.js";
 
@@ -90,9 +90,12 @@ export class InventoryService {
       // in both directions — converting only additions used to make "+2 kg" add
       // 2000 g while "-2 kg" removed just 2 g.
       const factor = product.conversionFactor && product.purchaseUnit && product.saleUnit ? product.conversionFactor : 1;
-      const adjustedQuantity = round2(quantity * factor);
+      const adjustedQuantity = roundStock(quantity * factor);
 
-      const newStock = round2(product.currentStock + adjustedQuantity);
+      // До тысячных, как остаток везде (stock.helpers.roundStock): в
+      // килограммах это грамм. round2 (до сотых) терял граммы — 1,234 кг
+      // плюс 1 г становилось 1,23.
+      const newStock = roundStock(product.currentStock + adjustedQuantity);
       if (newStock < 0) throw new AppError("Остаток не может стать отрицательным");
 
       const updated = await tx.product.update({

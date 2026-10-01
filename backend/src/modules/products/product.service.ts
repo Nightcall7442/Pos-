@@ -3,7 +3,7 @@ import type { CreateProductInput, UpdateProductInput, ProductQueryInput } from "
 import { AppError, NotFoundError } from "../../utils/errors.js";
 import { ci, searchTokens } from "../../utils/search.js";
 import { catalogService } from "../catalog/catalog.service.js";
-import { lockStockRows } from "../inventory/stock.helpers.js";
+import { lockStockRows, roundStock } from "../inventory/stock.helpers.js";
 import { inTransaction } from "../../utils/transaction.js";
 
 // saleUnit values that mean "sold by weight" — see gramsPerUnit().
@@ -259,7 +259,9 @@ export class ProductService {
       const product = await tx.product.findFirst({ where: { id: productId, tenantId } });
       if (!product) throw new NotFoundError("Товар не найден");
 
-      const newStock = product.currentStock + quantity;
+      // Округление, как у остатка везде: без него 84,2 − 1,24 записывалось
+      // как 82,96000000000001.
+      const newStock = roundStock(product.currentStock + quantity);
       if (newStock < 0) throw new AppError("Недостаточно остатка");
 
       const updated = await tx.product.update({

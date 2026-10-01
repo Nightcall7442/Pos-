@@ -9,6 +9,7 @@ npm run lint:budget   # lint + ограничение на число преду
 npm run typecheck     # tsc --noEmit: backend, панель, касса
 npm test              # тесты бэкенда (vitest, нужен Postgres)
 npm run test:frontend # юнит-тесты панели и кассы (vitest + jsdom, без базы)
+npm run test:e2e      # сквозной тест кассы в браузере (Playwright, нужен Postgres)
 npm run format        # prettier по репозиторию
 npm run ci            # всё вместе, как на PR
 ```
@@ -18,6 +19,22 @@ npm run ci            # всё вместе, как на PR
 миграции, demo-данные). Тесты сами создают и стирают свою базу `qwik_test` в том
 же Postgres; другое место — через `TEST_DATABASE_URL` (имя базы обязано
 кончаться на `_test`).
+
+## Сквозной тест кассы
+
+`e2e/` — Playwright проходит день кассира в браузере против настоящего
+бэкенда: привязка планшета к demo-market, вход Азизы по PIN, открытие смены,
+скан `2*` молока, хлеб одним касанием, оплата F8 — и сверка с сервером:
+заказ на 31 500, остатки 58 и 79, наличные в смене.
+
+- `e2e/start-backend.mts` готовит базу `qwik_e2e_test` (рядом с тестовой
+  базой из `TEST_DATABASE_URL`): стирает, накатывает миграции, кладёт
+  демо-данные из `prisma/seed.ts` — и поднимает бэкенд на порту 3200.
+  Касса — на 5274 и проксирует API туда (`VITE_PROXY_TARGET`). Запущенная
+  разработка на 3000/5173/5174 не мешает.
+- Локально браузер — установленный Microsoft Edge (`channel: "msedge"`),
+  скачивать ничего не нужно. В CI Playwright ставит свой Chromium.
+- Упавший тест оставляет трейс: `npx playwright show-trace test-results/…/trace.zip`.
 
 ## Политика линтера
 

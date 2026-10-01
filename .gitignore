@@ -25,3 +25,7 @@ landing/preview.html
 .idea/
 .vscode/
 .DS_Store
+
+# Playwright
+playwright-report/
+test-results/

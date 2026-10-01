@@ -112,7 +112,7 @@ export default tseslint.config(
 
   // ── Тесты и скрипты: console и node-окружение здесь норма ──────────────────
   {
-    files: ["backend/tests/**/*.ts", "backend/scripts/**/*.ts", "**/*.config.{ts,js}"],
+    files: ["backend/tests/**/*.ts", "backend/scripts/**/*.ts", "e2e/**/*.{ts,mts}", "**/*.config.{ts,js}"],
     languageOptions: { globals: { ...globals.node } },
     rules: {
       ...common,

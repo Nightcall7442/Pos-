@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+import type { StockReceiptQueryInput } from "../common.schema.js";
 import prisma from "../../config/database.js";
 import { ci } from "../../utils/search.js";
 import type { CreateStockReceiptInput } from "./stock-receipt.schema.js";
@@ -198,11 +200,11 @@ export class StockReceiptService {
     return this.findById(tenantId, receiptId);
   }
 
-  async findAll(tenantId: string, query: any) {
+  async findAll(tenantId: string, query: StockReceiptQueryInput) {
     const { page = 1, limit = 20, dateFrom, dateTo, supplierName } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId };
+    const where: Prisma.StockReceiptWhereInput = { tenantId };
     const createdAt = optionalDateFilter(dateFrom, dateTo, await tenantTimeZone(tenantId));
     if (createdAt) where.createdAt = createdAt;
     if (supplierName) where.supplierName = ci(supplierName);

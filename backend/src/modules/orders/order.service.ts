@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import prisma from "../../config/database.js";
 import { ci } from "../../utils/search.js";
 import type { CreateOrderInput, CheckoutInput, UpdateOrderStatusInput, OrderQueryInput } from "./order.schema.js";
@@ -41,7 +42,7 @@ export class OrderService {
     const { status, type, branchId, tableId, dateFrom, dateTo, search, sort = "createdAt", order = "desc", page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId };
+    const where: Prisma.OrderWhereInput = { tenantId };
     if (status) where.status = status;
     if (type) where.type = type;
     if (branchId) where.branchId = branchId;
@@ -55,7 +56,7 @@ export class OrderService {
       ];
     }
 
-    const orderBy: any = { [sort]: order };
+    const orderBy = { [sort]: order } as Prisma.OrderOrderByWithRelationInput;
 
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
@@ -119,7 +120,7 @@ export class OrderService {
   // builds the nested-create payload and the list of stock reservations.
   private async priceItems(tx: Tx, tenantId: string, items: CreateOrderInput["items"]) {
     let subtotal = 0;
-    const orderItems: any[] = [];
+    const orderItems: Prisma.OrderItemUncheckedCreateWithoutOrderInput[] = [];
     const reserved = new Map<string, Reservation>();
 
     for (const item of items) {
@@ -140,7 +141,7 @@ export class OrderService {
 
       let itemTotal = unitPrice * item.quantity;
 
-      const modifierItems: any[] = [];
+      const modifierItems: { modifierItemId: string; price: number }[] = [];
       if (item.modifierIds?.length) {
         // Only modifiers that belong to a group attached to this product may
         // be applied — otherwise any modifier id (including another shop's)
@@ -326,7 +327,7 @@ export class OrderService {
       const order = await lockOrder(tx, tenantId, id);
       if (!order) throw new NotFoundError("Заказ не найден");
 
-      const updateData: any = { status: data.status };
+      const updateData: Prisma.OrderUpdateInput = { status: data.status };
       if (data.status === "completed") updateData.completedAt = new Date();
 
       const row = await tx.order.update({
@@ -396,7 +397,7 @@ export class OrderService {
   }
 
   async getActiveOrders(tenantId: string, branchId?: string) {
-    const where: any = {
+    const where: Prisma.OrderWhereInput = {
       tenantId,
       status: { in: ["pending", "confirmed", "preparing", "ready", "served"] },
     };

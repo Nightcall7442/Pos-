@@ -1,3 +1,4 @@
+import type { ShiftQueryInput } from "./cash-shift.schema.js";
 import { Prisma } from "@prisma/client";
 import prisma from "../../config/database.js";
 import { ConflictError, ForbiddenError, NotFoundError } from "../../utils/errors.js";
@@ -108,7 +109,7 @@ export class CashShiftService {
   }
 
   async getCurrentShift(tenantId: string, userId: string) {
-    const shift: any = await prisma.cashShift.findFirst({
+    const shift = await prisma.cashShift.findFirst({
       where: { tenantId, userId, status: "open" },
       include: {
         user: { select: { id: true, firstName: true, lastName: true } },
@@ -123,11 +124,11 @@ export class CashShiftService {
     return { ...shift, ...totals };
   }
 
-  async findAll(tenantId: string, query: any) {
+  async findAll(tenantId: string, query: ShiftQueryInput) {
     const { page = 1, limit = 20, status, userId } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId };
+    const where: Prisma.CashShiftWhereInput = { tenantId };
     if (status) where.status = status;
     if (userId) where.userId = userId;
 

@@ -1,15 +1,16 @@
+import type { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { ci } from "../../utils/search.js";
 import prisma from "../../config/database.js";
-import type { CreateUserInput, UpdateUserInput } from "./user.schema.js";
+import type { CreateUserInput, UpdateUserInput, UserQueryInput } from "./user.schema.js";
 import { AppError, ConflictError, ForbiddenError, NotFoundError } from "../../utils/errors.js";
 
 export class UserService {
-  async findAll(tenantId: string, query: any) {
+  async findAll(tenantId: string, query: UserQueryInput) {
     const { search, role, isActive, page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId };
+    const where: Prisma.UserWhereInput = { tenantId };
     if (search) {
       where.OR = [
         { firstName: ci(search) },

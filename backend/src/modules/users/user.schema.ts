@@ -33,3 +33,4 @@ export const userQuerySchema = z.object({
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type UserQueryInput = z.infer<typeof userQuerySchema>;

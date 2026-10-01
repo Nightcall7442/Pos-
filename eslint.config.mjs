@@ -50,13 +50,22 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
 
   // ── Бэкенд: Node, без React ────────────────────────────────────────────────
+  // Планка как у Warehouse Pro: any и неиспользуемые переменные — ошибки, а не
+  // предупреждения. На бэкенде их не осталось ни одного, и новые не появятся.
   {
     files: ["backend/**/*.ts"],
     languageOptions: {
       globals: { ...globals.node },
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
     },
-    rules: { ...common },
+    rules: {
+      ...common,
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "none" },
+      ],
+    },
   },
 
   // ── Фронтенды: браузер + React ─────────────────────────────────────────────

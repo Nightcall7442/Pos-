@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import prisma from "../../config/database.js";
 import { ci } from "../../utils/search.js";
 import type { CreateTechCardInput, UpdateTechCardInput, TechCardQueryInput } from "./tech-card.schema.js";
@@ -8,13 +9,13 @@ export class TechCardService {
     const { search, isActive = true, sort = "name", order = "asc", page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId };
+    const where: Prisma.TechCardWhereInput = { tenantId };
     if (search) {
       where.name = ci(search);
     }
     if (isActive !== undefined) where.isActive = isActive;
 
-    const orderBy: any = { [sort]: order };
+    const orderBy = { [sort]: order } as Prisma.TechCardOrderByWithRelationInput;
 
     const [techCards, total] = await Promise.all([
       prisma.techCard.findMany({

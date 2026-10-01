@@ -25,14 +25,14 @@ export const settingsService = {
     });
   },
 
-  async update(tenantId: string, data: Record<string, any>) {
-    if ("businessType" in data && !BUSINESS_TYPES.includes(data.businessType)) {
+  async update(tenantId: string, data: Record<string, unknown>) {
+    if ("businessType" in data && !(BUSINESS_TYPES as readonly unknown[]).includes(data.businessType)) {
       throw new AppError("Неизвестный тип заведения");
     }
     if ("catalogSharing" in data && typeof data.catalogSharing !== "boolean") {
       throw new AppError("Некорректное значение настройки общей базы");
     }
-    const safeData: Record<string, any> = {};
+    const safeData: Record<string, unknown> = {};
     for (const key of ALLOWED_FIELDS) {
       if (key in data) {
         safeData[key] = data[key];

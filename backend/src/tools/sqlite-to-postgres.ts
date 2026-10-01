@@ -228,7 +228,7 @@ async function preflight(source: SqliteClient, plans: ModelPlan[]): Promise<stri
   return problems;
 }
 
-async function checkTarget(target: PgClient, plans: ModelPlan[], truncate: boolean, log: (m: string) => void): Promise<string[]> {
+async function checkTarget(target: PgClient, truncate: boolean, log: (m: string) => void): Promise<string[]> {
   const problems: string[] = [];
   const [env] = await target.$queryRaw<{ tz: string; folds: boolean }[]>`
     SELECT current_setting('TimeZone') AS tz, lower('МОЛОКО') = 'молоко' AND 'Молоко' ILIKE 'молоко' AS folds`;
@@ -284,7 +284,7 @@ export async function migrateSqliteToPostgres(options: MigrateOptions): Promise<
   const tables: TableReport[] = [];
   try {
     const problems = await preflight(source, plans);
-    problems.push(...(await checkTarget(target, plans, !!options.truncate && !options.dryRun, log)));
+    problems.push(...(await checkTarget(target, !!options.truncate && !options.dryRun, log)));
     for (const p of problems) log(`ПРОБЛЕМА: ${p}`);
     if (problems.length) return { snapshotPath, snapshotSha1, problems, tables, ok: false };
 

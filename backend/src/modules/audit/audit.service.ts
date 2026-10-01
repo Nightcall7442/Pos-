@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import prisma from "../../config/database.js";
 
 export class AuditService {
@@ -25,7 +26,7 @@ export class AuditService {
     const { userId, entityType, action, page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId };
+    const where: Prisma.AuditLogWhereInput = { tenantId };
     if (userId) where.userId = userId;
     if (entityType) where.entityType = entityType;
     if (action) where.action = action;

@@ -1,3 +1,4 @@
+import type { ShiftQueryInput } from "./cash-shift.schema.js";
 import { Request, Response } from "express";
 import { cashShiftService } from "./cash-shift.service.js";
 import { sendSuccess, sendPaginated } from "../../utils/response.js";
@@ -53,8 +54,8 @@ export class CashShiftController {
         {
           page: Number(req.query.page) || 1,
           limit: Number(req.query.limit) || 20,
-          status: req.query.status as string,
-          userId: req.query.userId as string,
+          status: req.query.status as ShiftQueryInput["status"],
+          userId: req.query.userId as string | undefined,
         }
       );
       sendPaginated(res, shifts, total, page, limit);

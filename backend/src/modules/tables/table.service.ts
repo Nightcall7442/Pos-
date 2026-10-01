@@ -1,9 +1,11 @@
+import type { Prisma } from "@prisma/client";
+import type { UpdateTableInput } from "./table.schema.js";
 import prisma from "../../config/database.js";
 import { ConflictError, NotFoundError } from "../../utils/errors.js";
 
 export class TableService {
   async findAll(tenantId: string, branchId?: string) {
-    const where: any = { tenantId };
+    const where: Prisma.TableWhereInput = { tenantId };
     if (branchId) where.branchId = branchId;
 
     return prisma.table.findMany({
@@ -48,7 +50,7 @@ export class TableService {
     });
   }
 
-  async update(tenantId: string, id: string, data: any) {
+  async update(tenantId: string, id: string, data: UpdateTableInput) {
     const table = await prisma.table.findFirst({ where: { id, tenantId } });
     if (!table) throw new NotFoundError("Стол не найден");
 

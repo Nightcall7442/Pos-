@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+import type { InventoryQueryInput, MovementQueryInput } from "../common.schema.js";
 import prisma from "../../config/database.js";
 import { ci } from "../../utils/search.js";
 import { lockStockRows, roundStock } from "./stock.helpers.js";
@@ -5,11 +7,11 @@ import { inTransaction } from "../../utils/transaction.js";
 import { AppError, NotFoundError } from "../../utils/errors.js";
 
 export class InventoryService {
-  async getStock(tenantId: string, query: any) {
+  async getStock(tenantId: string, query: InventoryQueryInput) {
     const { lowStock, categoryId, search, page = 1, limit = 50 } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId, isActive: true };
+    const where: Prisma.ProductWhereInput = { tenantId, isActive: true };
     if (categoryId) where.categoryId = categoryId;
     if (search) {
       where.OR = [
@@ -51,11 +53,11 @@ export class InventoryService {
     return { products: paginated, total: products.length, page, limit };
   }
 
-  async getMovements(tenantId: string, query: any) {
+  async getMovements(tenantId: string, query: MovementQueryInput) {
     const { productId, type, page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId };
+    const where: Prisma.InventoryMovementWhereInput = { tenantId };
     if (productId) where.productId = productId;
     if (type) where.type = type;
 

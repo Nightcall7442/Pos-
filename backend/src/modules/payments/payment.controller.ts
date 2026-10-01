@@ -1,3 +1,4 @@
+import type { PaymentQueryInput } from "../common.schema.js";
 import { Request, Response } from "express";
 import { paymentService } from "./payment.service.js";
 import { sendSuccess, sendCreated, sendPaginated } from "../../utils/response.js";
@@ -29,9 +30,9 @@ export class PaymentController {
       const query = {
         page: Number(req.query.page) || 1,
         limit: Number(req.query.limit) || 20,
-        method: req.query.method as string,
-        status: req.query.status as string,
-        orderId: req.query.orderId as string,
+        method: req.query.method as PaymentQueryInput["method"],
+        status: req.query.status as PaymentQueryInput["status"],
+        orderId: req.query.orderId as string | undefined,
       };
       const { payments, total, page, limit } = await paymentService.findAll(req.user!.tenantId, query);
       sendPaginated(res, payments, total, page, limit);

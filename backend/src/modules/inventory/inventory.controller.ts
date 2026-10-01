@@ -1,3 +1,4 @@
+import type { MovementQueryInput } from "../common.schema.js";
 import { Request, Response } from "express";
 import { inventoryService } from "./inventory.service.js";
 import { sendSuccess, sendPaginated } from "../../utils/response.js";
@@ -8,8 +9,8 @@ export class InventoryController {
     try {
       const { products, total, page, limit } = await inventoryService.getStock(req.user!.tenantId, {
         lowStock: req.query.lowStock as unknown as boolean | undefined,
-        categoryId: req.query.categoryId,
-        search: req.query.search,
+        categoryId: req.query.categoryId as string | undefined,
+        search: req.query.search as string | undefined,
         page: Number(req.query.page) || 1,
         limit: Number(req.query.limit) || 20,
       });
@@ -22,8 +23,8 @@ export class InventoryController {
   async getMovements(req: Request, res: Response) {
     try {
       const { movements, total, page, limit } = await inventoryService.getMovements(req.user!.tenantId, {
-        productId: req.query.productId,
-        type: req.query.type,
+        productId: req.query.productId as string | undefined,
+        type: req.query.type as MovementQueryInput["type"],
         page: Number(req.query.page) || 1,
         limit: Number(req.query.limit) || 20,
       });

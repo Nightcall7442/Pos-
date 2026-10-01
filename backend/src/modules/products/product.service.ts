@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import prisma from "../../config/database.js";
 import type { CreateProductInput, UpdateProductInput, ProductQueryInput } from "./product.schema.js";
 import { AppError, NotFoundError } from "../../utils/errors.js";
@@ -17,8 +18,8 @@ export class ProductService {
     // Every filter is its own AND clause: a previous version put both the
     // text search and the ingredient filter on `where.OR`, so whichever ran
     // last silently replaced the other.
-    const and: any[] = [];
-    const where: any = { tenantId, AND: and };
+    const and: Prisma.ProductWhereInput[] = [];
+    const where: Prisma.ProductWhereInput = { tenantId, AND: and };
     // Every word of the search must match the name (in any spelling of its
     // case — see utils/search.ts), or be found in the SKU / barcode.
     for (const token of searchTokens(search || "")) {
@@ -43,15 +44,19 @@ export class ProductService {
     } else if (isIngredient === true) {
       and.push({ OR: [{ isIngredient: true }, { category: { isIngredient: true } }] });
     }
-    if (minPrice !== undefined) where.price = { ...where.price, gte: minPrice };
-    if (maxPrice !== undefined) where.price = { ...where.price, lte: maxPrice };
+    const price: Prisma.FloatFilter = {};
+    if (minPrice !== undefined) price.gte = minPrice;
+    if (maxPrice !== undefined) price.lte = maxPrice;
+    if (minPrice !== undefined || maxPrice !== undefined) where.price = price;
     if (inStock !== undefined) {
       where.currentStock = inStock ? { gt: 0 } : { lte: 0 };
     }
 
     // Ties (equal sortOrder, which is every product until an admin arranges them)
     // fall back to the name so pages of a long catalogue are stable.
-    const orderBy: any = sort === "name" ? { name: order } : [{ [sort]: order }, { name: "asc" }];
+    const orderBy = (sort === "name" ? { name: order } : [{ [sort]: order }, { name: "asc" }]) as
+      | Prisma.ProductOrderByWithRelationInput
+      | Prisma.ProductOrderByWithRelationInput[];
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({

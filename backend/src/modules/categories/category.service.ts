@@ -81,9 +81,15 @@ export class CategoryService {
   }
 
   async reorder(tenantId: string, ids: string[]) {
+    // Раньше tenantId здесь не использовался вовсе: категории обновлялись по
+    // одному id, и админ одной точки мог переставить категории чужой, зная их
+    // id. Нашёл это noUnusedParameters в tsconfig.
+    const owned = await prisma.category.count({ where: { tenantId, id: { in: ids } } });
+    if (owned !== new Set(ids).size) throw new NotFoundError("Категория не найдена");
+
     const updates = ids.map((id, index) =>
-      prisma.category.update({
-        where: { id },
+      prisma.category.updateMany({
+        where: { id, tenantId },
         data: { sortOrder: index },
       })
     );

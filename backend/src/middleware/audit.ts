@@ -39,19 +39,20 @@ export function auditLog(action: string, entityType?: string) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const originalJson = res.json.bind(res);
 
-    res.json = function (body: any) {
+    res.json = function (body?: unknown) {
+      const payload = body as { success?: boolean; data?: { id?: string } } | undefined;
       // Повтор по Idempotency-Key ничего не меняет — в журнал он не пишется,
       // иначе одна продажа выглядела бы в журнале двумя.
       const replayed = res.getHeader("Idempotent-Replayed") === "true";
-      if (req.user && !replayed && res.statusCode >= 200 && res.statusCode < 300 && body?.success !== false) {
+      if (req.user && !replayed && res.statusCode >= 200 && res.statusCode < 300 && payload?.success !== false) {
         auditService
           .log({
             tenantId: req.user.tenantId,
             userId: req.user.id,
             action,
             entityType,
-            entityId: (req.params.id as string | undefined) || body?.data?.id,
-            newValue: serialize(body?.data ?? req.body),
+            entityId: (req.params.id as string | undefined) || payload?.data?.id,
+            newValue: serialize(payload?.data ?? req.body),
             ipAddress: req.ip,
             userAgent: req.get("user-agent"),
           })
@@ -63,7 +64,7 @@ export function auditLog(action: string, entityType?: string) {
           );
       }
       return originalJson(body);
-    };
+    } as typeof res.json;
 
     next();
   };

@@ -1,3 +1,4 @@
+import type { Prisma, Tenant } from "@prisma/client";
 import prisma from "../../config/database.js";
 import { NotFoundError } from "../../utils/errors.js";
 import { formatMoney } from "../../utils/money.js";
@@ -13,28 +14,33 @@ const escapeHtml = (v: unknown): string =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
+// Что нужно чеку от заказа — один раз, и тип данных чека выводится отсюда же.
+const receiptInclude = {
+  items: {
+    include: {
+      product: { select: { id: true, name: true, sku: true } },
+      modifiers: { include: { modifierItem: true } },
+    },
+  },
+  table: { select: { id: true, number: true } },
+  user: { select: { id: true, firstName: true, lastName: true } },
+  payments: true,
+} satisfies Prisma.OrderInclude;
+
+type ReceiptOrder = Prisma.OrderGetPayload<{ include: typeof receiptInclude }>;
+
 export interface ReceiptData {
-  order: any;
-  tenant: any;
-  payments: any[];
-  items: any[];
+  order: ReceiptOrder;
+  tenant: Tenant | null;
+  payments: ReceiptOrder["payments"];
+  items: ReceiptOrder["items"];
 }
 
 export class ReceiptService {
   async getReceiptData(tenantId: string, orderId: string): Promise<ReceiptData> {
     const order = await prisma.order.findFirst({
       where: { id: orderId, tenantId },
-      include: {
-        items: {
-          include: {
-            product: { select: { id: true, name: true, sku: true } },
-            modifiers: { include: { modifierItem: true } },
-          },
-        },
-        table: { select: { id: true, number: true } },
-        user: { select: { id: true, firstName: true, lastName: true } },
-        payments: true,
-      },
+      include: receiptInclude,
     });
 
     if (!order) throw new NotFoundError("Заказ не найден");
@@ -92,9 +98,9 @@ export class ReceiptService {
     const retail = tenant?.businessType === "retail";
     const money = (n: unknown) => escapeHtml(formatMoney(Number(n), tenant?.currency));
 
-    const itemsHTML = items.map((item: any) => {
+    const itemsHTML = items.map((item) => {
       const modifiersText = item.modifiers?.length
-        ? item.modifiers.map((m: any) => `  + ${escapeHtml(m.modifierItem.name)} (${money(m.price)})`).join("\n")
+        ? item.modifiers.map((m) => `  + ${escapeHtml(m.modifierItem.name)} (${money(m.price)})`).join("\n")
         : "";
       const modifiersRow = modifiersText ? `<tr><td class="modifier">${modifiersText}</td><td></td></tr>` : "";
 

@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../../config/database.js";
@@ -17,7 +18,7 @@ export class AuthService {
   // the database happened to return first would be the only one able to log in.
   // The secret may be the password or the user's terminal PIN; both are hashed.
   async login(data: LoginInput, tenantId?: string) {
-    const where: any = {
+    const where: Prisma.UserWhereInput = {
       email: data.email,
       isActive: true,
     };

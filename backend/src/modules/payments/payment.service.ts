@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+import type { PaymentQueryInput } from "../common.schema.js";
 import prisma from "../../config/database.js";
 import type { CreatePaymentInput } from "./payment.schema.js";
 import { deductTechCardIngredients, round2 } from "../inventory/stock.helpers.js";
@@ -69,11 +71,11 @@ export class PaymentService {
     });
   }
 
-  async findAll(tenantId: string, query: any) {
+  async findAll(tenantId: string, query: PaymentQueryInput) {
     const { page = 1, limit = 20, method, status, orderId } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId };
+    const where: Prisma.PaymentWhereInput = { tenantId };
     if (method) where.method = method;
     if (status) where.status = status;
     if (orderId) where.orderId = orderId;
@@ -157,7 +159,7 @@ export class PaymentService {
   }
 
   async getSummary(tenantId: string, dateFrom?: string, dateTo?: string) {
-    const where: any = { tenantId, status: "completed" };
+    const where: Prisma.PaymentWhereInput = { tenantId, status: "completed" };
     const createdAt = optionalDateFilter(dateFrom, dateTo, await tenantTimeZone(tenantId));
     if (createdAt) where.createdAt = createdAt;
 

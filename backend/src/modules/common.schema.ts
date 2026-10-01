@@ -70,3 +70,7 @@ export const stockReceiptQuerySchema = z.object({
 export type AdjustStockInput = z.infer<typeof adjustStockSchema>;
 export type ReorderCategoriesInput = z.infer<typeof reorderCategoriesSchema>;
 export type ReportQueryInput = z.infer<typeof reportQuerySchema>;
+export type PaymentQueryInput = z.infer<typeof paymentQuerySchema>;
+export type InventoryQueryInput = z.infer<typeof inventoryQuerySchema>;
+export type MovementQueryInput = z.infer<typeof movementQuerySchema>;
+export type StockReceiptQueryInput = z.infer<typeof stockReceiptQuerySchema>;

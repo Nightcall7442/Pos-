@@ -29,6 +29,9 @@ const withCheck = (prefix12: string) => {
 };
 const UZ_NEW = "4780000000014"; // only the national catalogue of Uzbekistan describes it
 const UZ_JUNK = "4780000000021"; // the shipped snapshot calls it "viking"; the national catalogue knows better
+const UZ_BROWSER = "4780000000038"; // described only by a record the shop's browser brings
+const UZ_JUNK2 = "4780000000045"; // a junk snapshot record, corrected by the browser's record
+const UZ_CROWD = "4780000000052"; // a shop's own word for an Uzbek code
 const NO_SHELF = "4607000000021"; // in the catalogue without a shelf — the name has to say which
 const CUSTOM_SHELF = withCheck("460300000003");
 const IN_STORE_LABEL = withCheck("210010082891"); // GS1 200–299: a shop's own label
@@ -44,6 +47,17 @@ const api = (path: string, token: string | null, init: RequestInit = {}) =>
 
 const lookup = async (code: string, token = cashierToken) => ((await (await api(`/catalog/lookup?code=${code}`, token)).json()) as any).data;
 const upstreamHits = async (code: string) => ((await (await fetch(`${OFF_BASE}/__hits/${code}`)).json()) as any).hits as number;
+const lookupWith = async (code: string, national: unknown, token = cashierToken) =>
+  ((await (await api("/catalog/lookup", token, { method: "POST", body: JSON.stringify({ code, national }) })).json()) as any).data;
+const cola = (code: string, extra: Record<string, unknown> = {}) => ({
+  internationalCode: code,
+  mxikCode: "02202002001010009",
+  brandName: "COCA-COLA",
+  attributeName: "сладкий, ПЭТ бутылка 1,5 л.",
+  subPositionName: "Безалкогольные напитки (газированные и негазированные)",
+  positionName: "Прохладительные безалкогольные напитки",
+  ...extra,
+});
 const nationalHits = async (code: string) => ((await (await fetch(`${OFF_BASE}/__hits/tasnif/${code}`)).json()) as any).hits as number;
 const add = (token: string, body: Record<string, unknown>) => api("/catalog/add", token, { method: "POST", body: JSON.stringify(body) });
 
@@ -70,6 +84,8 @@ describe("Barcode catalogue", () => {
         { barcode: "0" + UPC_A, name: "Sparkling water", quantity: "0,5 л", category: "Напитки", source: "snapshot" },
         { barcode: NO_SHELF, name: "Молоко Простоквашино 3,2%", quantity: "930 мл", source: "snapshot" },
         { barcode: UZ_JUNK, name: "viking", source: "snapshot" },
+        { barcode: UZ_JUNK2, name: "ooo", source: "snapshot" },
+        { barcode: UZ_CROWD, name: "Мой кефир", source: "crowd" },
       ],
     });
   });
@@ -171,6 +187,42 @@ describe("Barcode catalogue", () => {
     // LIVE_HIT was first looked up in the live tests above: both public catalogues know it, and disagree about the name
     const hit = await lookup(LIVE_HIT);
     expect(hit).toMatchObject({ source: "off", name: "Choco & Nuts", ikpu: "01905012001444068" });
+  });
+
+  // The server cannot always reach the national catalogue (Railway is turned away), so the shop's
+  // browser asks it and hands the record over.
+
+  it("shows a record the shop's browser fetched from the national catalogue — and does not store it", async () => {
+    const hit = await lookupWith(UZ_BROWSER, cola(UZ_BROWSER));
+    expect(hit).toMatchObject({ found: true, source: "tasnif", name: "Coca-Cola сладкий", quantity: "1,5 л", category: "Напитки", ikpu: "02202002001010009", displayName: "Coca-Cola сладкий 1,5 л" });
+    // the server cannot vouch for it, so other shops never see it as an official record
+    expect(await prisma.catalogProduct.findUnique({ where: { barcode: UZ_BROWSER } })).toBeNull();
+    expect((await lookup(UZ_BROWSER)).found).toBe(false);
+  });
+
+  it("lets the browser's record correct what volunteers typed about an Uzbek code, but not a shop's own word", async () => {
+    expect(await lookupWith(UZ_JUNK2, cola(UZ_JUNK2))).toMatchObject({ source: "tasnif", name: "Coca-Cola сладкий" });
+    expect(await prisma.catalogProduct.findUnique({ where: { barcode: UZ_JUNK2 } })).toMatchObject({ name: "ooo", source: "snapshot" });
+
+    expect(await lookupWith(UZ_CROWD, cola(UZ_CROWD))).toMatchObject({ source: "crowd", name: "Мой кефир", ikpu: "02202002001010009" });
+  });
+
+  it("adds only the IKPU when the code is not Uzbek and the server already has words for it", async () => {
+    expect(await lookupWith(NO_SHELF, cola(NO_SHELF))).toMatchObject({ source: "snapshot", name: "Молоко Простоквашино 3,2%", ikpu: "02202002001010009" });
+  });
+
+  it("ignores a record that is not about this barcode or carries no real IKPU", async () => {
+    const other = UZ_BROWSER.slice(0, 12) + ((Number(UZ_BROWSER[12]) + 1) % 10);
+    expect((await lookupWith(UZ_BROWSER, cola(other))).found).toBe(false); // someone else's barcode
+    expect((await lookupWith(UZ_BROWSER, cola(UZ_BROWSER, { mxikCode: "123" }))).found).toBe(false); // not a 17-digit IKPU
+    expect((await lookupWith(UZ_BROWSER, "just text")).found).toBe(false);
+    expect((await lookupWith(UZ_BROWSER, null)).found).toBe(false);
+  });
+
+  it("keeps the IKPU with the product the shop adds", async () => {
+    const res = await add(adminToken, { barcode: UZ_BROWSER, name: "Coca-Cola сладкий 1,5 л", price: 9500, ikpu: "02202002001010009" });
+    expect(JSON.parse(((await res.json()) as any).data.metadata)).toEqual({ ikpu: "02202002001010009" });
+    expect((await add(adminToken, { barcode: UZ_JUNK2, name: "x", price: 1, ikpu: "123" })).status).toBe(400);
   });
 
   describe("records of the national catalogue", () => {

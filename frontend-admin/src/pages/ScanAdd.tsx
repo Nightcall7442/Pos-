@@ -7,6 +7,7 @@ import api from "../services/api";
 import { catalogService, type CatalogHit, type Product } from "../services";
 import { useCategories } from "../hooks/useProducts";
 import { useBurstGuard } from "../hooks/useBurstGuard";
+import { fetchNational } from "../utils/national";
 import { useMoney } from "../hooks/useMoney";
 import LoadingSpinner from "../components/LoadingSpinner";
 
@@ -93,7 +94,8 @@ export default function ScanAdd() {
         setStep({ kind: "exists", code: digits, product: own });
         return;
       }
-      const answer = (await catalogService.lookup(digits)).data.data;
+      // This browser asks the national catalogue of Uzbekistan itself — the server may not get through.
+      const answer = (await catalogService.lookup(digits, await fetchNational(digits))).data.data;
       const hit = answer.found ? answer : null;
       setName(hit?.displayName ?? "");
       setPrice("");
@@ -121,6 +123,7 @@ export default function ScanAdd() {
           name: name.trim(),
           price: priceValue,
           weighed,
+          ...(step.hit?.ikpu ? { ikpu: step.hit.ikpu } : {}),
           ...(stockValue !== undefined ? { stock: stockValue } : {}),
           ...(chosenShelf.startsWith("id:") ? { categoryId: chosenShelf.slice(3) } : chosenShelf.startsWith("new:") ? { categoryName: chosenShelf.slice(4) } : {}),
         })

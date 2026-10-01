@@ -37,6 +37,7 @@ import techCardRoutes from "./api/tech-cards.routes.js";
 import catalogRoutes from "./api/catalog.routes.js";
 import { importSnapshot } from "./modules/catalog/catalog.import.js";
 import { catalogService } from "./modules/catalog/catalog.service.js";
+import { watchNationalCatalogue } from "./modules/catalog/catalog.tasnif.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -120,6 +121,7 @@ async function main() {
         .probeSources()
         .then((reachable) => (reachable.openFoodFacts && reachable.nationalCatalogue ? logger.info : logger.warn)("Barcode sources reachable", reachable))
         .catch(() => undefined);
+      watchNationalCatalogue();
     }
   } catch (error) {
     logger.error("Failed to start server", error);

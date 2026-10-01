@@ -10,11 +10,41 @@ import { cleanBrand, cleanName, normalizeQuantity } from "./names.js";
 // what is really sold in the country — by barcode, with the brand, the pack and the
 // code the law asks for. It answers the same search that the portal's own barcode field
 // runs; we ask it once per code, a few a minute, and remember the answer.
+//
+// A server in a foreign data centre may be turned away (Railway's is: every request times
+// out), while a browser in Uzbekistan is answered in a third of a second and the portal
+// allows requests from any site. So the shop's own browser asks it (see `nationalFrom` below)
+// and hands the record to the server; the server asks it too, but gives up quickly and
+// stops trying for a while once it is clear it cannot get through.
 const DEFAULT_BASE = "https://tasnif.soliq.uz/api/cls-api";
 const USER_AGENT = "QwikPOS/1.0 (hello@qwik.uz)";
-const TIMEOUT_MS = 4000;
+const TIMEOUT_MS = 2500;
+const PROBE_TIMEOUT_MS = 8000;
 const MAX_REQUESTS_PER_MINUTE = 40;
+const PAUSE_MS = 30 * 60_000;
 const stamps: number[] = [];
+
+let failures = 0;
+let pausedUntil = 0;
+
+/** True while the server has given up on reaching the catalogue (it is asked again after a pause). */
+export function nationalPaused(): boolean {
+  return Date.now() < pausedUntil;
+}
+
+function noteFailure(why: string): void {
+  failures++;
+  if (failures >= 2 && !nationalPaused()) {
+    pausedUntil = Date.now() + PAUSE_MS;
+    logger.warn("National catalogue unreachable from this server — not asking it for 30 minutes (shop browsers still can)", { why });
+  }
+}
+
+function noteSuccess(): void {
+  if (failures > 0 || pausedUntil > 0) logger.info("National catalogue reachable from this server");
+  failures = 0;
+  pausedUntil = 0;
+}
 
 function budgetLeft(): boolean {
   const now = Date.now();
@@ -102,26 +132,36 @@ interface Answer {
   ok: boolean;
 }
 
-async function ask(code: string, timeoutMs: number): Promise<Answer> {
-  if (!budgetLeft()) return { product: null, ok: false };
-  stamps.push(Date.now());
+async function ask(code: string, timeoutMs: number, probe = false): Promise<Answer & { ms: number; error?: string }> {
+  const started = Date.now();
+  if (!probe && (nationalPaused() || !budgetLeft())) return { product: null, ok: false, ms: 0 };
+  stamps.push(started);
   const base = getEnv().TASNIF_BASE_URL ?? DEFAULT_BASE;
   try {
     const res = await fetch(`${base}/mxik/search/by-params?gtin=${encodeURIComponent(code)}&size=3&lang=ru`, {
       headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
       signal: AbortSignal.timeout(timeoutMs),
     });
-    if (!res.ok) return { product: null, ok: false };
+    if (!res.ok) {
+      noteFailure(`HTTP ${res.status}`);
+      return { product: null, ok: false, ms: Date.now() - started, error: `HTTP ${res.status}` };
+    }
     const body = (await res.json()) as { success?: boolean; data?: { content?: Record<string, unknown>[] } };
-    if (body.success === false) return { product: null, ok: false };
+    if (body.success === false) {
+      noteFailure("success=false");
+      return { product: null, ok: false, ms: Date.now() - started, error: "success=false" };
+    }
+    noteSuccess();
     for (const record of body.data?.content ?? []) {
       const product = toTasnifProduct(record);
-      if (product) return { product, ok: true };
+      if (product) return { product, ok: true, ms: Date.now() - started };
     }
-    return { product: null, ok: true };
+    return { product: null, ok: true, ms: Date.now() - started };
   } catch (error) {
-    logger.warn("National catalogue lookup failed", { message: error instanceof Error ? error.message : String(error) });
-    return { product: null, ok: false };
+    const cause = (error as { cause?: { code?: string } }).cause?.code;
+    const why = `${error instanceof Error ? error.message : String(error)}${cause ? ` (${cause})` : ""}`;
+    noteFailure(why);
+    return { product: null, ok: false, ms: Date.now() - started, error: why };
   }
 }
 
@@ -132,8 +172,45 @@ export async function liveTasnif(code: string, timeoutMs = TIMEOUT_MS): Promise<
   return { product: answer.product, complete: answer.ok };
 }
 
-/** Is the catalogue reachable from here? Asked once at start, so the logs say so before anyone scans. */
-export async function probeTasnif(): Promise<boolean> {
-  if (getEnv().CATALOG_LIVE_LOOKUP === "off") return false;
-  return (await ask("5449000000996", TIMEOUT_MS)).ok;
+/** Is the catalogue reachable from here? Asked at start (and again, while paused), so the logs say so before anyone scans. */
+export async function probeTasnif(): Promise<{ ok: boolean; ms: number; error?: string }> {
+  if (getEnv().CATALOG_LIVE_LOOKUP === "off") return { ok: false, ms: 0, error: "CATALOG_LIVE_LOOKUP=off" };
+  const answer = await ask("5449000000996", PROBE_TIMEOUT_MS, true);
+  // A failed probe is evidence enough: asking on every scan would only make every scan wait.
+  if (!answer.ok) {
+    failures = Math.max(failures, 2);
+    if (!nationalPaused()) noteFailure(answer.error ?? "probe failed");
+  }
+  return { ok: answer.ok, ms: answer.ms, error: answer.error };
+}
+
+/** While the catalogue is out of reach, look again every half hour — a lifted block should not need a restart. */
+export function watchNationalCatalogue(): void {
+  const timer = setInterval(() => {
+    if (nationalPaused()) {
+      pausedUntil = 0; // let the probe through
+      void probeTasnif();
+    }
+  }, PAUSE_MS);
+  timer.unref();
+}
+
+const clip = (value: unknown, max = 300) => (typeof value === "string" ? value.slice(0, max) : "");
+
+/**
+ * A record a shop's browser fetched from the catalogue and handed over. It is not trusted beyond
+ * what it can prove: it must be about this very barcode and carry a real 17-digit IKPU. Only the
+ * fields the name is built from are read, and each is clipped.
+ */
+export function nationalFrom(record: unknown, barcodes: string[]): TasnifProduct | null {
+  if (!record || typeof record !== "object") return null;
+  const r = record as Record<string, unknown>;
+  if (typeof r.internationalCode !== "string" || !barcodes.includes(r.internationalCode)) return null;
+  return toTasnifProduct({
+    mxikCode: clip(r.mxikCode, 17),
+    brandName: clip(r.brandName),
+    attributeName: clip(r.attributeName),
+    subPositionName: clip(r.subPositionName),
+    positionName: clip(r.positionName),
+  });
 }

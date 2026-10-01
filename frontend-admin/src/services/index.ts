@@ -185,10 +185,14 @@ export interface CatalogAddInput {
   categoryName?: string;
   weighed?: boolean;
   stock?: number;
+  /** the IKPU the lookup showed; kept with the product for invoices and receipts */
+  ikpu?: string;
 }
 
 export const catalogService = {
-  lookup: (code: string) => api.get<ApiResponse<CatalogAnswer>>("/catalog/lookup", { params: { code } }),
+  // `national` is the record this browser fetched from tasnif.soliq.uz (see utils/national.ts).
+  lookup: (code: string, national?: Record<string, unknown> | null) =>
+    api.post<ApiResponse<CatalogAnswer>>("/catalog/lookup", { code, ...(national ? { national } : {}) }),
   add: (data: CatalogAddInput) => api.post<ApiResponse<Product>>("/catalog/add", data),
   stats: () => api.get<ApiResponse<{ total: number; crowd: number }>>("/catalog/stats"),
 };

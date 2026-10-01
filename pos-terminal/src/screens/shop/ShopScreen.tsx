@@ -8,6 +8,7 @@ import { useThemeStore } from "../../store/themeStore";
 import { useMoney } from "../../hooks/useMoney";
 import { useDebounced } from "../../hooks/useDebounced";
 import type { CartItem, CashShift, PaymentMethod, Product } from "../../types";
+import { fetchNational } from "../../utils/national";
 import { beep, setSoundEnabled, soundEnabled } from "../../utils/sound";
 import { gramsPerUnit, kgToGrams, parseDecimal, pricePerKg, stockInKg, weightLineTotal } from "../../utils/weight";
 import StockReceiptScreen from "../StockReceiptScreen";
@@ -226,7 +227,9 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
       // A code nobody has seen may take a few seconds (the public catalogues are asked) — say so.
       const hint = window.setTimeout(() => toast.loading("Ищу товар в общей базе…", { id: "shop-lookup" }), 500);
       try {
-        answer = (await api.get("/catalog/lookup", { params: { code } })).data.data;
+        // The register asks the national catalogue itself (the server cannot always reach it) and passes the record on.
+        const national = await fetchNational(code);
+        answer = (await api.post("/catalog/lookup", { code, ...(national ? { national } : {}) })).data.data;
       } catch {
         answer = null; // no network beyond the shop's own server — treat as unknown
       } finally {

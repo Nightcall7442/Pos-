@@ -96,9 +96,10 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 «Barcode catalogue loaded» (первая загрузка) или «Barcode catalogue already
 loaded» (уже есть), затем «Barcode sources reachable» с флагами
 `openFoodFacts` и `nationalCatalogue` — достучался ли сервер до Open Food Facts и до
-национального каталога Узбекистана (`tasnif.soliq.uz`) со своего адреса. Если
-`nationalCatalogue: false` — каталог не пускает облачный адрес: узбекские товары
-по-прежнему находятся в поставке, но без кода ИКПУ. Необязательные переменные:
+национального каталога Узбекистана (`tasnif.soliq.uz`) со своего адреса. Зарубежные
+адреса каталог не пускает (с Railway — таймаут), поэтому `nationalCatalogue: false`
+здесь штатно: каталог спрашивают браузеры магазинов (из Узбекистана), а сервер после
+двух неудач перестаёт спрашивать на 30 минут. Необязательные переменные:
 `CATALOG_LIVE_LOOKUP=off` — не ходить за неизвестными кодами в сеть вовсе;
 `OFF_BASE_URL`, `TASNIF_BASE_URL` — другие серверы вместо них.
 

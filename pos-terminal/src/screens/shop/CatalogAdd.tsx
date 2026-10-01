@@ -82,6 +82,7 @@ export default function CatalogAdd({ code, hit, symbol, onAdded, onClose }: Cata
         name: name.trim(),
         price: priceValue,
         weighed,
+        ...(hit?.ikpu ? { ikpu: hit.ikpu } : {}),
         ...(stockValue !== undefined ? { stock: stockValue } : {}),
         ...(chosenShelf.startsWith("id:") ? { categoryId: chosenShelf.slice(3) } : chosenShelf.startsWith("new:") ? { categoryName: chosenShelf.slice(4) } : {}),
       });

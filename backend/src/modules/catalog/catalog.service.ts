@@ -3,7 +3,7 @@ import { ConflictError, NotFoundError } from "../../utils/errors.js";
 import { logger } from "../../utils/logger.js";
 import { liveLookup, probeOff } from "./catalog.off.js";
 import type { CatalogAddInput } from "./catalog.schema.js";
-import { liveTasnif, probeTasnif } from "./catalog.tasnif.js";
+import { liveTasnif, nationalFrom, probeTasnif, type TasnifProduct } from "./catalog.tasnif.js";
 import { SHELF_NAMES, shelfFromName } from "./categories.js";
 import { barcodeVariants, canonicalBarcode, hasUzbekPrefix, isCatalogBarcode } from "./gtin.js";
 import { cleanName, displayName } from "./names.js";
@@ -96,18 +96,47 @@ function parseMetadata(text: string | null): Record<string, unknown> {
 let statsCache: { at: number; value: { total: number; crowd: number } } | null = null;
 
 export class CatalogService {
-  /** What is known about a barcode: our own base first, then — once — the public catalogues. */
-  async lookup(rawCode: string): Promise<CatalogHit | CatalogMiss> {
+  /**
+   * What is known about a barcode: our own base first, then — once — the public catalogues.
+   * `nationalRecord` is what the shop's browser got from the national catalogue of Uzbekistan,
+   * which the server often cannot reach itself (see catalog.tasnif.ts).
+   */
+  async lookup(rawCode: string, nationalRecord?: unknown): Promise<CatalogHit | CatalogMiss> {
     const code = rawCode.trim();
     if (!isCatalogBarcode(code)) return { found: false, barcode: code, valid: false };
     const canonical = canonicalBarcode(code);
 
+    const hit = await this.find(code, canonical);
+    const national = nationalFrom(nationalRecord, Array.from(new Set([code, canonical, ...barcodeVariants(code)])));
+    return this.withNational(hit, national, canonical) ?? { found: false, barcode: canonical, valid: true };
+  }
+
+  private async find(code: string, canonical: string): Promise<CatalogHit | null> {
     const stored = await prisma.catalogProduct.findFirst({ where: { barcode: { in: barcodeVariants(code) } } });
     if (stored) return toHit(this.worthAskingNationalCatalogue(stored) ? await this.upgradeFromNational(stored) : stored);
-    if (knownMiss(canonical)) return { found: false, barcode: canonical, valid: true };
+    if (knownMiss(canonical)) return null;
+    return this.askLive(canonical);
+  }
 
-    const live = await this.askLive(canonical);
-    return live ?? { found: false, barcode: canonical, valid: true };
+  // What the browser brought from the national catalogue is shown, never stored in the shared base:
+  // the server cannot check it, so it must not pass for an official record to other shops.
+  // For an Uzbek code its words win over Open Food Facts' and the snapshot's (not over a shop's own);
+  // for any other the open catalogue's stay, and the IKPU is added.
+  private withNational(hit: CatalogHit | null, national: TasnifProduct | null, canonical: string): CatalogHit | null {
+    if (!national || hit?.source === "tasnif") return hit;
+    const fromNational = (fallback: CatalogHit | null): CatalogHit =>
+      toHit({
+        barcode: canonical,
+        name: national.name,
+        brand: national.brand ?? fallback?.brand ?? null,
+        quantity: national.quantity ?? fallback?.quantity ?? null,
+        category: national.category ?? fallback?.category ?? null,
+        ikpu: national.ikpu,
+        source: "tasnif",
+      });
+    if (!hit) return fromNational(null);
+    if (hasUzbekPrefix(canonical) && hit.source !== "crowd") return fromNational(hit);
+    return { ...hit, ikpu: hit.ikpu ?? national.ikpu };
   }
 
   // An Uzbek code (478…) whose record came from Open Food Facts rather than from a shop or the
@@ -175,9 +204,9 @@ export class CatalogService {
   }
 
   /** Which of the public catalogues can this server reach? Logged at start, since a cloud address may be turned away. */
-  async probeSources(): Promise<{ openFoodFacts: boolean; nationalCatalogue: boolean }> {
-    const [openFoodFacts, nationalCatalogue] = await Promise.all([probeOff(), probeTasnif()]);
-    return { openFoodFacts, nationalCatalogue };
+  async probeSources(): Promise<{ openFoodFacts: boolean; nationalCatalogue: boolean; nationalMs: number; nationalError?: string }> {
+    const [openFoodFacts, national] = await Promise.all([probeOff(), probeTasnif()]);
+    return { openFoodFacts, nationalCatalogue: national.ok, nationalMs: national.ms, ...(national.error ? { nationalError: national.error } : {}) };
   }
 
   /**
@@ -218,6 +247,7 @@ export class CatalogService {
     const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { defaultMarkupPercent: true } });
     // The IKPU the invoice and the receipt will need travels with the product — read here, not taken from the client.
     const known = await prisma.catalogProduct.findFirst({ where: { barcode: { in: barcodeVariants(input.barcode) } }, select: { ikpu: true } });
+    const ikpu = input.ikpu ?? known?.ikpu ?? null;
 
     const product = await prisma.$transaction(async (tx) => {
       const duplicate = await tx.product.findFirst({ where: { tenantId, barcode: { in: barcodeVariants(input.barcode) } }, select: { id: true, name: true, isActive: true, metadata: true } });
@@ -226,7 +256,7 @@ export class CatalogService {
       // and with the IKPU, if the catalogue has learnt it since.
       if (duplicate) {
         const metadata = parseMetadata(duplicate.metadata);
-        if (known?.ikpu && !metadata.ikpu) metadata.ikpu = known.ikpu;
+        if (ikpu && !metadata.ikpu) metadata.ikpu = ikpu;
         return tx.product.update({ where: { id: duplicate.id }, data: { isActive: true, price: input.price, metadata: JSON.stringify(metadata) }, include: { category: true } });
       }
 
@@ -255,7 +285,7 @@ export class CatalogService {
           saleUnit: input.weighed ? "кг" : null,
           trackInventory: input.stock !== undefined,
           currentStock: input.stock ?? 0,
-          metadata: known?.ikpu ? JSON.stringify({ ikpu: known.ikpu }) : undefined,
+          metadata: ikpu ? JSON.stringify({ ikpu }) : undefined,
         },
         include: { category: true },
       });

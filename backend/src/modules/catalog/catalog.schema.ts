@@ -4,6 +4,13 @@ export const catalogLookupSchema = z.object({
   code: z.string().trim().min(1).max(32),
 });
 
+// The same question, with the record the shop's browser fetched from the national catalogue.
+export const catalogLookupBodySchema = z.object({
+  code: z.string().trim().min(1).max(32),
+  // Whatever the browser brought; anything that is not a record about this very barcode is ignored.
+  national: z.unknown().optional(),
+});
+
 // A product added by scanning: what the catalogue suggested (the client may
 // have edited it) plus what only the shop knows — the price.
 export const catalogAddSchema = z.object({
@@ -18,6 +25,8 @@ export const catalogAddSchema = z.object({
   weighed: z.boolean().optional(),
   // Stock on hand. Left out, the shop simply sells it without counting.
   stock: z.number().min(0).optional(),
+  // The IKPU the lookup showed; kept with the product for invoices and receipts.
+  ikpu: z.string().regex(/^\d{17}$/).optional(),
 });
 
 export type CatalogAddInput = z.infer<typeof catalogAddSchema>;

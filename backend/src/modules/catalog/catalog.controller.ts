@@ -12,6 +12,14 @@ export class CatalogController {
     }
   }
 
+  async lookupWith(req: Request, res: Response) {
+    try {
+      sendSuccess(res, await catalogService.lookup(String(req.body.code), req.body.national));
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
   async add(req: Request, res: Response) {
     try {
       sendCreated(res, await catalogService.add(req.user!.tenantId, req.body));

@@ -27,6 +27,10 @@ const envSchema = z.object({
   // Unpaid orders hold a stock reservation; after this many minutes they are
   // cancelled automatically and the stock is returned.
   PENDING_ORDER_TTL_MINUTES: z.coerce.number().int().min(1).default(30),
+  // Попыток входа (/login, /register) за 15 минут с одного IP. 30 — защита от
+  // перебора паролей; тестовый сервер поднимает планку, иначе набор тестов,
+  // который входит под разными сотрудниками в каждом файле, упирался в неё.
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(30),
   // Barcodes the shipped catalogue does not know are looked up live on Open Food
   // Facts (and its sister catalogues). OFF_BASE_URL sends every such lookup to
   // one server instead — the tests stand a stub in for the real thing.

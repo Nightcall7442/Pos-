@@ -193,7 +193,9 @@ export async function deductTechCardIngredients(
       const ingredient = await tx.product.findFirst({ where: { id: line.ingredientId, tenantId } });
       if (!ingredient) continue;
 
-      const units = round2(Number(line.quantity) * item.quantity);
+      // Округление — как у остатка, до тысячных: в килограммах это грамм.
+      // round2 (до сотых) списывал 4 г специй как 0, а 15 г — как 20.
+      const units = roundStock(Number(line.quantity) * item.quantity);
       await tx.product.update({
         where: { id: ingredient.id },
         data: { currentStock: roundStock(ingredient.currentStock - units) },

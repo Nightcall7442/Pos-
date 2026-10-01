@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { ci } from "../../utils/search.js";
 import prisma from "../../config/database.js";
 import type { CreateUserInput, UpdateUserInput } from "./user.schema.js";
-import { ConflictError, ForbiddenError, NotFoundError } from "../../utils/errors.js";
+import { AppError, ConflictError, ForbiddenError, NotFoundError } from "../../utils/errors.js";
 
 export class UserService {
   async findAll(tenantId: string, query: any) {
@@ -108,8 +108,11 @@ export class UserService {
     const user = await prisma.user.findFirst({ where: { id, tenantId } });
     if (!user) throw new NotFoundError("Пользователь не найден");
     this.assertRoleAllowed(actorRole, data.role);
-    if (user.role === "admin" && data.role && data.role !== "admin" && actorRole !== "admin") {
-      throw new ForbiddenError("Только администратор может изменить роль администратора");
+    // Администратора меняет только администратор — любое поле, не только роль.
+    // Раньше проверялась одна роль, и менеджер мог сменить администратору
+    // пароль или почту и войти под ним.
+    if (user.role === "admin" && actorRole !== "admin") {
+      throw new ForbiddenError("Только администратор может изменять администратора");
     }
 
     const { password, pin, ...rest } = data;
@@ -144,13 +147,32 @@ export class UserService {
     return { message: "User deactivated" };
   }
 
-  async toggleActive(tenantId: string, id: string) {
+  async toggleActive(tenantId: string, id: string, actor: { id: string; role: string }) {
     const user = await prisma.user.findFirst({ where: { id, tenantId } });
     if (!user) throw new NotFoundError("Пользователь не найден");
+    // Отключить себя — значит запереть себя снаружи, а последнего
+    // администратора — запереть всю точку.
+    if (user.id === actor.id) throw new AppError("Нельзя отключить самого себя", 400);
+    // Удалить администратора нельзя (delete), и отключение не должно быть
+    // обходным путём к тому же: его может отключить только администратор.
+    if (user.role === "admin" && actor.role !== "admin") {
+      throw new ForbiddenError("Только администратор может отключить администратора");
+    }
 
+    // select обязателен: без него в ответ уходила вся строка — с хешами
+    // пароля и PIN. Хеш четырёхзначного PIN перебирается за минуты.
     return prisma.user.update({
       where: { id },
       data: { isActive: !user.isActive },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isActive: true,
+      },
     });
   }
 }

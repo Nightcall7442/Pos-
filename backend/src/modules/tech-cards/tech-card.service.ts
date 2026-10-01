@@ -1,7 +1,7 @@
 import prisma from "../../config/database.js";
 import { ci } from "../../utils/search.js";
 import type { CreateTechCardInput, UpdateTechCardInput, TechCardQueryInput } from "./tech-card.schema.js";
-import { NotFoundError } from "../../utils/errors.js";
+import { AppError, NotFoundError } from "../../utils/errors.js";
 
 export class TechCardService {
   async findAll(tenantId: string, query: TechCardQueryInput) {
@@ -45,6 +45,7 @@ export class TechCardService {
 
   async create(tenantId: string, data: CreateTechCardInput) {
     const { ingredients, ...rest } = data;
+    if (ingredients) await this.assertIngredientsExist(tenantId, ingredients);
     const ingredientsJson = ingredients ? JSON.stringify(ingredients) : "[]";
     const totalCost = ingredients ? await this.calculateCost(tenantId, ingredients) : 0;
     const output = ingredients
@@ -72,6 +73,7 @@ export class TechCardService {
     let output = existing.output;
 
     if (ingredients !== undefined) {
+      await this.assertIngredientsExist(tenantId, ingredients);
       totalCost = await this.calculateCost(tenantId, ingredients);
       output = data.output ?? ingredients.reduce((sum, i) => sum + (i.netWeight || i.quantity || 0), 0);
     }
@@ -125,6 +127,19 @@ export class TechCardService {
       where: { id },
       data: { totalCost },
     });
+  }
+
+  // Ингредиент, которого нет в точке (опечатка, чужой id), раньше молча
+  // принимался: в себестоимость он не входил, при продаже не списывался, и
+  // техкарта выглядела рабочей.
+  private async assertIngredientsExist(tenantId: string, ingredients: { ingredientId: string }[]): Promise<void> {
+    const ids = [...new Set(ingredients.map((i) => i.ingredientId))];
+    const found = await prisma.product.findMany({ where: { tenantId, id: { in: ids } }, select: { id: true } });
+    const known = new Set(found.map((p) => p.id));
+    const missing = ids.filter((id) => !known.has(id));
+    if (missing.length) {
+      throw new AppError(`Ингредиент не найден в этой точке: ${missing.join(", ")}`, 400);
+    }
   }
 
   private async calculateCost(tenantId: string, ingredients: { ingredientId: string; quantity: number }[]): Promise<number> {

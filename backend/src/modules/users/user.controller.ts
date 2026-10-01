@@ -55,7 +55,7 @@ export class UserController {
   async toggleActive(req: Request, res: Response) {
     try {
       const id = req.params.id as string;
-      const user = await userService.toggleActive(req.user!.tenantId, id);
+      const user = await userService.toggleActive(req.user!.tenantId, id, { id: req.user!.id, role: req.user!.role });
       sendSuccess(res, user);
     } catch (error) {
       handleError(res, error);

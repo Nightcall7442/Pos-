@@ -103,6 +103,7 @@ export async function setup(): Promise<void> {
     JWT_SECRET: "test-jwt-secret-value-0123456789",
     JWT_REFRESH_SECRET: "test-refresh-secret-value-0123456789",
     LOG_LEVEL: "error",
+    AUTH_RATE_LIMIT_MAX: "1000",
     OFF_BASE_URL: `http://127.0.0.1:${OFF_PORT}`,
     TASNIF_BASE_URL: `http://127.0.0.1:${OFF_PORT}/tasnif`,
   };

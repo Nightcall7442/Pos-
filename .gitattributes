@@ -1,0 +1,10 @@
+# Переводы строк в репозитории — LF (как и в .prettierrc.json и .editorconfig).
+# Без этого правила Windows-машина коммитит CRLF, и дифф каждого файла
+# выглядит как полная переписка.
+* text=auto eol=lf
+
+# Бинарные файлы не трогать
+*.png binary
+*.jpg binary
+*.svg text eol=lf
+*.db binary

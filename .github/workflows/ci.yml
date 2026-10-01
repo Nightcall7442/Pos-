@@ -1,0 +1,65 @@
+# Проверки на каждый PR и на push в main. До этого в репозитории не было ни CI,
+# ни линтера: 13 000 строк фронтенда держал только tsc, запускаемый вручную.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend-admin/package-lock.json
+            pos-terminal/package-lock.json
+
+      # Пакеты устанавливаются отдельно: workspaces в репозитории ещё нет
+      # (задача FE-2), у каждого приложения свой package-lock.json.
+      - name: Install
+        run: |
+          npm ci
+          npm ci --prefix backend
+          npm ci --prefix frontend-admin
+          npm ci --prefix pos-terminal
+
+      # Без сгенерированного клиента не проходит ни typecheck бэкенда, ни тесты.
+      - name: Prisma client
+        run: npm run db:generate --prefix backend
+
+      # lint:budget — это lint плюс ограничение на число предупреждений.
+      # Сегодня их 382 (список накопленных замечаний: any, неиспользуемые
+      # переменные, доступность). Число разрешено только уменьшать: любой PR,
+      # который добавит новое предупреждение, станет красным.
+      - name: Lint
+        run: npm run lint:budget
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Тесты сами поднимают свой сервер на своём файле SQLite
+      # (backend/tests/globalSetup.ts) и заглушки вместо внешних API.
+      - name: Tests
+        run: npm test
+
+      # Сборка проверяет то, что linter и tsc не видят: что Vite реально
+      # собирает оба фронтенда.
+      - name: Build frontends
+        run: |
+          npm run build:admin
+          npm run build:terminal

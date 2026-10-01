@@ -104,7 +104,7 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
     return (m ? m[2] : query).trim();
   }, [query]);
   const debouncedTerm = useDebounced(term, 180);
-  const suggestOn = !modalOpen && term.length >= 2 && !/^[\d\s.,\-]+$/.test(term);
+  const suggestOn = !modalOpen && term.length >= 2 && !/^[\d\s.,-]+$/.test(term);
   const { data: suggestData, isFetching: suggestFetching } = useQuery<Product[]>({
     queryKey: ["shop-suggest", debouncedTerm],
     enabled: suggestOn && debouncedTerm.length >= 2,

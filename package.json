@@ -13,9 +13,29 @@
     "build:admin": "cd frontend-admin && npm run build",
     "build:terminal": "cd pos-terminal && npm run build",
     "setup": "npm install --prefix backend && npm install --prefix frontend-admin && npm install --prefix pos-terminal && npm run db:generate --prefix backend && npm run db:deploy --prefix backend && npm run db:seed --prefix backend",
-    "test": "cd backend && npm run test:run"
+    "test": "cd backend && npm run test:run",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:strict": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "npm run typecheck:backend && npm run typecheck:admin && npm run typecheck:terminal",
+    "typecheck:backend": "tsc --noEmit -p backend/tsconfig.json",
+    "typecheck:admin": "tsc --noEmit -p frontend-admin/tsconfig.json",
+    "typecheck:terminal": "tsc --noEmit -p pos-terminal/tsconfig.json",
+    "ci": "npm run lint && npm run typecheck && npm test",
+    "lint:budget": "eslint . --max-warnings 382"
   },
   "devDependencies": {
-    "concurrently": "^9.0.0"
+    "@eslint/js": "^9.39.5",
+    "concurrently": "^9.0.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.0"
   }
 }

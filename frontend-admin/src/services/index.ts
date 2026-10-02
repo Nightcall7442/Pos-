@@ -107,6 +107,8 @@ export interface Order {
   discountAmount?: number;
   payments?: { id: string; method: string; amount: number; status: string }[];
   createdAt: string;
+  // Время последней смены статуса — кухня считает по нему, сколько ждёт готовый заказ.
+  updatedAt?: string;
   items: OrderItem[];
   user?: { id: string; firstName: string; lastName?: string } | null;
 }

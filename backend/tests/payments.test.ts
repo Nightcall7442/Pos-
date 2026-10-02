@@ -138,7 +138,9 @@ describe("Payments API", () => {
     const payment = await prisma.payment.findFirst({
       where: { orderId, status: "completed" },
     });
-    if (!payment) return;
+    // Раньше здесь был `if (!payment) return;` — без платежа тест молча
+    // проходил, ничего не проверив.
+    expect(payment).not.toBeNull();
 
     const res = await fetch(`${BASE_URL}/api/payments/${payment.id}/refund`, {
       method: "POST",
@@ -153,5 +155,10 @@ describe("Payments API", () => {
     expect(res.status).toBe(200);
     expect(data.success).toBe(true);
     expect(data.data.status).toBe("refunded");
+
+    // Причина возврата должна сохраниться: раньше она доходила до сервиса и
+    // пропадала.
+    const stored = await prisma.payment.findUnique({ where: { id: payment!.id } });
+    expect(JSON.parse(stored!.metadata).refund).toMatchObject({ reason: "Customer not satisfied" });
   });
 });

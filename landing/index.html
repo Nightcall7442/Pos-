@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Qwik — касса, склад и отчёты для торговой точки</title>
 <meta name="description" content="Qwik — система для торговой точки: касса, склад с себестоимостью, техкарты, кассовые смены и отчёты по часам.">
-<meta name="theme-color" content="#1f5f3f">
+<meta name="theme-color" content="#232b33">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Qwik — касса, склад и отчёты">
@@ -13,102 +13,180 @@
 <meta property="og:site_name" content="Qwik">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  /*
+   * Лендинг в том же языке, что касса и панель: графитовая строка сверху,
+   * светлый фон, белые блоки с табличными шапками, сталь для акцентов.
+   * Зелёный — только у кнопки оплаты на миниатюре кассы, как в самом продукте.
+   */
   :root {
-    --paper: #f7f5f0;
-    --ink: #14150f;
-    --muted: #6d6c62;
-    --line: #dedbd2;
-    --accent: #1f5f3f;
-    --accent-soft: #e8efe9;
+    --canvas: #eceff1;
+    --surface: #ffffff;
+    --zebra: #f5f7f8;
+    --head: #eceff1;
+    --ink: #15191b;
+    --muted: #60686d;
+    --faint: #666d72;
+    --line: #dfe3e6;
+    --steel: #4f6a8a;
+    --steel-sel: #62799a;
+    --key: #5a6878;
+    --graphite: #2c3540;
+    --graphite-hi: #36414d;
+    --bar: #232b33;
+    --bar-fg: #d9e0e5;
+    --bar-muted: #8e9aa8;
+    --pay: #2f9e61;
+    --ok: #2f9e61;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
   body {
-    background: var(--paper); color: var(--ink);
-    font-family: Inter, system-ui, -apple-system, sans-serif;
+    background: var(--canvas); color: var(--ink);
+    font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased; line-height: 1.6; overflow-x: hidden;
   }
-  .wrap { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  .wrap { width: 100%; max-width: 1160px; margin: 0 auto; padding: 0 24px; }
   a { color: inherit; text-decoration: none; }
-  .serif { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; }
+  :focus-visible { outline: 2px solid var(--steel); outline-offset: 2px; }
 
-  nav { border-bottom: 1px solid var(--line); position: sticky; top: 0; background: rgba(247,245,240,.9); backdrop-filter: blur(10px); z-index: 50; }
-  nav .wrap { display: flex; align-items: center; height: 72px; gap: 28px; }
-  .logo { font-size: 22px; letter-spacing: -.02em; }
-  .nav-links { margin-left: auto; display: flex; gap: 28px; font-size: 14px; color: var(--muted); }
-  .nav-links a:hover { color: var(--ink); }
-  .btn { display: inline-flex; align-items: center; gap: 9px; padding: 12px 22px; border-radius: 4px; font-size: 14px; font-weight: 500; transition: all .15s ease; white-space: nowrap; }
+  /* ── строка сверху — как строка состояния кассы ───────────────────────── */
+  nav { position: sticky; top: 0; z-index: 50; background: var(--bar); color: var(--bar-fg); }
+  nav .wrap { display: flex; align-items: center; height: 60px; gap: 28px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; color: #fff; letter-spacing: -.01em; }
+  .logo svg { width: 28px; height: 28px; flex: none; }
+  .nav-links { margin-left: auto; display: flex; gap: 26px; font-size: 14px; color: var(--bar-fg); }
+  .nav-links a:hover { color: #fff; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 46px; padding: 0 22px; border-radius: 6px; font-size: 15px; font-weight: 600; transition: background .15s ease, border-color .15s ease, color .15s ease; white-space: nowrap; }
   .btn:active { transform: scale(.98); }
-  .btn-primary { background: var(--accent); color: #fff; }
-  .btn-primary:hover { background: #17492f; }
-  .btn-ghost { border: 1px solid var(--ink); }
-  .btn-ghost:hover { background: var(--ink); color: var(--paper); }
+  .btn-primary { background: var(--graphite); color: #fff; }
+  .btn-primary:hover { background: var(--graphite-hi); }
+  .btn-ghost { border: 1px solid #c9cfd4; background: var(--surface); color: var(--ink); }
+  .btn-ghost:hover { border-color: var(--steel); color: var(--steel); }
+  nav .btn { height: 38px; padding: 0 16px; font-size: 14px; border: 1px solid rgba(255,255,255,.2); background: transparent; color: #fff; }
+  nav .btn:hover { border-color: rgba(255,255,255,.45); }
 
-  header { padding: 92px 0 72px; border-bottom: 1px solid var(--line); }
-  .kicker { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 26px; }
-  h1 { font-size: clamp(44px, 8vw, 88px); line-height: .98; letter-spacing: -.02em; }
-  h1 em { font-style: italic; color: var(--accent); }
-  .under { margin-top: 34px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 46px; align-items: end; }
-  .lede { font-size: 17.5px; color: var(--muted); max-width: 44ch; }
-  .cta { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 12px; }
+  /* ── первый экран ─────────────────────────────────────────────────────── */
+  header { padding: 76px 0 84px; }
+  .hero { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 56px; align-items: center; }
+  .kicker { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 20px; }
+  h1 { font-size: clamp(40px, 5.6vw, 66px); line-height: 1.02; letter-spacing: -.025em; font-weight: 600; }
+  h1 span { color: var(--steel); }
+  .lede { margin-top: 24px; font-size: 18px; color: var(--muted); max-width: 44ch; }
+  .cta { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 12px; }
+  .facts { margin-top: 34px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); padding-top: 18px; gap: 16px; max-width: 520px; }
+  .facts b { display: block; font-size: 19px; font-weight: 600; }
+  .facts span { font-size: 13px; color: var(--muted); line-height: 1.4; }
 
-  .ticket { border: 1px solid var(--line); background: #fff; padding: 22px; font-size: 13.5px; }
-  .ticket .t-head { display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px dashed var(--line); margin-bottom: 12px; }
-  .ticket .t-row { display: flex; justify-content: space-between; gap: 14px; padding: 5px 0; color: var(--muted); }
-  .ticket .t-row b { color: var(--ink); font-weight: 500; white-space: nowrap; }
-  .ticket .t-total { display: flex; justify-content: space-between; border-top: 1px dashed var(--line); margin-top: 12px; padding-top: 12px; font-size: 18px; }
-  .ticket .t-total b { font-weight: 600; }
+  /* миниатюра экрана кассы в корпусе */
+  .device { background: #0b100f; border-radius: 20px; padding: 10px; box-shadow: 0 40px 80px -40px rgba(20, 28, 32, .45); }
+  .screen { border-radius: 10px; overflow: hidden; background: var(--surface); display: flex; flex-direction: column; font-size: 13px; }
+  .s-bar { display: flex; justify-content: space-between; gap: 12px; background: var(--bar); color: var(--bar-fg); padding: 8px 14px; font-size: 11.5px; white-space: nowrap; }
+  .s-bar .ok { color: var(--ok); font-weight: 700; }
+  .s-bar .opt { opacity: .7; }
+  .s-main { display: grid; grid-template-columns: minmax(0, 1fr) 150px; }
+  .s-left { display: flex; flex-direction: column; min-width: 0; }
+  .s-g { display: grid; grid-template-columns: 22px minmax(0, 1fr) 66px 74px; gap: 8px; align-items: center; padding: 0 12px; }
+  .s-head { height: 28px; background: var(--head); color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; }
+  .s-head > *:nth-child(n + 3), .s-row > *:nth-child(n + 3) { text-align: right; }
+  .s-row { height: 38px; font-size: 13px; }
+  .s-row:nth-child(even) { background: var(--zebra); }
+  .s-row .n { color: var(--faint); }
+  .s-row .nm { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .s-row .s { font-weight: 600; }
+  .s-row.sel { background: var(--steel-sel); color: #fff; }
+  .s-row.sel .n { color: rgba(255,255,255,.75); }
+  .s-spacer { flex: 1; min-height: 34px; }
+  .s-total { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-top: 1px solid var(--line); padding: 10px 12px 12px; }
+  .s-total small { display: block; font-size: 10.5px; color: var(--muted); }
+  .s-total .chip { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; background: var(--bar); color: var(--bar-fg); padding: 3px 7px; border-radius: 3px; }
+  .s-total b { font-size: 38px; line-height: .95; font-weight: 600; letter-spacing: -.01em; }
+  .s-keys { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 38px; gap: 1px; background: #3d4855; }
+  .s-keys span { display: flex; align-items: center; justify-content: center; background: var(--key); color: #fff; font-size: 16px; font-weight: 500; }
+  .s-keys .pay { grid-column: 1 / -1; grid-row: span 2; background: var(--pay); font-size: 15px; font-weight: 600; letter-spacing: .16em; flex-direction: column; }
+  .s-keys .pay small { font-size: 9.5px; letter-spacing: 0; opacity: .75; font-weight: 400; }
+  .s-fn { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #3d4855; }
+  .s-fn span { background: var(--graphite); color: #e3e8ea; font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif; font-size: 11.5px; font-weight: 500; padding: 7px 10px; line-height: 1.25; }
+  .s-fn span small { display: block; font-size: 9.5px; color: #8e9aa8; }
+  .s-fn .danger { color: #ff8b7d; }
+  .stand { width: 34%; height: 18px; margin: 0 auto; background: linear-gradient(180deg, #2a3236, #0b100f); border-radius: 0 0 10px 10px; }
 
-  section { padding: 84px 0; border-bottom: 1px solid var(--line); }
-  h2 { font-size: clamp(30px, 4.4vw, 46px); line-height: 1.08; letter-spacing: -.015em; }
-  .sec-head { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; margin-bottom: 52px; }
-  .sec-head p { color: var(--muted); }
+  /* ── разделы ──────────────────────────────────────────────────────────── */
+  section { padding: 84px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: clamp(28px, 3.8vw, 42px); line-height: 1.1; letter-spacing: -.02em; font-weight: 600; }
+  .sec-head { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: end; margin-bottom: 40px; }
+  .sec-head p { color: var(--muted); max-width: 52ch; }
+  .eyebrow { display: block; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+  .eyebrow b { color: var(--steel); font-weight: 600; }
 
-  /* Кому подходит — розница слева, общепит справа. */
-  .audience { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); }
-  .aud { background: var(--paper); padding: 34px 30px; }
-  .aud .tag { display: inline-block; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); padding: 4px 10px; margin-bottom: 18px; }
-  .aud h3 { font-size: 24px; font-weight: 400; margin-bottom: 14px; }
+  .block { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .block-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--head); padding: 10px 22px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+  .audience { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .aud-body { padding: 22px 22px 18px; }
+  .aud h3 { font-size: 22px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 10px; }
   .aud ul { list-style: none; }
-  .aud li { display: flex; gap: 11px; padding: 8px 0; font-size: 15px; color: var(--muted); }
-  .aud li svg { flex: none; width: 17px; height: 17px; margin-top: 4px; stroke: var(--accent); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-  .aud-note { margin-top: 24px; font-size: 15px; color: var(--muted); }
-  .aud-note b { color: var(--ink); font-weight: 500; }
+  .aud li { display: flex; gap: 11px; padding: 9px 0; font-size: 15px; color: var(--muted); border-top: 1px solid var(--line); }
+  .aud li:first-child { border-top: 0; }
+  .aud li svg { flex: none; width: 17px; height: 17px; margin-top: 4px; stroke: var(--steel); fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .aud-note { margin-top: 18px; font-size: 15px; color: var(--muted); }
+  .aud-note b { color: var(--ink); font-weight: 600; }
 
-  .list { border-top: 1px solid var(--line); }
-  .item { display: grid; grid-template-columns: 56px 1fr 1.25fr; gap: 26px; padding: 26px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
-  .item .num { font-size: 15px; color: var(--muted); }
-  .item h3 { font-size: 21px; font-weight: 500; letter-spacing: -.01em; }
-  .item p { color: var(--muted); font-size: 15px; }
+  .list .item { display: grid; grid-template-columns: 56px minmax(0, .8fr) minmax(0, 1.3fr); gap: 24px; padding: 20px 22px; border-top: 1px solid var(--line); align-items: baseline; }
+  .list .item:nth-child(even) { background: var(--zebra); }
+  .list .item .num { font-size: 14px; font-weight: 600; color: var(--steel); }
+  .list .item h3 { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+  .list .item p { color: var(--muted); font-size: 15px; }
 
-  .quote-band { background: var(--accent); color: #fff; border-bottom: 0; }
-  .quote-band .wrap { padding-top: 76px; padding-bottom: 76px; }
-  .quote-band p { font-size: clamp(24px, 3.4vw, 34px); line-height: 1.28; max-width: 22ch; }
-  .quote-band .meta { margin-top: 24px; font-size: 14px; opacity: .75; }
+  .band { background: var(--bar); color: #fff; border-top: 0; }
+  .band .wrap { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 40px; align-items: end; }
+  .band p { font-size: clamp(24px, 3.2vw, 34px); line-height: 1.25; font-weight: 500; letter-spacing: -.01em; max-width: 24ch; }
+  .band .meta { font-size: 15px; color: var(--bar-muted); max-width: 40ch; }
 
-  .numbers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
-  .num-cell { background: var(--paper); padding: 30px 26px; }
-  .num-cell b { display: block; font-size: 34px; letter-spacing: -.02em; font-family: "Instrument Serif", Georgia, serif; font-weight: 400; }
-  .num-cell span { font-size: 14px; color: var(--muted); }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .step { padding: 24px 22px 26px; border-left: 1px solid var(--line); }
+  .step:first-child { border-left: 0; }
+  .step b { display: block; font-size: 15px; font-weight: 600; color: var(--steel); margin-bottom: 8px; }
+  .step span { font-size: 16px; line-height: 1.45; }
 
-  .final { text-align: center; border-bottom: 0; }
-  .final p { margin: 16px auto 0; color: var(--muted); max-width: 46ch; }
-  .final .cta { justify-content: center; margin-top: 30px; }
+  .final .panel { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 24px; padding: 34px 32px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+  .final p { margin-top: 8px; color: var(--muted); max-width: 46ch; }
+  .final .cta { margin-top: 0; }
 
-  footer { padding: 34px 0; font-size: 13.5px; color: var(--muted); border-top: 1px solid var(--line); }
+  footer { padding: 30px 0; font-size: 13.5px; color: var(--muted); border-top: 1px solid var(--line); }
   footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; }
   footer a:hover { color: var(--ink); }
 
-  @media (max-width: 880px) {
-    .under, .sec-head, .audience { grid-template-columns: 1fr; }
-    .under, .sec-head { gap: 30px; }
-    .item { grid-template-columns: 34px 1fr; }
-    .item p { grid-column: 2; }
-    .numbers { grid-template-columns: 1fr; }
+  @media (max-width: 960px) {
+    .hero, .sec-head, .audience, .band .wrap { grid-template-columns: 1fr; }
+    .hero { gap: 44px; }
+    .sec-head, .band .wrap { gap: 18px; }
     .nav-links { display: none; }
+    nav .btn { margin-left: auto; }
     section, header { padding: 58px 0; }
+  }
+  @media (max-width: 640px) {
+    .list .item { grid-template-columns: 34px 1fr; gap: 6px 14px; padding: 18px; }
+    .list .item p { grid-column: 2; }
+    .steps { grid-template-columns: 1fr; }
+    .step { border-left: 0; border-top: 1px solid var(--line); }
+    .step:first-child { border-top: 0; }
+    .facts { grid-template-columns: 1fr 1fr; }
+    .s-main { grid-template-columns: 1fr; }
+    .s-keys { grid-template-columns: repeat(6, 1fr); grid-auto-rows: 34px; }
+    .s-keys .pay { grid-row: auto; flex-direction: row; gap: 8px; }
+    .s-keys .k-extra { display: none; }
+    .s-fn { grid-template-columns: repeat(2, 1fr); }
+    .s-g { grid-template-columns: 18px minmax(0, 1fr) 56px 64px; padding: 0 10px; }
+    .s-bar .opt { display: none; }
+    .final .panel { padding: 26px 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn:active { transform: none; }
   }
 </style>
 </head>
@@ -116,45 +194,77 @@
 
 <nav>
   <div class="wrap">
-    <div class="logo serif">Qwik</div>
+    <a class="logo" href="#">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="8" fill="#2c3540" stroke="rgba(255,255,255,.18)"/><circle cx="15" cy="15" r="6.2" fill="none" stroke="#fff" stroke-width="2.6"/><path d="M19 19 L23.5 23.5" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/></svg>
+      Qwik
+    </a>
     <div class="nav-links">
       <a href="#audience">Кому подходит</a>
       <a href="#what">Что умеет</a>
       <a href="#how">Как начать</a>
-      <a href="${ADMIN_URL}">Вход</a>
     </div>
-    <a class="btn btn-ghost" href="${ADMIN_URL}">Войти</a>
+    <a class="btn" href="${ADMIN_URL}">Войти</a>
   </div>
 </nav>
 
 <header>
-  <div class="wrap">
-    <div class="kicker">Касса · склад · отчёты</div>
-    <h1 class="serif">Точка продаж,<br>которая <em>считает сама</em></h1>
-    <div class="under">
-      <div>
-        <p class="lede">
-          Qwik ведёт продажу, остатки, себестоимость и смены в одной системе.
-          Кассир нажимает «Оплатить» — склад, выручка и отчёты обновляются сами.
-        </p>
-        <div class="cta">
-          <a class="btn btn-primary" href="${ADMIN_URL}">Панель управления
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </a>
-          <a class="btn btn-ghost" href="${POS_URL}">Открыть кассу</a>
+  <div class="wrap hero">
+    <div>
+      <div class="kicker">Касса · склад · отчёты</div>
+      <h1>Точка продаж, которая <span>считает сама</span></h1>
+      <p class="lede">
+        Qwik ведёт продажу, остатки, себестоимость и смены в одной системе.
+        Кассир принимает оплату — склад, выручка и отчёты обновляются сами.
+      </p>
+      <div class="cta">
+        <a class="btn btn-primary" href="${ADMIN_URL}">Панель управления
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a class="btn btn-ghost" href="${POS_URL}">Открыть кассу</a>
+      </div>
+      <div class="facts">
+        <div><b>Браузер</b><span>планшет, ноутбук или телефон — ничего не ставить</span></div>
+        <div><b>PIN</b><span>кассир входит за секунду, смена со сверкой</span></div>
+        <div><b>Сум</b><span>весы, штрихкоды, техкарты и часовой пояс точки</span></div>
+      </div>
+    </div>
+
+    <div role="img" aria-label="Экран кассы Qwik: чек на 65 000 сум, цифровая клавиатура и кнопка оплаты наличными">
+      <div class="device">
+        <div class="screen" aria-hidden="true">
+          <div class="s-bar">
+            <span><b>18:40</b> &nbsp;Азиза Р. · Касса 1<span class="opt"> · смена с 08:02</span></span>
+            <span>Связь <span class="ok">✓</span><span class="opt"> &nbsp;Принтер <span class="ok">✓</span> &nbsp;Весы <span class="ok">✓</span></span></span>
+          </div>
+          <div class="s-main">
+            <div class="s-left">
+              <div class="s-g s-head"><span>№</span><span>Товар</span><span>Кол-во</span><span>Сумма</span></div>
+              <div class="s-g s-row"><span class="n">1</span><span class="nm">Молоко «Лактис» 3,2% 1 л</span><span>2</span><span class="s">27 000</span></div>
+              <div class="s-g s-row"><span class="n">2</span><span class="nm">Сыр «Российский»</span><span>0,250 кг</span><span class="s">24 500</span></div>
+              <div class="s-g s-row sel"><span class="n">3</span><span class="nm">Хлеб «Нон» белый</span><span>3</span><span class="s">13 500</span></div>
+              <div class="s-spacer"></div>
+              <div class="s-total">
+                <span><span class="chip">ПРОДАЖА</span></span>
+                <span style="text-align:right"><small>Итого, сўм</small><b>65 000</b></span>
+              </div>
+            </div>
+            <div class="s-keys">
+              <span>7</span><span>8</span><span>9</span>
+              <span>4</span><span>5</span><span>6</span>
+              <span class="k-extra">1</span><span class="k-extra">2</span><span class="k-extra">3</span>
+              <span class="k-extra">0</span><span class="k-extra">00</span><span class="k-extra">,</span>
+              <span class="pay">НАЛИЧНЫЕ <small>F8</small></span>
+            </div>
+          </div>
+          <div class="s-fn">
+            <span><small>F2</small>Отложить чек</span>
+            <span><small>F3</small>Найти товар</span>
+            <span class="danger"><small>Delete</small>Убрать позицию</span>
+            <span><small>F9 · F10</small>Карта · QR</span>
+          </div>
         </div>
       </div>
-
-      <div class="ticket">
-        <div class="t-head"><span>Чек №128</span><span>19:42</span></div>
-        <div class="t-row"><span>Молоко 2,5%, 1 л</span><b>12 000</b></div>
-        <div class="t-row"><span>Хлеб бородинский</span><b>7 000</b></div>
-        <div class="t-row"><span>Яблоки · 1,240 кг × 18 000</span><b>22 320</b></div>
-        <div class="t-row"><span>Кофе зерновой, 250 г</span><b>89 000</b></div>
-        <div class="t-total"><span>Итого</span><b>130 320</b></div>
-        <div class="t-row" style="margin-top:8px"><span>Наличные</span><b>150 000</b></div>
-        <div class="t-row"><span>Сдача</span><b>19 680</b></div>
-      </div>
+      <div class="stand" aria-hidden="true"></div>
     </div>
   </div>
 </header>
@@ -162,29 +272,33 @@
 <section id="audience">
   <div class="wrap">
     <div class="sec-head">
-      <h2 class="serif">Кому подходит</h2>
-      <p>Одна система закрывает и розницу, и общепит — различается только то, чем вы пользуетесь каждый день.</p>
+      <div><span class="eyebrow"><b>01</b> · Кому подходит</span><h2>Магазину и кафе — одна система</h2></div>
+      <p>Различается только то, чем вы пользуетесь каждый день: в магазине — сканер и весы, в кафе — столы, кухня и техкарты.</p>
     </div>
     <div class="audience">
-      <div class="aud">
-        <span class="tag">Розница</span>
-        <h3 class="serif">Продуктовый магазин, минимаркет</h3>
-        <ul>
-          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Весовой товар: вводите вес на кассе, цена считается сама</li>
-          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Сканер со справочником: отсканировали штрихкод — название и полка уже подставлены, осталось ввести цену</li>
-          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Приход от поставщика с закупочной ценой и наценкой</li>
-          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Остатки, минимальный запас и товары без маржи — видно сразу</li>
-        </ul>
+      <div class="block aud">
+        <div class="block-head"><span>Розница</span><span>сканер · весы</span></div>
+        <div class="aud-body">
+          <h3>Продуктовый магазин, минимаркет</h3>
+          <ul>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Весовой товар: вес приходит с весов, цена считается сама</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Сканер со справочником: отсканировали штрихкод — название уже подставлено, осталось ввести цену</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Приход от поставщика с закупочной ценой и наценкой</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Остатки, минимальный запас и товары без маржи — видно сразу</li>
+          </ul>
+        </div>
       </div>
-      <div class="aud">
-        <span class="tag">Общепит</span>
-        <h3 class="serif">Кафе, бар, пекарня</h3>
-        <ul>
-          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Столы, заказы в зале и навынос</li>
-          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Кухонный экран: заказ приходит сразу после оформления</li>
-          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Техкарты: блюдо списывает ингредиенты при оплате</li>
-          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Варианты объёма и порции у одной позиции</li>
-        </ul>
+      <div class="block aud">
+        <div class="block-head"><span>Общепит</span><span>столы · кухня</span></div>
+        <div class="aud-body">
+          <h3>Кафе, чайхана, пекарня</h3>
+          <ul>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Столы, заказы в зале и навынос</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Кухонный экран: заказ приходит сразу после оформления, время ожидания видно цветом</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Техкарты: блюдо списывает ингредиенты при оплате</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Варианты объёма и порции у одной позиции</li>
+          </ul>
+        </div>
       </div>
     </div>
     <p class="aud-note">
@@ -197,11 +311,12 @@
 <section id="what">
   <div class="wrap">
     <div class="sec-head">
-      <h2 class="serif">Что делает система</h2>
-      <p>Шесть блоков, которые закрывают рабочий день точки — от прихода товара до сверки кассы вечером.</p>
+      <div><span class="eyebrow"><b>02</b> · Что умеет</span><h2>Рабочий день точки — от прихода до сверки кассы</h2></div>
+      <p>Шесть блоков, которые закрывают день целиком. Всё связано: продажа сразу меняет остаток, выручку смены и отчёт.</p>
     </div>
-    <div class="list">
-      <div class="item"><span class="num">01</span><h3>Тач-касса</h3><p>Категории, поиск, вес в граммах, столы и клиент. Заказ, оплата и чек — одной операцией.</p></div>
+    <div class="block list">
+      <div class="block-head"><span>Блок</span><span>что делает</span></div>
+      <div class="item"><span class="num">01</span><h3>Касса</h3><p>Сканер и весы, плитки без штрихкода, горячие клавиши (F2, F3, F8–F10), отложенные чеки. Заказ, оплата и чек — одной операцией.</p></div>
       <div class="item"><span class="num">02</span><h3>Склад</h3><p>Остаток резервируется в момент заказа, приход обновляет себестоимость, цена продажи меняется только по вашему решению.</p></div>
       <div class="item"><span class="num">03</span><h3>Техкарты</h3><p>Рецепт блюда списывает ингредиенты при оплате — с точностью до грамма.</p></div>
       <div class="item"><span class="num">04</span><h3>Смены</h3><p>Открытие с суммой в кассе, живые итоги по наличным, карте и QR, расхождение при закрытии.</p></div>
@@ -211,9 +326,9 @@
   </div>
 </section>
 
-<section class="quote-band">
+<section class="band">
   <div class="wrap">
-    <p class="serif">«Кассир нажал оплату — склад, смена и отчёт уже обновились».</p>
+    <p>«Кассир нажал оплату — склад, смена и отчёт уже обновились».</p>
     <div class="meta">Так работает система по умолчанию, без ручной сверки в конце дня.</div>
   </div>
 </section>
@@ -221,24 +336,31 @@
 <section id="how">
   <div class="wrap">
     <div class="sec-head">
-      <h2 class="serif">Запуск — за вечер</h2>
+      <div><span class="eyebrow"><b>03</b> · Как начать</span><h2>Запуск — за вечер</h2></div>
       <p>Ничего не нужно устанавливать: система открывается в браузере на планшете, ноутбуке или телефоне.</p>
     </div>
-    <div class="numbers">
-      <div class="num-cell"><b>01</b><span>Создайте заведение: название, валюта, часовой пояс</span></div>
-      <div class="num-cell"><b>02</b><span>Заведите товары приходом — с закупкой и ценой продажи</span></div>
-      <div class="num-cell"><b>03</b><span>Откройте смену и продавайте — кассир входит по PIN</span></div>
+    <div class="block">
+      <div class="block-head"><span>Шаги</span><span>около часа</span></div>
+      <div class="steps">
+        <div class="step"><b>01</b><span>Создайте заведение: название, валюта, часовой пояс</span></div>
+        <div class="step"><b>02</b><span>Заведите товары приходом — с закупкой и ценой продажи</span></div>
+        <div class="step"><b>03</b><span>Откройте смену и продавайте — кассир входит по PIN</span></div>
+      </div>
     </div>
   </div>
 </section>
 
 <section class="final" id="start">
   <div class="wrap">
-    <h2 class="serif">Готовы начать?</h2>
-    <p>Создайте заведение и сделайте первую продажу сегодня. Данные остаются вашими.</p>
-    <div class="cta">
-      <a class="btn btn-primary" href="${ADMIN_URL}">Панель управления</a>
-      <a class="btn btn-ghost" href="${POS_URL}">POS-терминал</a>
+    <div class="panel">
+      <div>
+        <h2>Готовы начать?</h2>
+        <p>Создайте заведение и сделайте первую продажу сегодня. Данные остаются вашими.</p>
+      </div>
+      <div class="cta">
+        <a class="btn btn-primary" href="${ADMIN_URL}">Панель управления</a>
+        <a class="btn btn-ghost" href="${POS_URL}">Открыть кассу</a>
+      </div>
     </div>
   </div>
 </section>

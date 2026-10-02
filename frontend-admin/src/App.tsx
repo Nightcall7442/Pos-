@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
@@ -19,6 +20,10 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Kitchen from "./pages/Kitchen";
 import TechCards from "./pages/TechCards";
+import LoadingSpinner from "./components/LoadingSpinner";
+
+// Витрина интерфейса нужна только администратору — отдельным файлом, не в общей сборке.
+const DesignSystem = lazy(() => import("./pages/DesignSystem"));
 
 export default function App() {
   return (
@@ -44,6 +49,14 @@ export default function App() {
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/kitchen" element={<Kitchen />} />
+        <Route
+          path="/_design"
+          element={
+            <Suspense fallback={<LoadingSpinner />}>
+              <DesignSystem />
+            </Suspense>
+          }
+        />
       </Route>
     </Routes>
   );

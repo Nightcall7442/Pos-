@@ -10,13 +10,28 @@ if errorlevel 1 (
     exit /b 1
 )
 
+rem The database is PostgreSQL 16. With Docker Desktop it is started from
+rem docker-compose.yml; without Docker, install PostgreSQL 16 yourself and put
+rem its address into DATABASE_URL in backend\.env.
+where docker >nul 2>nul
+if errorlevel 1 (
+    echo [INFO] Docker not found - expecting PostgreSQL 16 on localhost:5432, see backend\.env
+) else (
+    echo Starting PostgreSQL...
+    docker compose up -d --wait postgres
+    if errorlevel 1 (
+        echo [ERROR] Could not start PostgreSQL with Docker. Is Docker Desktop running?
+        pause
+        exit /b 1
+    )
+)
+
 if not exist "backend\.env" (
     echo Creating backend\.env with default dev settings...
     (
         echo PORT=3000
         echo NODE_ENV=development
-        echo DATABASE_URL="file:./dev.db"
-        echo REDIS_URL="redis://localhost:6379"
+        echo DATABASE_URL="postgresql://qwik:qwik@localhost:5432/qwik?schema=public&connection_limit=10&pool_timeout=20&options=-c%%20TimeZone%%3DUTC"
         echo JWT_SECRET="dev-local-jwt-secret-change-me-please"
         echo JWT_EXPIRES_IN="15m"
         echo JWT_REFRESH_SECRET="dev-local-refresh-secret-change-me-please"
@@ -45,11 +60,13 @@ if not exist "backend\node_modules" (
         echo Installing pos-terminal dependencies...
         call npm install --prefix pos-terminal
     )
-    if not exist "backend\prisma\dev.db" (
-        echo Database not found - creating and seeding...
-        call npm run db:generate --prefix backend
-        call npm run db:push --prefix backend
-        call npm run db:seed --prefix backend
+    rem Applies new migrations, if any; does nothing when the schema is current.
+    call npm run db:generate --prefix backend
+    call npm run db:deploy --prefix backend
+    if errorlevel 1 (
+        echo [ERROR] Could not apply database migrations - is PostgreSQL running?
+        pause
+        exit /b 1
     )
 )
 

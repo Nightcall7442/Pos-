@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, Search, Moon, Sun, LogOut } from "lucide-react";
+import { Bell, Search, Moon, Sun, LogOut, Menu } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { useUIStore } from "../store/uiStore";
 import { useLogout } from "../hooks/useAuth";
@@ -9,7 +9,7 @@ import NotificationsPanel from "./NotificationsPanel";
 
 export default function Header() {
   const user = useAuthStore((s) => s.user);
-  const { theme, toggleTheme } = useUIStore();
+  const { theme, toggleTheme, mobileNavOpen, setMobileNavOpen } = useUIStore();
   const logout = useLogout();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
@@ -22,31 +22,45 @@ export default function Header() {
   const unreadCount = data || 0;
 
   return (
-    <header className="relative flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 dark:border-gray-700 dark:bg-gray-800">
-      <div className="relative w-96">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+    <header className="relative flex h-14 items-center gap-2 bg-bar px-3 text-bar-fg sm:px-6">
+      <button
+        onClick={() => setMobileNavOpen(true)}
+        aria-label="Открыть меню"
+        aria-controls="app-nav"
+        aria-expanded={mobileNavOpen}
+        className="-ml-1 flex h-10 w-10 items-center justify-center rounded text-bar-fg hover:bg-bar-hover hover:text-white lg:hidden"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+      <div className="relative hidden md:block md:w-72 lg:w-96">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bar-muted" />
         <input
           type="text"
           placeholder="Поиск товаров, заказов..."
-          className="input pl-10"
+          aria-label="Поиск по панели"
+          className="block h-9 w-full rounded border border-white/10 bg-white/5 pl-10 pr-3 text-sm text-bar-fg placeholder:text-bar-muted focus:border-white/40 focus:outline-none focus:ring-2 focus:ring-primary-400/60"
         />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-1 sm:gap-2">
         <button
           onClick={toggleTheme}
-          className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+          aria-label={theme === "light" ? "Тёмная тема" : "Светлая тема"}
+          className="rounded p-2 text-bar-muted hover:bg-bar-hover hover:text-white"
         >
           {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
         </button>
         <div className="relative">
           <button
             onClick={() => setNotificationsOpen(!notificationsOpen)}
-            className="relative rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+            aria-label={unreadCount > 0 ? `Уведомления: ${unreadCount} новых` : "Уведомления"}
+            aria-expanded={notificationsOpen}
+            aria-controls="notifications-panel"
+            className="relative rounded p-2 text-bar-muted hover:bg-bar-hover hover:text-white"
           >
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger-solid text-[10px] font-bold text-white">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -56,16 +70,17 @@ export default function Header() {
             onClose={() => setNotificationsOpen(false)}
           />
         </div>
-        <div className="ml-2 flex items-center gap-3 border-l border-gray-200 pl-4 dark:border-gray-600">
-          <div className="text-right">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+        <div className="ml-1 flex items-center gap-3 border-l border-white/10 pl-2 sm:ml-2 sm:pl-4">
+          <div className="hidden text-right sm:block">
+            <p className="text-sm font-medium text-white">
               {user?.firstName} {user?.lastName}
             </p>
-            <p className="text-xs text-gray-500 capitalize">{user?.role === "admin" ? "Администратор" : user?.role === "cashier" ? "Кассир" : user?.role}</p>
+            <p className="text-xs text-bar-muted capitalize">{user?.role === "admin" ? "Администратор" : user?.role === "cashier" ? "Кассир" : user?.role}</p>
           </div>
           <button
             onClick={logout}
-            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
+            aria-label="Выйти"
+            className="rounded p-2 text-bar-muted hover:bg-bar-hover hover:text-danger-400"
           >
             <LogOut className="h-5 w-5" />
           </button>

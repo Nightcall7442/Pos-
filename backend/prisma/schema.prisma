@@ -2,8 +2,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// PostgreSQL 16. До 2026-10 база была SQLite: её миграции и замороженная
+// схема лежат в prisma/cutover/ — для переноса данных и отката.
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -36,6 +38,8 @@ model Tenant {
   categories   Category[]
   products     Product[]
   orders       Order[]
+  orderCounter OrderCounter?
+  idempotencyKeys IdempotencyKey[]
   payments     Payment[]
   inventory    InventoryMovement[]
   tables       Table[]
@@ -63,6 +67,11 @@ model User {
   role          String    @default("cashier")
   avatarUrl     String?   @map("avatar_url")
   isActive      Boolean   @default(true) @map("is_active")
+  // Счётчик для отзыва refresh-токенов: он пишется в токен обновления и
+  // сверяется при каждом обновлении. Смена пароля увеличивает счётчик, и все
+  // выданные ранее refresh-токены перестают работать. Без этого украденный
+  // токен жил свои семь дней, а смена пароля его не отменяла.
+  tokenVersion  Int       @default(0) @map("token_version")
   lastLoginAt   DateTime? @map("last_login_at")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
@@ -180,6 +189,9 @@ model Product {
   inventory      InventoryMovement[]
   stockReceiptItems StockReceiptItem[]
 
+  @@index([tenantId, categoryId])
+  @@index([tenantId, barcode])
+  @@index([tenantId, sku])
   @@map("products")
 }
 
@@ -273,6 +285,13 @@ model Order {
   customerPhone     String?   @map("customer_phone")
   estimatedReadyAt  DateTime? @map("estimated_ready_at")
   completedAt       DateTime? @map("completed_at")
+  // Кухня — отдельно от оплаты. status говорит о деньгах (completed — продажа
+  // оплачена, на нём держатся выручка, смена и склад), kitchenStatus — о том,
+  // где блюдо: new → cooking → ready → served. null — кухня не участвует
+  // (магазин). Оплаченный заказ кафе уходит на кухню сразу, а отчёты не ждут,
+  // пока его приготовят.
+  kitchenStatus     String?   @map("kitchen_status")
+  kitchenStatusAt   DateTime? @map("kitchen_status_at")
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
@@ -280,10 +299,53 @@ model Order {
   payments  Payment[]
   receipts  Receipt[]
 
-  @@index([tenantId])
-  @@index([status])
+  // Номер заказа уникален в пределах точки. На SQLite это держалось на том,
+  // что писатель в базе один; на Postgres — на счётчике OrderCounter, а это
+  // ограничение — страховка от любой будущей ошибки в выдаче номеров.
+  @@unique([tenantId, orderNumber])
+  @@index([tenantId, createdAt])
+  // Для фоновой отмены неоплаченных заказов (order.cleanup.ts).
+  @@index([status, createdAt])
   @@index([cashShiftId])
+  // Экран кухни: заказы точки, которые ещё не выданы.
+  @@index([tenantId, kitchenStatus])
   @@map("orders")
+}
+
+// Счётчик номеров заказов по точке. На SQLite номер брался как max+1 внутри
+// транзакции, и гонки не было: писатель в базе один. На Postgres две
+// одновременные продажи прочитали бы один и тот же max и получили одинаковый
+// номер. Теперь номер выдаёт один INSERT ... ON CONFLICT DO UPDATE ... RETURNING
+// по строке точки: строка заблокирована до конца транзакции, так что номера
+// уникальны и идут без пропусков (откат продажи возвращает номер).
+model OrderCounter {
+  tenantId   String @id @map("tenant_id")
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lastNumber Int    @map("last_number")
+
+  @@map("order_counters")
+}
+
+// Ключи идемпотентности (заголовок Idempotency-Key). Касса, у которой
+// оборвалась связь посреди продажи, не знает, прошла ли продажа, и шлёт её
+// ещё раз — с тем же ключом. Строка пишется в той же транзакции, что и сама
+// продажа (оплата, приход): либо есть и то и другое, либо ничего, — и
+// повтор возвращает уже созданное вместо второго чека. Ключ живёт сутки.
+model IdempotencyKey {
+  tenantId    String   @map("tenant_id")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key         String
+  // «POST /orders/checkout» и т.п. и SHA-256 тела запроса: тот же ключ с
+  // другим запросом — ошибка клиента, а не повтор.
+  route       String
+  requestHash String   @map("request_hash")
+  // id созданного заказа, платежа или прихода — по нему повтор и отвечает.
+  resourceId  String?  @map("resource_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@id([tenantId, key])
+  @@index([createdAt])
+  @@map("idempotency_keys")
 }
 
 model OrderItem {
@@ -303,6 +365,8 @@ model OrderItem {
 
   modifiers OrderItemModifier[]
 
+  @@index([orderId])
+  @@index([productId])
   @@map("order_items")
 }
 
@@ -315,6 +379,7 @@ model OrderItemModifier {
   price           Float        @default(0)
   createdAt       DateTime     @default(now()) @map("created_at")
 
+  @@index([orderItemId])
   @@map("order_item_modifiers")
 }
 
@@ -335,6 +400,8 @@ model Payment {
   processedAt          DateTime? @map("processed_at")
   createdAt            DateTime @default(now()) @map("created_at")
 
+  @@index([orderId])
+  @@index([tenantId, createdAt])
   @@map("payments")
 }
 
@@ -352,6 +419,8 @@ model InventoryMovement {
   user       User?    @relation(fields: [userId], references: [id])
   createdAt  DateTime @default(now()) @map("created_at")
 
+  @@index([tenantId, createdAt])
+  @@index([productId])
   @@map("inventory_movements")
 }
 
@@ -483,6 +552,7 @@ model CashShift {
 
   orders Order[]
 
+  @@index([tenantId, status])
   @@map("cash_shifts")
 }
 

@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { cashShiftService } from "../services";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Badge from "../components/Badge";
 import Modal from "../components/Modal";
-import toast from "react-hot-toast";
-import { Calendar, User, Clock, DollarSign, Eye, TrendingUp, TrendingDown } from "lucide-react";
+import { User, Clock, Eye } from "lucide-react";
+import EmptyState from "../components/EmptyState";
 import { useMoney } from "../hooks/useMoney";
 
 
@@ -32,7 +32,6 @@ interface CashShift {
 export default function CashShifts() {
   const { money } = useMoney();
   const [showDetail, setShowDetail] = useState<CashShift | null>(null);
-  const qc = useQueryClient();
 
   const { data: shiftsData, isLoading } = useQuery({
     queryKey: ["cash-shifts"],
@@ -51,7 +50,44 @@ export default function CashShifts() {
       {isLoading ? (
         <LoadingSpinner />
       ) : (
-        <div className="card overflow-x-auto">
+        <>
+        <div className="space-y-3 md:hidden">
+          {shifts.length === 0 && (
+            <div className="card">
+              <EmptyState compact icon={<Clock className="h-6 w-6" />} title="Смен пока нет" description="Смену открывает кассир на кассе при входе. Здесь появятся её итоги: продажи, наличные в кассе и расхождение при закрытии." />
+            </div>
+          )}
+          {shifts.map((shift) => (
+            <button key={shift.id} type="button" onClick={() => setShowDetail(shift)} className="card block w-full p-4 text-left">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate font-medium text-gray-900">
+                  {shift.user.firstName} {shift.user.lastName}
+                </span>
+                <Badge variant={shift.status === "open" ? "success" : "gray"}>{shift.status === "open" ? "Открыта" : "Закрыта"}</Badge>
+              </div>
+              <p className="mt-0.5 text-xs text-gray-500">
+                {new Date(shift.openedAt).toLocaleString("ru-RU")} → {shift.closedAt ? new Date(shift.closedAt).toLocaleString("ru-RU") : "сейчас"}
+              </p>
+              <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                <div>
+                  <dt className="text-xs text-gray-500">Продажи</dt>
+                  <dd className="font-semibold text-gray-900">{money(shift.totalSales)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-gray-500">Наличные</dt>
+                  <dd className="text-gray-700">{money(shift.totalCashSales)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-gray-500">Разница</dt>
+                  <dd className={shift.difference === null ? "text-gray-500" : shift.difference === 0 ? "font-medium text-success-600" : "font-semibold text-danger-600"}>
+                    {shift.difference === null ? "—" : shift.difference === 0 ? "Сходится" : money(shift.difference)}
+                  </dd>
+                </div>
+              </dl>
+            </button>
+          ))}
+        </div>
+        <div className="card hidden overflow-x-auto md:block">
           <table className="w-full min-w-[720px]">
             <thead>
               <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -75,7 +111,7 @@ export default function CashShifts() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2 text-sm">
-                      <User className="h-4 w-4 text-gray-400" />
+                      <User className="h-4 w-4 text-gray-500" />
                       {shift.user.firstName} {shift.user.lastName}
                     </div>
                   </td>
@@ -92,17 +128,18 @@ export default function CashShifts() {
                   <td className="p-4 whitespace-nowrap text-right text-sm text-gray-500">{money(shift.totalCashSales)}</td>
                   <td className="p-4 text-right">
                     {shift.difference !== null ? (
-                      <span className={`text-sm font-medium ${shift.difference === 0 ? "text-green-600" : "text-red-600"}`}>
+                      <span className={`text-sm font-medium ${shift.difference === 0 ? "text-success-600" : "text-danger-600"}`}>
                         {shift.difference === 0 ? "Сходится" : money(shift.difference)}
                       </span>
                     ) : (
-                      <span className="text-sm text-gray-400">—</span>
+                      <span className="text-sm text-gray-500">—</span>
                     )}
                   </td>
                   <td className="p-4 text-right">
                     <button
                       onClick={() => setShowDetail(shift)}
-                      className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                      aria-label="Детали смены"
+                      className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
                     >
                       <Eye className="h-4 w-4" />
                     </button>
@@ -111,14 +148,15 @@ export default function CashShifts() {
               ))}
               {shifts.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-gray-500">
-                    Нет смен
+                  <td colSpan={8}>
+                    <EmptyState compact icon={<Clock className="h-6 w-6" />} title="Смен пока нет" description="Смену открывает кассир на кассе при входе. Здесь появятся её итоги: продажи, наличные в кассе и расхождение при закрытии." />
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <Modal isOpen={!!showDetail} onClose={() => setShowDetail(null)} title="Детали смены" size="lg">
@@ -142,28 +180,28 @@ export default function CashShifts() {
                   <p className="text-xs text-gray-500">Конечная сумма</p>
                   <p className="text-lg font-bold text-gray-900">{showDetail.closingCash !== null ? money(showDetail.closingCash) : "—"}</p>
                 </div>
-                <div className="rounded-lg bg-blue-50 p-3">
-                  <p className="text-xs text-blue-600">Продажи наличными</p>
-                  <p className="text-lg font-bold text-blue-700">{money(showDetail.totalCashSales)}</p>
+                <div className="rounded-lg bg-info-50 p-3">
+                  <p className="text-xs text-info-600">Продажи наличными</p>
+                  <p className="text-lg font-bold text-info-700">{money(showDetail.totalCashSales)}</p>
                 </div>
-                <div className="rounded-lg bg-purple-50 p-3">
-                  <p className="text-xs text-purple-600">Продажи картой</p>
-                  <p className="text-lg font-bold text-purple-700">{money(showDetail.totalCardSales)}</p>
+                <div className="rounded-lg bg-info-50 p-3">
+                  <p className="text-xs text-info-600">Продажи картой</p>
+                  <p className="text-lg font-bold text-info-700">{money(showDetail.totalCardSales)}</p>
                 </div>
-                <div className="rounded-lg bg-green-50 p-3">
-                  <p className="text-xs text-green-600">Общая сумма</p>
-                  <p className="text-lg font-bold text-green-700">{money(showDetail.totalSales)}</p>
+                <div className="rounded-lg bg-success-50 p-3">
+                  <p className="text-xs text-success-600">Общая сумма</p>
+                  <p className="text-lg font-bold text-success-700">{money(showDetail.totalSales)}</p>
                 </div>
-                <div className="rounded-lg bg-yellow-50 p-3">
-                  <p className="text-xs text-yellow-600">Чаевые</p>
-                  <p className="text-lg font-bold text-yellow-700">{money(showDetail.totalTips)}</p>
+                <div className="rounded-lg bg-warning-50 p-3">
+                  <p className="text-xs text-warning-600">Чаевые</p>
+                  <p className="text-lg font-bold text-warning-700">{money(showDetail.totalTips)}</p>
                 </div>
               </div>
             </div>
 
             {showDetail.difference !== null && showDetail.difference !== 0 && (
-              <div className="rounded-lg bg-red-50 border border-red-200 p-3">
-                <p className="text-sm text-red-700">
+              <div className="rounded-lg bg-danger-50 border border-danger-200 p-3">
+                <p className="text-sm text-danger-700">
                   <strong>Расхождение:</strong> {money(showDetail.difference)}
                 </p>
               </div>

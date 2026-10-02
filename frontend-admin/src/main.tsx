@@ -26,9 +26,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           toastOptions={{
             duration: 3000,
             style: {
-              background: "#1f2937",
-              color: "#f9fafb",
-              borderRadius: "12px",
+              // Цвета — из токенов темы, чтобы уведомления не выпадали из оформления (D-1).
+              background: "var(--toast-bg)",
+              color: "var(--toast-fg)",
+              borderRadius: "6px",
               fontSize: "14px",
             },
           }}

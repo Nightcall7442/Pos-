@@ -6,20 +6,18 @@ interface BadgeProps {
   className?: string;
 }
 
+// Статус — плашкой с прямыми углами, как в таблицах кассы; цвет — по смыслу (D-5).
+const BASE = "inline-flex items-center gap-1 whitespace-nowrap rounded-sm px-2 py-0.5 text-xs font-medium";
 const variantMap = {
-  success: "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-  warning: "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
-  danger: "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
-  info: "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  gray: "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
+  success: "bg-success-50 text-success-700",
+  warning: "bg-warning-50 text-warning-800",
+  danger: "bg-danger-50 text-danger-700",
+  info: "bg-info-50 text-info-700",
+  gray: "bg-gray-100 text-gray-700",
 };
 
 export default function Badge({ children, variant = "gray", className }: BadgeProps) {
-  return (
-    <span className={clsx(variantMap[variant], className)}>
-      {children}
-    </span>
-  );
+  return <span className={clsx(BASE, variantMap[variant], className)}>{children}</span>;
 }
 
 export function statusBadge(status: string) {

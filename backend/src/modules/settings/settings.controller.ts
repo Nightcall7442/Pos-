@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { settingsService } from "./settings.service.js";
-import { sendSuccess, sendError } from "../../utils/response.js";
+import { sendSuccess } from "../../utils/response.js";
 import { handleError } from "../../utils/errors.js";
 
 export class SettingsController {

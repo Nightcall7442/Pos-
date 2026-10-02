@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, Delete, Eye, EyeOff, RefreshCw } from "lucide-react";
 import api, { storeTokens } from "../services/api";
 import toast from "react-hot-toast";
+import { apiErrorMessage } from "../utils/apiError";
+import { useCartStore } from "../store/cartStore";
 
 type LoginUser = { id: string; firstName: string; lastName: string; email: string; role: string };
 
@@ -42,13 +44,6 @@ function readTenant(): string | null {
   }
 }
 
-function errorText(error: unknown, fallback: string): string {
-  const err = error as { response?: { data?: { error?: string } } };
-  if (err.response?.data?.error) return err.response.data.error;
-  if (!err.response) return "Нет связи с сервером";
-  return fallback;
-}
-
 function initials(member: { firstName: string; lastName: string }): string {
   return `${member.firstName?.[0] ?? ""}${member.lastName?.[0] ?? ""}`.toUpperCase();
 }
@@ -67,8 +62,12 @@ function Avatar({ member }: { member: StaffMember }) {
 }
 
 export default function LoginScreen({ onLogin }: LoginScreenProps) {
-  const [stage, setStage] = useState<Stage>("loading");
   const [tenant, setTenant] = useState<string | null>(readTenant);
+  // Точка до «Сменить точку»: отложенные чеки принадлежат ей, а не следующей.
+  const previousTenant = useRef<string | null>(null);
+  // Непривязанный планшет сразу показывает привязку — без лишнего рендера
+  // «загрузки» и записи стадии из эффекта.
+  const [stage, setStage] = useState<Stage>(() => (readTenant() ? "loading" : "pairing"));
   const [tenantName, setTenantName] = useState("");
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [selected, setSelected] = useState<StaffMember | null>(null);
@@ -95,10 +94,9 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
   // При запуске: если планшет уже привязан — сразу плитки.
   useEffect(() => {
-    if (!tenant) {
-      setStage("pairing");
-      return;
-    }
+    if (!tenant) return;
+    // loadStaff пишет состояние после ответа сервера (await), а не синхронно.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- загрузка по сети
     loadStaff(tenant)
       .then(() => setStage("staff"))
       .catch((error) => {
@@ -110,7 +108,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           setPairingError("Сохранённый код точки больше не действует. Введите новый.");
           setStage("pairing");
         } else {
-          toast.error(errorText(error, "Не удалось загрузить сотрудников"));
+          toast.error(apiErrorMessage(error, "Не удалось загрузить сотрудников"));
           setStage("email");
         }
       });
@@ -127,11 +125,16 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     setPairingError("");
     try {
       await loadStaff(code);
+      if (previousTenant.current && previousTenant.current !== code) {
+        // Чеки и отложенные чеки другой точки здесь не продать: в них её товары.
+        useCartStore.setState({ items: [], parked: [] });
+      }
+      previousTenant.current = null;
       localStorage.setItem(TENANT_KEY, code);
       setTenant(code);
       setStage("staff");
     } catch (error) {
-      setPairingError(errorText(error, "Точка не найдена — проверьте код"));
+      setPairingError(apiErrorMessage(error, "Точка не найдена — проверьте код"));
     } finally {
       setBusy(false);
     }
@@ -143,13 +146,14 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     try {
       await loadStaff(tenant);
     } catch (error) {
-      toast.error(errorText(error, "Не удалось обновить список"));
+      toast.error(apiErrorMessage(error, "Не удалось обновить список"));
     } finally {
       setBusy(false);
     }
   };
 
   const unpair = (): void => {
+    previousTenant.current = tenant;
     localStorage.removeItem(TENANT_KEY);
     setTenant(null);
     setStaff([]);
@@ -179,7 +183,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       const res = await api.post("/auth/login-pin", { tenant, userId: selected.id, pin: digits });
       finish(res.data.data);
     } catch (error) {
-      setPinError(errorText(error, "Неверный PIN"));
+      setPinError(apiErrorMessage(error, "Неверный PIN"));
       setDigits("");
     } finally {
       setBusy(false);
@@ -221,7 +225,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       const res = await api.post("/auth/login", { email, password });
       finish(res.data.data);
     } catch (error) {
-      toast.error(errorText(error, "Ошибка входа"));
+      toast.error(apiErrorMessage(error, "Ошибка входа"));
     } finally {
       setBusy(false);
     }

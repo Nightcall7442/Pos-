@@ -6,13 +6,15 @@ import SearchInput from "../components/SearchInput";
 import Badge from "../components/Badge";
 import LoadingSpinner from "../components/LoadingSpinner";
 import EmptyState from "../components/EmptyState";
-import Modal from "../components/Modal";
+import { useIsRetail } from "../hooks/useSettings";
+import ConfirmDialog from "../components/ConfirmDialog";
 import type { Product, Category } from "../services";
 import { useMoney } from "../hooks/useMoney";
 
 
 export default function Products() {
   const { money } = useMoney();
+  const retail = useIsRetail();
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [categoryId, setCategoryId] = useState("");
@@ -32,29 +34,31 @@ export default function Products() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Товары</h1>
           <p className="text-gray-500">Управление каталогом товаров</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link to="/products/scan" className="btn-secondary" title="Наведите сканер на штрихкод — название подставится из общей базы">
+          <Link to="/products/scan" aria-label="Добавить сканером" className="btn-secondary whitespace-nowrap" title="Наведите сканер на штрихкод — название подставится из общей базы">
             <ScanBarcode className="mr-2 h-4 w-4" />
-            Добавить сканером
+            <span className="sm:hidden">Сканер</span>
+            <span className="hidden sm:inline">Добавить сканером</span>
           </Link>
-          <Link to="/products/new" className="btn-primary">
+          <Link to="/products/new" aria-label="Добавить товар" className="btn-primary whitespace-nowrap">
             <Plus className="mr-2 h-4 w-4" />
-            Добавить товар
+            <span className="sm:hidden">Товар</span>
+            <span className="hidden sm:inline">Добавить товар</span>
           </Link>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <SearchInput value={search} onChange={setSearch} className="w-80" placeholder="Поиск товаров..." />
+      <div className="flex flex-wrap items-center gap-3">
+        <SearchInput value={search} onChange={setSearch} className="w-full sm:w-80" placeholder="Поиск товаров..." />
         <select
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
-          className="input w-48"
+          className="input w-full sm:w-48"
         >
           <option value="">Все категории</option>
           {categories?.map((cat: Category) => (
@@ -64,13 +68,17 @@ export default function Products() {
         <div className="flex rounded-lg border border-gray-200">
           <button
             onClick={() => setViewMode("grid")}
-            className={`p-2 ${viewMode === "grid" ? "bg-gray-100 text-gray-900" : "text-gray-400"}`}
+            aria-label="Плитками"
+            aria-pressed={viewMode === "grid"}
+            className={`p-2 ${viewMode === "grid" ? "bg-gray-100 text-gray-900" : "text-gray-500"}`}
           >
             <Grid3X3 className="h-4 w-4" />
           </button>
           <button
             onClick={() => setViewMode("list")}
-            className={`p-2 ${viewMode === "list" ? "bg-gray-100 text-gray-900" : "text-gray-400"}`}
+            aria-label="Списком"
+            aria-pressed={viewMode === "list"}
+            className={`p-2 ${viewMode === "list" ? "bg-gray-100 text-gray-900" : "text-gray-500"}`}
           >
             <List className="h-4 w-4" />
           </button>
@@ -80,22 +88,50 @@ export default function Products() {
       {isLoading ? (
         <LoadingSpinner />
       ) : products.length === 0 ? (
-        <EmptyState
-          title="Товары не найдены"
-          description="Создайте первый товар для начала работы"
-          action={
-            <div className="flex items-center justify-center gap-3">
-              <Link to="/products/scan" className="btn-secondary">
-                <ScanBarcode className="mr-2 h-4 w-4" />
-                Добавить сканером
-              </Link>
-              <Link to="/products/new" className="btn-primary">
-                <Plus className="mr-2 h-4 w-4" />
-                Добавить товар
-              </Link>
-            </div>
-          }
-        />
+        <div className="card">
+          {search || categoryId ? (
+            <EmptyState
+              compact
+              title={search ? `По запросу «${search}» товаров нет` : "В этой категории товаров нет"}
+              description="Проверьте написание или поищите по штрихкоду."
+              action={
+                <button onClick={() => { setSearch(""); setCategoryId(""); }} className="btn-secondary">
+                  Сбросить поиск
+                </button>
+              }
+            />
+          ) : retail ? (
+            <EmptyState
+              compact
+              title="Товаров пока нет"
+              description="Быстрее всего — сканером: наведите на штрихкод, название и полка подставятся из общей базы, останется ввести цену."
+              action={
+                <>
+                  <Link to="/products/scan" className="btn-primary">
+                    <ScanBarcode className="mr-2 h-4 w-4" />
+                    Добавить сканером
+                  </Link>
+                  <Link to="/products/new" className="btn-secondary">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Вручную
+                  </Link>
+                </>
+              }
+            />
+          ) : (
+            <EmptyState
+              compact
+              title="Меню пока пустое"
+              description="Блюдо — это название, цена и категория. Категории станут клавишами на кассе, блюда — плитками."
+              action={
+                <Link to="/products/new" className="btn-primary">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Добавить блюдо
+                </Link>
+              }
+            />
+          )}
+        </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((product) => (
@@ -112,17 +148,17 @@ export default function Products() {
                   <h3 className="font-semibold text-gray-900 line-clamp-1">{product.name}</h3>
                   {product.category && <Badge variant="gray">{product.category.name}</Badge>}
                 </div>
-                {product.sku && <p className="mt-0.5 text-xs text-gray-400">Артикул: {product.sku}</p>}
+                {product.sku && <p className="mt-0.5 text-xs text-gray-500">Артикул: {product.sku}</p>}
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-lg font-bold text-gray-900">{money(product.price)}</span>
                   {product.trackInventory && (
-                    <span className={`text-sm ${product.currentStock <= product.minStock ? "text-red-600 font-medium" : "text-gray-500"}`}>
+                    <span className={`text-sm ${product.currentStock <= product.minStock ? "text-danger-600 font-medium" : "text-gray-500"}`}>
                       Остаток: {product.currentStock}
                     </span>
                   )}
                 </div>
               </div>
-              <div className="mt-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="mt-3 flex gap-2 transition-opacity group-focus-within:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
                 <Link to={`/products/${product.id}`} className="btn-secondary flex-1 text-xs py-1.5">
                   <Pencil className="mr-1 inline h-3 w-3" />
                   Изменить
@@ -136,7 +172,60 @@ export default function Products() {
           ))}
         </div>
       ) : (
-        <div className="card overflow-x-auto">
+        <>
+        {/* Телефон: одна карточка на товар, главное крупно, остальное парами (D-4). */}
+        <div className="card divide-y divide-gray-100 p-0 md:hidden">
+          {products.map((product) => {
+            const low = product.trackInventory && product.currentStock <= product.minStock;
+            const noMargin = product.costPrice > 0 && product.price <= product.costPrice;
+            return (
+              <div key={product.id} className="flex flex-col gap-3 p-4">
+                <div className="flex items-start gap-3">
+                  {product.imageUrl ? (
+                    <img src={product.imageUrl} alt="" className="h-11 w-11 flex-shrink-0 rounded-md object-cover" />
+                  ) : (
+                    <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md bg-gray-100">
+                      <Package className="h-5 w-5 text-gray-500" />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-gray-900">{product.name}</p>
+                    <p className="truncate text-xs text-gray-500">{[product.sku, product.category?.name].filter(Boolean).join(" · ") || "—"}</p>
+                  </div>
+                  <Badge variant={product.isActive ? "success" : "gray"}>{product.isActive ? "Активен" : "Неактивен"}</Badge>
+                </div>
+                <dl className="grid grid-cols-3 gap-2 text-sm">
+                  <div>
+                    <dt className="text-xs text-gray-500">Цена</dt>
+                    <dd className="font-semibold text-gray-900">{money(product.price)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-gray-500">Себестоимость</dt>
+                    <dd className="text-gray-700">{money(product.costPrice)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-gray-500">Остаток</dt>
+                    <dd className={`font-semibold ${low ? "text-danger-600" : "text-gray-900"}`}>{product.trackInventory ? product.currentStock : "—"}</dd>
+                  </div>
+                </dl>
+                {noMargin && (
+                  <span className="w-fit rounded-md bg-danger-50 px-1.5 py-0.5 text-[11px] font-medium text-danger-600">без маржи — проверьте цену</span>
+                )}
+                <div className="flex gap-2">
+                  <Link to={`/products/${product.id}`} className="btn-secondary flex-1">
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Изменить
+                  </Link>
+                  <button onClick={() => setDeleteId(product.id)} className="btn-secondary flex-1 text-danger-600">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Удалить
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="card hidden overflow-x-auto md:block">
           <table className="w-full min-w-[720px]">
             <thead>
               <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -158,12 +247,12 @@ export default function Products() {
                         <img src={product.imageUrl} alt="" className="h-10 w-10 rounded-lg object-cover" />
                       ) : (
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100">
-                          <Package className="h-5 w-5 text-gray-400" />
+                          <Package className="h-5 w-5 text-gray-500" />
                         </div>
                       )}
                       <div>
                         <span className="font-medium text-gray-900">{product.name}</span>
-                        {product.sku && <p className="text-xs text-gray-400">{product.sku}</p>}
+                        {product.sku && <p className="text-xs text-gray-500">{product.sku}</p>}
                       </div>
                     </div>
                   </td>
@@ -174,7 +263,7 @@ export default function Products() {
                         by a delivery rather than set deliberately. */}
                     {product.costPrice > 0 && product.price <= product.costPrice && (
                       <span
-                        className="ml-2 inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-600"
+                        className="ml-2 inline-flex items-center rounded-md bg-danger-50 px-1.5 py-0.5 text-[11px] font-medium text-danger-600"
                         title="Цена продажи не выше себестоимости — проверьте цену или наценку категории"
                       >
                         без маржи
@@ -183,7 +272,7 @@ export default function Products() {
                   </td>
                   <td className="p-4 whitespace-nowrap text-sm text-gray-500">{money(product.costPrice)}</td>
                   <td className="p-4">
-                    <span className={`font-semibold ${product.trackInventory && product.currentStock <= product.minStock ? "text-red-600" : "text-gray-900"}`}>
+                    <span className={`font-semibold ${product.trackInventory && product.currentStock <= product.minStock ? "text-danger-600" : "text-gray-900"}`}>
                       {product.trackInventory ? product.currentStock : "—"}
                     </span>
                   </td>
@@ -199,7 +288,7 @@ export default function Products() {
                       </Link>
                       <button
                         onClick={() => setDeleteId(product.id)}
-                        className="text-sm font-medium text-red-600 hover:text-red-700"
+                        className="text-sm font-medium text-danger-600 hover:text-danger-700"
                       >
                         Удалить
                       </button>
@@ -210,17 +299,19 @@ export default function Products() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
-      <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Удалить товар" size="sm">
-        <p className="text-gray-600">Вы уверены, что хотите удалить этот товар? Это действие нельзя отменить.</p>
-        <div className="mt-4 flex justify-end gap-3">
-          <button onClick={() => setDeleteId(null)} className="btn-secondary">Отмена</button>
-          <button onClick={handleDelete} disabled={deleteProduct.isPending} className="btn-danger">
-            {deleteProduct.isPending ? "Удаление..." : "Удалить"}
-          </button>
-        </div>
-      </Modal>
+      <ConfirmDialog
+        open={!!deleteId}
+        danger
+        title="Удалить товар?"
+        description="Товар пропадёт из каталога и с кассы. История продаж и приходов останется."
+        confirmLabel="Удалить"
+        loading={deleteProduct.isPending}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   );
 }

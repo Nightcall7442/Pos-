@@ -3,13 +3,14 @@ import { persist } from "zustand/middleware";
 import type { CartItem, OrderType, Product } from "../types";
 import { round2 } from "../utils/money";
 import { weightLineTotal, weightUnitOf } from "../utils/weight";
+import { randomId } from "../utils/id";
 
-function randomId(): string {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
-  });
+// Что «Очистить» убирает из заказа — чтобы «Вернуть» положило всё на место.
+export interface CartSnapshot {
+  items: CartItem[];
+  tableId?: string;
+  customerName?: string;
+  customerPhone?: string;
 }
 
 // A check the cashier set aside (the customer went back for one more thing):
@@ -50,6 +51,8 @@ interface CartState {
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
+  // Отмена «Очистить»: возвращает строки, стол и клиента.
+  restoreCart: (snapshot: CartSnapshot) => void;
   setTable: (tableId?: string) => void;
   setOrderType: (type: OrderType) => void;
   setCustomer: (name?: string, phone?: string) => void;
@@ -102,6 +105,7 @@ export const useCartStore = create<CartState>()(
             : state.items.map((i) => (i.id === id ? { ...i, quantity } : i)),
         })),
       clearCart: () => set({ items: [], tableId: undefined, customerName: undefined, customerPhone: undefined }),
+      restoreCart: ({ items, tableId, customerName, customerPhone }) => set({ items, tableId, customerName, customerPhone }),
       setTable: (tableId) => set({ tableId }),
       // A table only makes sense for dine-in; drop it when switching away so a
       // takeaway order never carries a stale table.

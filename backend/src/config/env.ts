@@ -3,7 +3,12 @@ import { z } from "zod";
 const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  DATABASE_URL: z.string(),
+  // С 2026-10 база — PostgreSQL. Старая строка file:./dev.db от SQLite теперь
+  // приводила бы к непонятной ошибке Prisma при первом запросе — лучше
+  // сказать прямо при старте.
+  DATABASE_URL: z
+    .string()
+    .regex(/^postgres(ql)?:\/\//, "DATABASE_URL должен быть postgresql://… — SQLite (file:…) больше не поддерживается, см. RAILWAY.md"),
   REDIS_URL: z.string().default("redis://localhost:6379"),
   JWT_SECRET: z.string().min(16),
   JWT_EXPIRES_IN: z.string().default("15m"),
@@ -22,6 +27,10 @@ const envSchema = z.object({
   // Unpaid orders hold a stock reservation; after this many minutes they are
   // cancelled automatically and the stock is returned.
   PENDING_ORDER_TTL_MINUTES: z.coerce.number().int().min(1).default(30),
+  // Попыток входа (/login, /register) за 15 минут с одного IP. 30 — защита от
+  // перебора паролей; тестовый сервер поднимает планку, иначе набор тестов,
+  // который входит под разными сотрудниками в каждом файле, упирался в неё.
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(30),
   // Barcodes the shipped catalogue does not know are looked up live on Open Food
   // Facts (and its sister catalogues). OFF_BASE_URL sends every such lookup to
   // one server instead — the tests stand a stub in for the real thing.
@@ -31,13 +40,37 @@ const envSchema = z.object({
   TASNIF_BASE_URL: z.string().url().optional(),
 });
 
+// Значения из .env.example. В проде с ними сервер подписывал бы токены
+// секретом, который лежит в открытом репозитории.
+const PLACEHOLDER_SECRETS = [
+  "your-super-secret-jwt-key-change-in-production",
+  "your-refresh-secret-key-change-in-production",
+];
+
+const envWithChecks = envSchema
+  .refine((env) => env.JWT_SECRET !== env.JWT_REFRESH_SECRET, {
+    path: ["JWT_REFRESH_SECRET"],
+    message:
+      "JWT_SECRET и JWT_REFRESH_SECRET должны различаться: с одинаковыми секретами токен доступа работает как токен обновления",
+  })
+  .refine(
+    (env) =>
+      env.NODE_ENV !== "production" ||
+      (!PLACEHOLDER_SECRETS.includes(env.JWT_SECRET) &&
+        !PLACEHOLDER_SECRETS.includes(env.JWT_REFRESH_SECRET)),
+    {
+      path: ["JWT_SECRET"],
+      message: "В production нельзя оставлять секреты из .env.example",
+    }
+  );
+
 export type Env = z.infer<typeof envSchema>;
 
 let _env: Env;
 
 export function getEnv(): Env {
   if (!_env) {
-    _env = envSchema.parse(process.env);
+    _env = envWithChecks.parse(process.env);
   }
   return _env;
 }

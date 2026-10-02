@@ -8,3 +8,4 @@ prisma/test.db-journal
 uploads/*
 !uploads/.gitkeep
 *.log
+prisma/generated/

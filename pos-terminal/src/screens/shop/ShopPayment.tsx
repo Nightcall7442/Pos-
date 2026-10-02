@@ -8,6 +8,8 @@ import type { Order, PaymentMethod, Product } from "../../types";
 import { useMoney } from "../../hooks/useMoney";
 import { round2 } from "../../utils/money";
 import { parseDecimal } from "../../utils/weight";
+import { paymentErrorMessage } from "../../utils/apiError";
+import { checkoutKeyFor, forgetCheckoutKey } from "../../utils/checkoutKey";
 
 export interface SaleResult {
   order: Order;
@@ -57,18 +59,26 @@ export default function ShopPayment({ method, total, shiftId, onClose, onPaid }:
   const checkout = useMutation({
     mutationFn: async (): Promise<Order> => {
       const { items } = useCartStore.getState();
-      const res = await api.post("/orders/checkout", {
-        type: "takeaway",
-        cashShiftId: shiftId,
-        customerName: customerName || undefined,
-        customerPhone: customerPhone || undefined,
-        items: items.map((item) => ({ productId: item.productId, quantity: item.quantity, grams: item.grams })),
-        expectedTotal: total,
-        payment: { method },
-      });
+      const lines = items.map((item) => ({ productId: item.productId, quantity: item.quantity, grams: item.grams }));
+      // Повтор после обрыва связи — с тем же ключом: второй чек не создастся.
+      const key = checkoutKeyFor({ cashShiftId: shiftId, items: lines });
+      const res = await api.post(
+        "/orders/checkout",
+        {
+          type: "takeaway",
+          cashShiftId: shiftId,
+          customerName: customerName || undefined,
+          customerPhone: customerPhone || undefined,
+          items: lines,
+          expectedTotal: total,
+          payment: { method },
+        },
+        { headers: { "Idempotency-Key": key } }
+      );
       return res.data.data as Order;
     },
     onSuccess: (order) => {
+      forgetCheckoutKey();
       // Stock moved on the server — tiles, quick keys and suggestions must not show yesterday's numbers.
       for (const key of ["shop-tiles", "shop-quick", "shop-suggest", "cash-shift"]) qc.invalidateQueries({ queryKey: [key] });
       useCartStore.getState().clearCart();
@@ -88,7 +98,7 @@ export default function ShopPayment({ method, total, shiftId, onClose, onPaid }:
         onClose();
         return;
       }
-      toast.error(error.response?.data?.error || "Не удалось провести оплату");
+      toast.error(paymentErrorMessage(error), { duration: 8000 });
     },
   });
 
@@ -134,7 +144,7 @@ export default function ShopPayment({ method, total, shiftId, onClose, onPaid }:
   const totalParts = parts(total);
 
   return (
-    <div className="sh-scrim" onMouseDown={(e) => e.target === e.currentTarget && !checkout.isPending && onClose()}>
+    <div className="sh-scrim" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && !checkout.isPending && onClose()}>
       <div className="sh-modal" role="dialog" aria-label={`Оплата: ${METHODS[method].label}`}>
         <div className="sh-mh">
           <div className="emo">
@@ -165,7 +175,7 @@ export default function ShopPayment({ method, total, shiftId, onClose, onPaid }:
                 <span className="lbl">Получено</span>
                 <span className={`v tab${text === "" ? " ph" : ""}`}>
                   {parts(text ? parseDecimal(text) : total).figure}
-                  <small style={{ fontFamily: "Inter, sans-serif", fontSize: 18, marginLeft: 8, color: "var(--muted)" }}>{totalParts.symbol}</small>
+                  <small style={{ fontWeight: 500, fontSize: 18, marginLeft: 8, color: "var(--muted)" }}>{totalParts.symbol}</small>
                 </span>
               </div>
               <div className={`sh-pm-change${short ? " short" : ""}`}>

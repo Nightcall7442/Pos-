@@ -1,17 +1,18 @@
 import { spawn, execSync, type ChildProcess } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import fs from "node:fs";
 import http from "node:http";
+import { TEST_DATABASE_URL, resetTestDatabase } from "./testDatabase.js";
 
 // The suite talks to a real HTTP server. It used to expect one already running
 // on the development port and wiped the development database as it went; now
-// it starts its own server on its own SQLite file, and touches nothing else.
+// it starts its own server on its own database (qwik_test, see testDatabase.ts),
+// and touches nothing else.
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
-const dbPath = path.join(root, "prisma", "test.db");
-const DATABASE_URL = "file:./test.db";
+const DATABASE_URL = TEST_DATABASE_URL;
 const PORT = Number(process.env.TEST_PORT || 3100);
+
 
 let server: ChildProcess | undefined;
 let offStub: http.Server | undefined;
@@ -92,9 +93,7 @@ export async function setup(): Promise<void> {
     if (error instanceof Error && error.message.includes("already in use")) throw error;
   }
 
-  for (const suffix of ["", "-journal"]) {
-    fs.rmSync(dbPath + suffix, { force: true });
-  }
+  await resetTestDatabase(DATABASE_URL);
 
   const env = {
     ...process.env,
@@ -104,6 +103,7 @@ export async function setup(): Promise<void> {
     JWT_SECRET: "test-jwt-secret-value-0123456789",
     JWT_REFRESH_SECRET: "test-refresh-secret-value-0123456789",
     LOG_LEVEL: "error",
+    AUTH_RATE_LIMIT_MAX: "1000",
     OFF_BASE_URL: `http://127.0.0.1:${OFF_PORT}`,
     TASNIF_BASE_URL: `http://127.0.0.1:${OFF_PORT}/tasnif`,
   };
@@ -111,16 +111,38 @@ export async function setup(): Promise<void> {
   await startOffStub();
   execSync("npx prisma migrate deploy", { cwd: root, env, stdio: "ignore" });
 
-  // `npx` spawns tsx as a child of its own, so the whole process group is
-  // signalled on teardown — killing only the wrapper used to leave a server
-  // behind that the next run then talked to instead of its own.
-  server = spawn("npx", ["tsx", "src/index.ts"], { cwd: root, env, stdio: "ignore", detached: true });
+  // Запускаем tsx напрямую через node, а не через npx: на Windows `spawn("npx")`
+  // падает с ENOENT (npx — это npx.cmd, и без shell его не найти), из-за чего
+  // весь набор тестов на Windows вообще не стартовал. Прямой запуск к тому же
+  // убирает лишний процесс-обёртку: гасить на teardown нужно ровно один pid.
+  const tsxCli = path.join(root, "node_modules", "tsx", "dist", "cli.mjs");
+  server = spawn(process.execPath, [tsxCli, "src/index.ts"], {
+    cwd: root,
+    env,
+    stdio: "ignore",
+    // POSIX: своя группа процессов, чтобы teardown погасил всё дерево разом.
+    // На Windows групп процессов нет — там дерево обходит taskkill /T.
+    detached: process.platform !== "win32",
+  });
   await waitForHealth(`http://127.0.0.1:${PORT}/health`);
 }
 
 export async function teardown(): Promise<void> {
   offStub?.close();
   if (!server?.pid) return;
+
+  // На Windows process.kill(-pid) не работает: отрицательный pid там не
+  // означает группу, вызов падает, и сервер остаётся слушать тестовый порт —
+  // следующий запуск упёрся бы в «Port 3100 is already in use».
+  if (process.platform === "win32") {
+    try {
+      execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: "ignore" });
+    } catch {
+      // уже завершился
+    }
+    return;
+  }
+
   const pgid = -server.pid;
   try {
     process.kill(pgid, "SIGTERM");

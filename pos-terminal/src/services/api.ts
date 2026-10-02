@@ -1,4 +1,6 @@
 import axios from "axios";
+import { isNoConnection } from "../utils/apiError";
+import { reportReachable, reportUnreachable } from "./connection";
 
 const api = axios.create({
   baseURL: "/api",
@@ -50,8 +52,14 @@ function refreshAccessToken(): Promise<string> {
 }
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    reportReachable();
+    return response;
+  },
   async (error) => {
+    // Любой ответ сервера — даже 4xx — значит, что связь есть (services/connection.ts).
+    if (isNoConnection(error)) reportUnreachable();
+    else if (error.response) reportReachable();
     const original = error.config;
     // 401 от самого входа — это «неверный PIN/пароль», а не протухшая сессия:
     // обновлять нечего, а reload() стёр бы сообщение об ошибке с экрана.

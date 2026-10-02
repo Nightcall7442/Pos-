@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X, Banknote, CreditCard, QrCode, ArrowRight, Smartphone } from "lucide-react";
 import { useCartStore } from "../store/cartStore";
@@ -6,6 +6,8 @@ import api from "../services/api";
 import toast from "react-hot-toast";
 import type { Order, PaymentMethod, Product } from "../types";
 import { useMoney } from "../hooks/useMoney";
+import { paymentErrorMessage } from "../utils/apiError";
+import { checkoutKeyFor, forgetCheckoutKey } from "../utils/checkoutKey";
 
 
 interface PaymentModalProps {
@@ -29,24 +31,32 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
   // re-price the cart instead of recording an underpaid sale.
   const createOrder = useMutation({
     mutationFn: async (): Promise<Order> => {
-      const res = await api.post("/orders/checkout", {
-        type: orderType,
-        tableId: tableId || undefined,
-        cashShiftId: shiftId,
-        customerName: customerName || undefined,
-        customerPhone: customerPhone || undefined,
-        items: items.map((item) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          grams: item.grams,
-          modifierIds: item.modifiers?.map((m) => m.id) || [],
-        })),
-        expectedTotal: Math.round(getTotal() * 100) / 100,
-        payment: { method: selectedMethod },
-      });
+      const lines = items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        grams: item.grams,
+        modifierIds: item.modifiers?.map((m) => m.id) || [],
+      }));
+      // Повтор после обрыва связи — с тем же ключом: второй чек не создастся.
+      const key = checkoutKeyFor({ cashShiftId: shiftId, items: lines });
+      const res = await api.post(
+        "/orders/checkout",
+        {
+          type: orderType,
+          tableId: tableId || undefined,
+          cashShiftId: shiftId,
+          customerName: customerName || undefined,
+          customerPhone: customerPhone || undefined,
+          items: lines,
+          expectedTotal: Math.round(getTotal() * 100) / 100,
+          payment: { method: selectedMethod },
+        },
+        { headers: { "Idempotency-Key": key } }
+      );
       return res.data.data as Order;
     },
     onSuccess: (order) => {
+      forgetCheckoutKey();
       // Stock (and shift totals) changed server-side — refetch so the menu's
       // stock badges and totals reflect it right away.
       qc.invalidateQueries({ queryKey: ["products-all"] });
@@ -68,9 +78,19 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
         onClose();
         return;
       }
-      toast.error(error.response?.data?.error || "Ошибка оплаты");
+      toast.error(paymentErrorMessage(error), { duration: 8000 });
     },
   });
+
+  // Escape закрывает окно, как в «Магазине», — но не посреди проведения оплаты.
+  const pending = createOrder.isPending;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !pending) onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose, pending]);
 
   const total = getTotal();
   const paid = paidAmount ? parseFloat(paidAmount) : total;
@@ -79,15 +99,18 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ animation: "fade-in 0.2s ease" }}>
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/70" role="presentation" onClick={onClose} />
 
       <div
-        className="relative mx-4 w-full max-w-lg rounded-3xl border border-dark-600 bg-dark-800 shadow-2xl overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="payment-title"
+        className="relative mx-4 w-full max-w-lg rounded-md border border-dark-600 bg-dark-800 shadow-2xl overflow-hidden"
         style={{ animation: "scale-in 0.25s ease" }}
       >
         <div className="flex items-center justify-between border-b border-dark-700 px-6 py-4">
-          <h2 className="text-lg font-bold text-dark-50">Оплата</h2>
-          <button onClick={onClose} className="rounded-xl p-2 text-dark-400 hover:bg-dark-700 hover:text-dark-50 transition-colors">
+          <h2 id="payment-title" className="text-lg font-bold text-dark-50">Оплата</h2>
+          <button onClick={onClose} aria-label="Закрыть" className="rounded p-2 text-dark-400 hover:bg-dark-700 hover:text-dark-50 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -101,9 +124,9 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
         <div className="px-6 pb-4">
           <div className="grid grid-cols-3 gap-3">
             {([
-              { key: "cash" as const, label: "Наличные", icon: Banknote, activeColor: "border-success-500 bg-success-500/10 shadow-success-500/10", textColor: "text-success-500" },
-              { key: "card" as const, label: "Карта", icon: CreditCard, activeColor: "border-primary-500 bg-primary-600/10 shadow-primary-500/10", textColor: "text-primary-400" },
-              { key: "qr" as const, label: "QR", icon: QrCode, activeColor: "border-blue-500 bg-blue-500/10 shadow-blue-500/10", textColor: "text-blue-400" },
+              { key: "cash" as const, label: "Наличные", icon: Banknote, activeColor: "border-success-500 bg-success-500/10", textColor: "text-success-500" },
+              { key: "card" as const, label: "Карта", icon: CreditCard, activeColor: "border-primary-500 bg-primary-600/10", textColor: "text-primary-400" },
+              { key: "qr" as const, label: "QR", icon: QrCode, activeColor: "border-primary-500 bg-primary-500/10", textColor: "text-primary-400" },
             ]).map(({ key, label, icon: Icon, activeColor, textColor }) => (
               <button
                 key={key}
@@ -118,14 +141,14 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
                   }
                   setSelectedMethod(key);
                 }}
-                className={`flex flex-col items-center gap-2 rounded-2xl border-2 py-5 transition-all active:scale-[0.97] ${
+                className={`flex flex-col items-center gap-2 rounded border-2 py-5 transition-all active:scale-[0.97] ${
                   selectedMethod === key
                     ? `${activeColor} shadow-md`
                     : "border-dark-600 bg-dark-700 hover:border-dark-500"
                 }`}
               >
                 <Icon className={`h-8 w-8 ${selectedMethod === key ? textColor : "text-dark-300"}`} />
-                <span className={`text-sm font-semibold ${selectedMethod === key ? textColor : "text-dark-300"}`}>{label}</span>
+                <span className={`text-sm font-semibold ${selectedMethod === key ? "text-dark-50" : "text-dark-300"}`}>{label}</span>
               </button>
             ))}
           </div>
@@ -134,16 +157,16 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
         {selectedMethod === "cash" && (
           <div className="px-6 pb-4 space-y-3" style={{ animation: "slide-up 0.2s ease" }}>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-dark-400">Внесено</label>
+              <label htmlFor="paymentscree-f1" className="mb-1.5 block text-xs font-medium text-dark-400">Внесено</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-dark-400">{symbol}</span>
-                <input
+                <input id="paymentscree-f1"
                   type="number"
                   step="1000"
                   value={paidAmount}
                   onChange={(e) => setPaidAmount(e.target.value)}
                   placeholder="0"
-                  className="w-full rounded-xl border-2 border-dark-600 bg-dark-700 py-3.5 pl-14 pr-4 text-center text-2xl font-bold text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none transition-colors"
+                  className="w-full rounded border-2 border-dark-600 bg-dark-700 py-3.5 pl-14 pr-4 text-center text-2xl font-bold text-dark-50 placeholder:text-dark-400 focus:border-primary-500 focus:outline-none transition-colors"
                 />
               </div>
             </div>
@@ -154,14 +177,14 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
                 <button
                   key={`${idx}-${amount}`}
                   onClick={() => setPaidAmount(String(amount))}
-                  className="rounded-xl border border-dark-600 bg-dark-700 py-2 text-xs font-semibold text-dark-300 transition-all hover:border-primary-500/50 hover:text-dark-50 active:scale-95"
+                  className="rounded border border-dark-600 bg-dark-700 py-2 text-xs font-semibold text-dark-300 transition-all hover:border-primary-500/50 hover:text-dark-50 active:scale-95"
                 >
                   {compact(amount)}
                 </button>
               ))}
             </div>
             {change > 0 && (
-              <div className="rounded-xl border border-success-500/30 bg-success-500/10 p-3 text-center" style={{ animation: "pop-in 0.2s ease" }}>
+              <div className="rounded border border-success-500/30 bg-success-500/10 p-3 text-center" style={{ animation: "pop-in 0.2s ease" }}>
                 <p className="text-[10px] font-medium text-success-500">Сдача</p>
                 <p className="text-2xl font-bold text-success-500">{money(change)}</p>
               </div>
@@ -173,7 +196,7 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
           <button
             onClick={() => createOrder.mutate()}
             disabled={createOrder.isPending || !canPay}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-600 py-4 text-base font-bold text-white shadow-lg shadow-primary-600/30 transition-all hover:bg-primary-500 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded bg-success-600 py-4 text-xl font-bold text-white transition-all hover:bg-success-500 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {createOrder.isPending ? (
               <>
@@ -192,16 +215,16 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
 
       {/* ═══ QR Coming Soon Modal ═══ */}
       {showQrSoon && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" style={{ animation: "fade-in 0.2s ease" }}>
-          <div className="rounded-3xl border border-dark-600 bg-dark-800 p-8 w-80 text-center shadow-2xl" style={{ animation: "scale-in 0.2s ease" }}>
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/15 mb-4">
-              <Smartphone className="h-8 w-8 text-blue-400" />
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60" style={{ animation: "fade-in 0.2s ease" }}>
+          <div className="rounded-md border border-dark-600 bg-dark-800 p-8 w-80 text-center shadow-2xl" style={{ animation: "scale-in 0.2s ease" }}>
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded bg-primary-500/15 mb-4">
+              <Smartphone className="h-8 w-8 text-primary-400" />
             </div>
             <h3 className="text-lg font-bold text-dark-50">Скоро будет доступно</h3>
             <p className="mt-2 text-sm text-dark-400">QR-оплата находится в разработке</p>
             <button
               onClick={() => setShowQrSoon(false)}
-              className="mt-6 w-full rounded-xl bg-primary-600 py-3 text-sm font-bold text-white hover:bg-primary-500 transition-colors active:scale-[0.98]"
+              className="mt-6 w-full rounded bg-primary-600 py-3 text-sm font-bold text-white hover:bg-primary-500 transition-colors active:scale-[0.98]"
             >
               Круто
             </button>
@@ -211,16 +234,16 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
 
       {/* ═══ Card Coming Soon Modal ═══ */}
       {showCardSoon && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" style={{ animation: "fade-in 0.2s ease" }}>
-          <div className="rounded-3xl border border-dark-600 bg-dark-800 p-8 w-80 text-center shadow-2xl" style={{ animation: "scale-in 0.2s ease" }}>
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-500/15 mb-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60" style={{ animation: "fade-in 0.2s ease" }}>
+          <div className="rounded-md border border-dark-600 bg-dark-800 p-8 w-80 text-center shadow-2xl" style={{ animation: "scale-in 0.2s ease" }}>
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded bg-primary-500/15 mb-4">
               <CreditCard className="h-8 w-8 text-primary-400" />
             </div>
             <h3 className="text-lg font-bold text-dark-50">Скоро будет доступно</h3>
             <p className="mt-2 text-sm text-dark-400">Оплата картой находится в разработке</p>
             <button
               onClick={() => setShowCardSoon(false)}
-              className="mt-6 w-full rounded-xl bg-primary-600 py-3 text-sm font-bold text-white hover:bg-primary-500 transition-colors active:scale-[0.98]"
+              className="mt-6 w-full rounded bg-primary-600 py-3 text-sm font-bold text-white hover:bg-primary-500 transition-colors active:scale-[0.98]"
             >
               Круто
             </button>

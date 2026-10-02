@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { productService, categoryService } from "../services";
-import type { Product, Category, Ingredient, ApiResponse } from "../services";
+import type { ProductInput, Category, Ingredient } from "../services";
 
 interface ProductParams {
   search?: string;
@@ -28,7 +28,7 @@ export function useProduct(id: string) {
 export function useCreateProduct() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Partial<Product>) => productService.create(data).then((r) => r.data.data),
+    mutationFn: (data: ProductInput) => productService.create(data).then((r) => r.data.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["products"] });
       toast.success("Товар создан");
@@ -42,7 +42,7 @@ export function useCreateProduct() {
 export function useUpdateProduct() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Product> }) =>
+    mutationFn: ({ id, data }: { id: string; data: ProductInput }) =>
       productService.update(id, data).then((r) => r.data.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["products"] });

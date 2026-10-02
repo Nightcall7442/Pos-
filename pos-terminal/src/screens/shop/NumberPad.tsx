@@ -97,7 +97,7 @@ export default function NumberPad(props: NumberPadProps) {
   const lineTotal = valid || value > 0 ? total(value) : 0;
 
   return (
-    <div className="sh-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="sh-scrim" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="sh-modal" role="dialog" aria-label={title}>
         <div className="sh-mh">
           <div className="emo">{imageUrl ? <img src={imageUrl} alt="" /> : emoji}</div>

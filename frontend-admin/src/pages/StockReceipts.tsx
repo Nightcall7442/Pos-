@@ -4,7 +4,8 @@ import { stockReceiptService, productService } from "../services";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
 import toast from "react-hot-toast";
-import { Plus, Trash2, Calendar, Building2, Eye, Search } from "lucide-react";
+import { Plus, Trash2, Calendar, Building2, Eye, Search, Truck } from "lucide-react";
+import EmptyState from "../components/EmptyState";
 import type { Product } from "../services";
 import { useMoney } from "../hooks/useMoney";
 
@@ -174,7 +175,7 @@ export default function StockReceipts() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Приход товаров</h1>
           <p className="text-gray-500">Оформление поставок на склад</p>
@@ -212,7 +213,7 @@ export default function StockReceipts() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2 text-sm">
-                      <Building2 className="h-4 w-4 text-gray-400" />
+                      <Building2 className="h-4 w-4 text-gray-500" />
                       {receipt.supplierName || "—"}
                     </div>
                   </td>
@@ -223,7 +224,7 @@ export default function StockReceipts() {
                   <td className="p-4 text-right">
                     <button
                       onClick={() => setShowDetail(receipt)}
-                      className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                      className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
                     >
                       <Eye className="h-4 w-4" />
                     </button>
@@ -232,8 +233,19 @@ export default function StockReceipts() {
               ))}
               {receipts.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-gray-500">
-                    Нет приходов
+                  <td colSpan={7}>
+                    <EmptyState
+                      compact
+                      icon={<Truck className="h-6 w-6" />}
+                      title="Приходов пока нет"
+                      description="Приход — это поступление товара от поставщика: остатки растут, себестоимость пересчитывается по цене закупки."
+                      action={
+                        <button onClick={() => setShowCreate(true)} className="btn-primary">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Оформить приход
+                        </button>
+                      }
+                    />
                   </td>
                 </tr>
               )}
@@ -246,8 +258,8 @@ export default function StockReceipts() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Поставщик</label>
-              <input
+              <label htmlFor="stockreceipt-f1" className="label">Поставщик</label>
+              <input id="stockreceipt-f1"
                 value={supplierName}
                 onChange={(e) => setSupplierName(e.target.value)}
                 className="input"
@@ -255,8 +267,8 @@ export default function StockReceipts() {
               />
             </div>
             <div>
-              <label className="label">Номер накладной</label>
-              <input
+              <label htmlFor="stockreceipt-f2" className="label">Номер накладной</label>
+              <input id="stockreceipt-f2"
                 value={invoiceNumber}
                 onChange={(e) => setInvoiceNumber(e.target.value)}
                 className="input"
@@ -270,7 +282,7 @@ export default function StockReceipts() {
 
             <div className="relative mb-3" ref={searchRef}>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
                 <input
                   type="text"
                   value={searchQuery}
@@ -284,7 +296,7 @@ export default function StockReceipts() {
                 />
               </div>
               {showSuggestions && searchQuery && filteredProducts.length > 0 && (
-                <div className="absolute z-10 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+                <div className="absolute z-10 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-surface shadow-lg">
                   {filteredProducts.slice(0, 10).map((p) => (
                     <button
                       key={p.id}
@@ -362,7 +374,7 @@ export default function StockReceipts() {
                       {item.salePrice !== "" && item.costPrice > 0 && (
                         <p
                           className={`mt-0.5 text-[11px] ${
-                            parseFloat(item.salePrice) > item.costPrice ? "text-green-600" : "text-red-600"
+                            parseFloat(item.salePrice) > item.costPrice ? "text-success-600" : "text-danger-600"
                           }`}
                         >
                           маржа {money(parseFloat(item.salePrice) - item.costPrice)}
@@ -370,7 +382,7 @@ export default function StockReceipts() {
                       )}
                     </div>
                     <div className="col-span-1 text-right">
-                      <button onClick={() => removeItem(index)} className="text-red-500 hover:text-red-700">
+                      <button onClick={() => removeItem(index)} className="text-danger-500 hover:text-danger-700">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
@@ -387,8 +399,8 @@ export default function StockReceipts() {
           </div>
 
           <div>
-            <label className="label">Примечание</label>
-            <input
+            <label htmlFor="stockreceipt-f3" className="label">Примечание</label>
+            <input id="stockreceipt-f3"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="input"

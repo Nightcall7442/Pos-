@@ -5,6 +5,7 @@ import api from "../services/api";
 import toast from "react-hot-toast";
 import type { CashShift } from "../types";
 import { useMoney } from "../hooks/useMoney";
+import { apiErrorMessage } from "../utils/apiError";
 
 
 interface OpenShiftScreenProps {
@@ -27,8 +28,8 @@ export default function OpenShiftScreen({ user, onShiftOpened }: OpenShiftScreen
       toast.success("Смена открыта!");
       onShiftOpened(shift);
     },
-    onError: (error: Error & { response?: { data?: { error?: string } } }) => {
-      toast.error(error.response?.data?.error || "Ошибка открытия смены");
+    onError: (error) => {
+      toast.error(apiErrorMessage(error, "Не удалось открыть смену — повторите"));
     },
   });
 
@@ -37,12 +38,12 @@ export default function OpenShiftScreen({ user, onShiftOpened }: OpenShiftScreen
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-dark-950">
       <div
-        className="mx-4 w-full max-w-md rounded-3xl border border-dark-600 bg-dark-800 shadow-2xl overflow-hidden"
+        className="mx-4 w-full max-w-md rounded-md border border-dark-600 bg-dark-800 shadow-2xl overflow-hidden"
         style={{ animation: "scale-in 0.3s ease" }}
       >
         {/* Header */}
         <div className="border-b border-dark-700 px-6 py-5 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-600/15 mb-3">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded bg-primary-600/15 mb-3">
             <Lock className="h-7 w-7 text-primary-400" />
           </div>
           <h2 className="text-xl font-bold text-dark-50">Открытие смены</h2>
@@ -54,18 +55,18 @@ export default function OpenShiftScreen({ user, onShiftOpened }: OpenShiftScreen
         {/* Content */}
         <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="mb-2 block text-sm font-medium text-dark-300">
+            <label htmlFor="openshiftscr-f1" className="mb-2 block text-sm font-medium text-dark-300">
               Начальная наличность в кассе
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-dark-400">{symbol}</span>
-              <input
+              <input id="openshiftscr-f1"
                 type="number"
                 step="10000"
                 value={openingCash}
                 onChange={(e) => setOpeningCash(e.target.value)}
                 placeholder="0"
-                className="w-full rounded-xl border-2 border-dark-600 bg-dark-700 py-4 pl-12 pr-4 text-center text-3xl font-bold text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none transition-colors"
+                className="w-full rounded border-2 border-dark-600 bg-dark-700 py-4 pl-12 pr-4 text-center text-3xl font-bold text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none transition-colors"
                 autoFocus
               />
             </div>
@@ -81,7 +82,7 @@ export default function OpenShiftScreen({ user, onShiftOpened }: OpenShiftScreen
               <button
                 key={amount}
                 onClick={() => setOpeningCash(String(amount))}
-                className={`rounded-xl border py-2.5 text-xs font-semibold transition-all active:scale-95 ${
+                className={`rounded border py-2.5 text-xs font-semibold transition-all active:scale-95 ${
                   openingCash === String(amount)
                     ? "border-primary-500 bg-primary-600/20 text-primary-400"
                     : "border-dark-600 bg-dark-700 text-dark-300 hover:border-dark-500 hover:text-dark-50"
@@ -98,7 +99,7 @@ export default function OpenShiftScreen({ user, onShiftOpened }: OpenShiftScreen
           <button
             onClick={() => openShift.mutate()}
             disabled={openShift.isPending}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-600 py-4 text-base font-bold text-white shadow-lg shadow-primary-600/30 transition-all hover:bg-primary-500 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded bg-primary-600 py-4 text-base font-bold text-white transition-all hover:bg-primary-500 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {openShift.isPending ? (
               <>

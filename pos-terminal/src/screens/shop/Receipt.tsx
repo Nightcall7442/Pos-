@@ -40,7 +40,23 @@ export default function Receipt({ items, selectedId, flashId, money, onSelect, o
             const lineTotal = Math.round(item.price * item.quantity * 100) / 100;
 
             const row = (
-              <div className="sh-g sh-row" key={item.id} onClick={() => onSelect(item.id)} data-line={item.id}>
+              // По строкам ходят стрелками из поля сканера, поэтому tabIndex -1: Tab не
+              // останавливается на каждой строке, но щелчок, Enter и диктор работают.
+              <div
+                className="sh-g sh-row"
+                key={item.id}
+                role="button"
+                tabIndex={-1}
+                aria-pressed={selected}
+                onClick={() => onSelect(item.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelect(item.id);
+                  }
+                }}
+                data-line={item.id}
+              >
                 <div className="n tab">{index + 1}</div>
                 <div className="nm">
                   <span>

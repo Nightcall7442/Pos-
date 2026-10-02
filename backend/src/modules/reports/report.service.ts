@@ -46,8 +46,11 @@ export class ReportService {
         where: { tenantId, status: { in: ["pending", "confirmed", "preparing", "ready", "served"] } },
       }),
       prisma.product.count({ where: { tenantId, isActive: true } }),
+      // «Мало на складе» — остаток не выше минимального, как в
+      // inventory.getLowStockAlerts. Раньше здесь считались все товары с
+      // учётом остатка, и на дашборде стояло их общее число.
       prisma.product.count({
-        where: { tenantId, trackInventory: true, isActive: true },
+        where: { tenantId, trackInventory: true, isActive: true, currentStock: { lte: prisma.product.fields.minStock } },
       }),
       prisma.order.findMany({
         where: { tenantId },

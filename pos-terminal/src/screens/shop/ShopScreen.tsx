@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Lock, LogOut, Moon, PackagePlus, PauseCircle, Sun, Volume2, VolumeX } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
+import { ConnectionDot } from "../../components/ConnectionStatus";
+import { apiErrorMessage } from "../../utils/apiError";
+import { undoToast } from "../../utils/undoToast";
 import { useCartStore } from "../../store/cartStore";
 import { useThemeStore } from "../../store/themeStore";
 import { useMoney } from "../../hooks/useMoney";
@@ -104,8 +107,8 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
     return (m ? m[2] : query).trim();
   }, [query]);
   const debouncedTerm = useDebounced(term, 180);
-  const suggestOn = !modalOpen && term.length >= 2 && !/^[\d\s.,\-]+$/.test(term);
-  const { data: suggestData, isFetching: suggestFetching } = useQuery<Product[]>({
+  const suggestOn = !modalOpen && term.length >= 2 && !/^[\d\s.,-]+$/.test(term);
+  const { data: suggestData, isFetching: suggestFetching, error: suggestFailure } = useQuery<Product[]>({
     queryKey: ["shop-suggest", debouncedTerm],
     enabled: suggestOn && debouncedTerm.length >= 2,
     staleTime: 20_000,
@@ -117,7 +120,13 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
   // The list is kept from the previous word while the next one loads, so it can
   // be shown — but Enter may only pick from a list that belongs to what is typed now.
   const suggestFresh = suggestOn && debouncedTerm === term && !suggestFetching;
-  useEffect(() => setSuggestIndex(0), [debouncedTerm]);
+  // Новое слово — выделение подсказки снова с первой строки. Поправка во время
+  // рендера (так советует React), а не эффектом с лишним проходом.
+  const [indexFor, setIndexFor] = useState(debouncedTerm);
+  if (indexFor !== debouncedTerm) {
+    setIndexFor(debouncedTerm);
+    setSuggestIndex(0);
+  }
 
   // ── добавление товара ────────────────────────────────────────────────────
   const fail = useCallback((message: string, duration = 2600) => {
@@ -254,8 +263,13 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
     [canAddProducts, fail]
   );
 
+  // Обработчики клавиатуры читают последние значения отсюда. Пишутся они после
+  // фиксации рендера (useLayoutEffect — раньше любых событий и эффектов), а не во
+  // время рендера: рендер, который React отбросит, не должен их перезаписать.
   const live = useRef({ query, armed, suggestions, suggestFresh, suggestIndex, items, modalOpen, selectedId, payMethod });
-  live.current = { query, armed, suggestions, suggestFresh, suggestIndex, items, modalOpen, selectedId, payMethod };
+  useLayoutEffect(() => {
+    live.current = { query, armed, suggestions, suggestFresh, suggestIndex, items, modalOpen, selectedId, payMethod };
+  });
 
   const submit = useCallback(async () => {
     const state = live.current;
@@ -305,8 +319,8 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
       } else {
         fail(`Товар «${text}» не найден`);
       }
-    } catch {
-      fail("Нет связи с сервером");
+    } catch (error) {
+      fail(apiErrorMessage(error, "Не удалось найти товар — повторите"));
     }
   }, [addProduct, fail, findByCode, offerCatalog]);
 
@@ -348,24 +362,10 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
       const line = list[index];
       removeItem(id);
       setSelectedId(list[index + 1]?.id ?? list[index - 1]?.id ?? null);
-      toast(
-        (t) => (
-          <span style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 15 }}>
-            «{line.name}» убрана
-            <button
-              style={{ color: "#7fd6a6", fontWeight: 600 }}
-              onClick={() => {
-                insertItem(line, index);
-                setSelectedId(line.id);
-                toast.dismiss(t.id);
-              }}
-            >
-              Вернуть
-            </button>
-          </span>
-        ),
-        { id: "shop-undo", duration: 5000 }
-      );
+      undoToast(`«${line.name}» убрана`, () => {
+        insertItem(line, index);
+        setSelectedId(line.id);
+      });
     },
     [insertItem, removeItem]
   );
@@ -394,8 +394,8 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
       const product = (await api.get(`/products/${id}`)).data.data as Product;
       products.current.set(id, product);
       return product;
-    } catch {
-      toast.error("Не удалось загрузить товар");
+    } catch (error) {
+      toast.error(apiErrorMessage(error, "Не удалось загрузить товар"));
       return null;
     }
   }, []);
@@ -574,6 +574,7 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
         <button className="sh-chip" onClick={park} title="F2">
           <PauseCircle className="i" />
           Отложить
+          <span className="sh-chip-fk">F2</span>
         </button>
         {parked.length > 0 && (
           <button className="sh-chip" onClick={() => setShowParked(true)}>
@@ -591,6 +592,7 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
           Смена от {new Date(shift.openedAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
           <Lock className="i" />
         </button>
+        <ConnectionDot />
         <span className="sh-time tab">{hhmm}</span>
         <button
           className="sh-ic"
@@ -629,6 +631,8 @@ export default function ShopScreen({ user, shift, onLogout, onCloseShift }: Shop
             suggestions={suggestions}
             suggestOpen={suggestOn}
             suggestLoading={suggestFetching}
+            // Без связи «Ничего не найдено» — неправда: товар есть, его просто не спросить.
+            suggestError={suggestFailure ? apiErrorMessage(suggestFailure, "Поиск не сработал — повторите") : null}
             suggestIndex={suggestIndex}
             onSuggestIndex={setSuggestIndex}
             onPick={(product) => {

@@ -1,8 +1,9 @@
+import type { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../../config/database.js";
 import { getEnv } from "../../config/env.js";
-import { generateTokens } from "../../middleware/auth.js";
+import { generateTokens, type TokenClaims } from "../../middleware/auth.js";
 import type { LoginInput, RegisterInput } from "./auth.schema.js";
 import { AppError, ConflictError, NotFoundError } from "../../utils/errors.js";
 import { slugify } from "../../utils/slug.js";
@@ -17,7 +18,7 @@ export class AuthService {
   // the database happened to return first would be the only one able to log in.
   // The secret may be the password or the user's terminal PIN; both are hashed.
   async login(data: LoginInput, tenantId?: string) {
-    const where: any = {
+    const where: Prisma.UserWhereInput = {
       email: data.email,
       isActive: true,
     };
@@ -56,6 +57,7 @@ export class AuthService {
       role: user.role,
       firstName: user.firstName,
       lastName: user.lastName,
+      tokenVersion: user.tokenVersion,
     });
 
     return {
@@ -133,6 +135,7 @@ export class AuthService {
       role: user.role,
       firstName: user.firstName,
       lastName: user.lastName,
+      tokenVersion: user.tokenVersion,
     });
 
     return {
@@ -189,6 +192,7 @@ export class AuthService {
       role: user.role,
       firstName: user.firstName,
       lastName: user.lastName,
+      tokenVersion: user.tokenVersion,
     });
 
     return {
@@ -207,14 +211,13 @@ export class AuthService {
     const env = getEnv();
 
     try {
-      const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET) as {
-        id: string;
-        tenantId: string;
-        email: string;
-        role: string;
-        firstName: string;
-        lastName: string;
-      };
+      const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET) as TokenClaims;
+
+      // Токен доступа здесь не принимается, даже если секреты почему-то
+      // совпали: тип написан в самом токене.
+      if (decoded.typ !== "refresh") {
+        throw new AppError("Недействительный refresh-токен", 401);
+      }
 
       const user = await prisma.user.findUnique({
         where: { id: decoded.id },
@@ -224,6 +227,12 @@ export class AuthService {
         throw new NotFoundError("Пользователь не найден или отключён");
       }
 
+      // Смена пароля увеличивает token_version, и все refresh-токены, выданные
+      // до неё, перестают работать.
+      if ((decoded.ver ?? 0) !== user.tokenVersion) {
+        throw new AppError("Сессия завершена — войдите снова", 401);
+      }
+
       const tokens = generateTokens({
         id: user.id,
         tenantId: user.tenantId,
@@ -231,6 +240,7 @@ export class AuthService {
         role: user.role,
         firstName: user.firstName,
         lastName: user.lastName,
+        tokenVersion: user.tokenVersion,
       });
 
       return tokens;
@@ -247,9 +257,12 @@ export class AuthService {
     if (!isValid) throw new AppError("Текущий пароль неверен");
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
+    // Вместе с паролем увеличиваем token_version: прежние refresh-токены
+    // перестают работать, то есть смена пароля действительно завершает все
+    // сессии, а не только меняет строку в базе.
     await prisma.user.update({
       where: { id: userId },
-      data: { passwordHash },
+      data: { passwordHash, tokenVersion: { increment: 1 } },
     });
 
     return { message: "Password changed successfully" };

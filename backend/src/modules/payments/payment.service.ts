@@ -1,34 +1,39 @@
+import type { Prisma } from "@prisma/client";
+import type { PaymentQueryInput } from "../common.schema.js";
 import prisma from "../../config/database.js";
 import type { CreatePaymentInput } from "./payment.schema.js";
 import { deductTechCardIngredients, round2 } from "../inventory/stock.helpers.js";
 import { optionalDateFilter, tenantTimeZone } from "../../utils/dates.js";
 import { AppError, ConflictError, NotFoundError } from "../../utils/errors.js";
+import { inTransaction } from "../../utils/transaction.js";
+import { attachIdempotencyResource, claimIdempotencyKey, type IdempotencyContext } from "../../utils/idempotency.js";
+import { lockOrder } from "../orders/order.locks.js";
 
 export class PaymentService {
-  async create(tenantId: string, data: CreatePaymentInput, userId?: string) {
-    const order = await prisma.order.findFirst({
-      where: { id: data.orderId, tenantId },
-      include: { payments: true },
-    });
-    if (!order) throw new NotFoundError("Заказ не найден");
-    if (order.status === "cancelled") throw new ConflictError("Нельзя оплатить отменённый заказ");
-    if (order.status === "completed") throw new ConflictError("Заказ уже оплачен");
+  async create(tenantId: string, data: CreatePaymentInput, userId?: string, idem?: IdempotencyContext | null) {
+    // Всё — внутри одной транзакции под блокировкой строки заказа. Раньше
+    // статус и остаток к оплате проверялись до транзакции, и пять одновременных
+    // оплат одного заказа проходили все пять (тест concurrency.test.ts).
+    return inTransaction(async (tx) => {
+      await claimIdempotencyKey(tx, tenantId, idem);
+      const order = await lockOrder(tx, tenantId, data.orderId);
+      if (!order) throw new NotFoundError("Заказ не найден");
+      if (order.status === "cancelled") throw new ConflictError("Нельзя оплатить отменённый заказ");
+      if (order.status === "completed") throw new ConflictError("Заказ уже оплачен");
 
-    const totalPaid = order.payments
-      .filter((p) => p.status === "completed")
-      .reduce((sum, p) => sum + p.amount, 0);
-    const remaining = round2(order.total - totalPaid);
+      const payments = await tx.payment.findMany({ where: { orderId: data.orderId, status: "completed" } });
+      const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+      const remaining = round2(order.total - totalPaid);
 
-    if (data.amount > remaining + 0.01) {
-      throw new AppError(`Сумма превышает остаток к оплате ${remaining.toFixed(2)}`);
-    }
-    if (data.amount < remaining - 0.01 && !data.allowPartial) {
-      throw new Error(`Сумма ${data.amount.toFixed(2)} меньше остатка к оплате ${remaining.toFixed(2)}`);
-    }
+      if (data.amount > remaining + 0.01) {
+        throw new AppError(`Сумма превышает остаток к оплате ${remaining.toFixed(2)}`);
+      }
+      if (data.amount < remaining - 0.01 && !data.allowPartial) {
+        throw new Error(`Сумма ${data.amount.toFixed(2)} меньше остатка к оплате ${remaining.toFixed(2)}`);
+      }
 
-    const completesOrder = totalPaid + data.amount >= order.total - 0.01;
+      const completesOrder = totalPaid + data.amount >= order.total - 0.01;
 
-    return prisma.$transaction(async (tx) => {
       const payment = await tx.payment.create({
         data: {
           tenantId,
@@ -61,15 +66,16 @@ export class PaymentService {
         }
       }
 
+      await attachIdempotencyResource(tx, tenantId, idem, payment.id);
       return payment;
     });
   }
 
-  async findAll(tenantId: string, query: any) {
+  async findAll(tenantId: string, query: PaymentQueryInput) {
     const { page = 1, limit = 20, method, status, orderId } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId };
+    const where: Prisma.PaymentWhereInput = { tenantId };
     if (method) where.method = method;
     if (status) where.status = status;
     if (orderId) where.orderId = orderId;
@@ -91,42 +97,69 @@ export class PaymentService {
   }
 
   async refund(tenantId: string, paymentId: string, reason: string) {
-    const payment = await prisma.payment.findFirst({
-      where: { id: paymentId, tenantId, status: "completed" },
-      include: { order: { include: { payments: true } } },
-    });
-    if (!payment) throw new NotFoundError("Платёж не найден");
+    return inTransaction(async (tx) => {
+      const target = await tx.payment.findFirst({ where: { id: paymentId, tenantId }, select: { orderId: true } });
+      if (!target) throw new NotFoundError("Платёж не найден");
+      // Блокировка заказа — иначе два одновременных возврата одного платежа
+      // (или возврат во время оплаты) оба видели бы платёж «completed».
+      await lockOrder(tx, tenantId, target.orderId);
+      const payment = await tx.payment.findFirst({
+        where: { id: paymentId, tenantId, status: "completed" },
+        include: { order: { include: { payments: true } } },
+      });
+      if (!payment) throw new NotFoundError("Платёж не найден");
 
-    const updated = await prisma.payment.update({
-      where: { id: paymentId },
-      data: { status: "refunded" },
-    });
+      // Причину возврата требует refundPaymentSchema, контроллер передаёт её
+      // сюда — и до сих пор она терялась: в платёж не писалась, а в журнал
+      // аудита не попадала (middleware/audit сохраняет data из ответа, где
+      // причины нет). Теперь она лежит в metadata платежа вместе с временем.
+      let metadata: Record<string, unknown> = {};
+      try {
+        const parsed: unknown = JSON.parse(payment.metadata || "{}");
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          metadata = parsed as Record<string, unknown>;
+        }
+      } catch {
+        // битый JSON в metadata не должен ломать возврат
+      }
 
-    const order = payment.order;
-    const otherCompletedPayments = order.payments.filter(
-      (p) => p.id !== paymentId && p.status === "completed"
-    );
-    const totalPaidAfterRefund = otherCompletedPayments.reduce((sum, p) => sum + p.amount, 0);
-
-    if (totalPaidAfterRefund < order.total - 0.01 && order.status === "completed") {
-      await prisma.order.update({
-        where: { id: order.id },
-        data: { status: "served", completedAt: null },
+      const updated = await tx.payment.update({
+        where: { id: paymentId },
+        data: {
+          status: "refunded",
+          metadata: JSON.stringify({
+            ...metadata,
+            refund: { reason, at: new Date().toISOString() },
+          }),
+        },
       });
 
-      if (order.tableId) {
-        await prisma.table.update({
-          where: { id: order.tableId },
-          data: { status: "occupied" },
-        });
-      }
-    }
+      const order = payment.order;
+      const otherCompletedPayments = order.payments.filter(
+        (p) => p.id !== paymentId && p.status === "completed"
+      );
+      const totalPaidAfterRefund = otherCompletedPayments.reduce((sum, p) => sum + p.amount, 0);
 
-    return updated;
+      if (totalPaidAfterRefund < order.total - 0.01 && order.status === "completed") {
+        await tx.order.update({
+          where: { id: order.id },
+          data: { status: "served", completedAt: null },
+        });
+
+        if (order.tableId) {
+          await tx.table.update({
+            where: { id: order.tableId },
+            data: { status: "occupied" },
+          });
+        }
+      }
+
+      return updated;
+    });
   }
 
   async getSummary(tenantId: string, dateFrom?: string, dateTo?: string) {
-    const where: any = { tenantId, status: "completed" };
+    const where: Prisma.PaymentWhereInput = { tenantId, status: "completed" };
     const createdAt = optionalDateFilter(dateFrom, dateTo, await tenantTimeZone(tenantId));
     if (createdAt) where.createdAt = createdAt;
 

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { receiptService } from "../modules/receipts/receipt.service.js";
 import { authenticate } from "../middleware/auth.js";
-import { sendSuccess, sendError } from "../utils/response.js";
+import { sendSuccess } from "../utils/response.js";
 import { handleError } from "../utils/errors.js";
 
 const router = Router();

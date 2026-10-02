@@ -1,8 +1,11 @@
+import type { Prisma } from "@prisma/client";
 import prisma from "../../config/database.js";
 import type { CreateProductInput, UpdateProductInput, ProductQueryInput } from "./product.schema.js";
 import { AppError, NotFoundError } from "../../utils/errors.js";
-import { caseVariants, searchTokens } from "../../utils/search.js";
+import { ci, searchTokens } from "../../utils/search.js";
 import { catalogService } from "../catalog/catalog.service.js";
+import { lockStockRows, roundStock } from "../inventory/stock.helpers.js";
+import { inTransaction } from "../../utils/transaction.js";
 
 // saleUnit values that mean "sold by weight" — see gramsPerUnit().
 const WEIGHT_UNITS = ["г", "кг", "g", "kg"];
@@ -15,15 +18,15 @@ export class ProductService {
     // Every filter is its own AND clause: a previous version put both the
     // text search and the ingredient filter on `where.OR`, so whichever ran
     // last silently replaced the other.
-    const and: any[] = [];
-    const where: any = { tenantId, AND: and };
+    const and: Prisma.ProductWhereInput[] = [];
+    const where: Prisma.ProductWhereInput = { tenantId, AND: and };
     // Every word of the search must match the name (in any spelling of its
     // case — see utils/search.ts), or be found in the SKU / barcode.
     for (const token of searchTokens(search || "")) {
       and.push({
         OR: [
-          ...caseVariants(token).map((variant) => ({ name: { contains: variant } })),
-          { sku: { contains: token } },
+          { name: ci(token) },
+          { sku: ci(token) },
           { barcode: { contains: token } },
         ],
       });
@@ -41,15 +44,19 @@ export class ProductService {
     } else if (isIngredient === true) {
       and.push({ OR: [{ isIngredient: true }, { category: { isIngredient: true } }] });
     }
-    if (minPrice !== undefined) where.price = { ...where.price, gte: minPrice };
-    if (maxPrice !== undefined) where.price = { ...where.price, lte: maxPrice };
+    const price: Prisma.FloatFilter = {};
+    if (minPrice !== undefined) price.gte = minPrice;
+    if (maxPrice !== undefined) price.lte = maxPrice;
+    if (minPrice !== undefined || maxPrice !== undefined) where.price = price;
     if (inStock !== undefined) {
       where.currentStock = inStock ? { gt: 0 } : { lte: 0 };
     }
 
     // Ties (equal sortOrder, which is every product until an admin arranges them)
     // fall back to the name so pages of a long catalogue are stable.
-    const orderBy: any = sort === "name" ? { name: order } : [{ [sort]: order }, { name: "asc" }];
+    const orderBy = (sort === "name" ? { name: order } : [{ [sort]: order }, { name: "asc" }]) as
+      | Prisma.ProductOrderByWithRelationInput
+      | Prisma.ProductOrderByWithRelationInput[];
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
@@ -249,18 +256,24 @@ export class ProductService {
   }
 
   async adjustStock(tenantId: string, productId: string, quantity: number, reason: string, userId: string) {
-    const product = await prisma.product.findFirst({ where: { id: productId, tenantId } });
-    if (!product) throw new NotFoundError("Товар не найден");
+    // Под блокировкой строки товара (lockStockRows) и в одной транзакции:
+    // раньше остаток читался до транзакции, и корректировка, совпавшая с
+    // продажей, затирала её списание.
+    return inTransaction(async (tx) => {
+      await lockStockRows(tx, tenantId, [productId]);
+      const product = await tx.product.findFirst({ where: { id: productId, tenantId } });
+      if (!product) throw new NotFoundError("Товар не найден");
 
-    const newStock = product.currentStock + quantity;
-    if (newStock < 0) throw new AppError("Недостаточно остатка");
+      // Округление, как у остатка везде: без него 84,2 − 1,24 записывалось
+      // как 82,96000000000001.
+      const newStock = roundStock(product.currentStock + quantity);
+      if (newStock < 0) throw new AppError("Недостаточно остатка");
 
-    const [updated] = await prisma.$transaction([
-      prisma.product.update({
+      const updated = await tx.product.update({
         where: { id: productId },
         data: { currentStock: newStock },
-      }),
-      prisma.inventoryMovement.create({
+      });
+      await tx.inventoryMovement.create({
         data: {
           tenantId,
           productId,
@@ -269,10 +282,10 @@ export class ProductService {
           reason,
           userId,
         },
-      }),
-    ]);
+      });
 
-    return updated;
+      return updated;
+    });
   }
 }
 

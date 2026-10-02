@@ -1,12 +1,24 @@
+import type { PaymentQueryInput } from "../common.schema.js";
 import { Request, Response } from "express";
 import { paymentService } from "./payment.service.js";
-import { sendSuccess, sendCreated, sendError, sendPaginated } from "../../utils/response.js";
+import { sendSuccess, sendCreated, sendPaginated } from "../../utils/response.js";
 import { handleError } from "../../utils/errors.js";
+import prisma from "../../config/database.js";
+import { idempotencyFrom, withIdempotency } from "../../utils/idempotency.js";
 
 export class PaymentController {
   async create(req: Request, res: Response) {
     try {
-      const payment = await paymentService.create(req.user!.tenantId, req.body, req.user!.id);
+      const tenantId = req.user!.tenantId;
+      const idem = idempotencyFrom(req, "POST /payments");
+      // Повтор с тем же Idempotency-Key отвечает тем, что создал первый запрос.
+      const { value: payment, replayed } = await withIdempotency(
+        tenantId,
+        idem,
+        () => paymentService.create(tenantId, req.body, req.user!.id, idem),
+        (id) => prisma.payment.findFirstOrThrow({ where: { id, tenantId } })
+      );
+      if (replayed) res.setHeader("Idempotent-Replayed", "true");
       sendCreated(res, payment);
     } catch (error) {
       handleError(res, error);
@@ -18,9 +30,9 @@ export class PaymentController {
       const query = {
         page: Number(req.query.page) || 1,
         limit: Number(req.query.limit) || 20,
-        method: req.query.method as string,
-        status: req.query.status as string,
-        orderId: req.query.orderId as string,
+        method: req.query.method as PaymentQueryInput["method"],
+        status: req.query.status as PaymentQueryInput["status"],
+        orderId: req.query.orderId as string | undefined,
       };
       const { payments, total, page, limit } = await paymentService.findAll(req.user!.tenantId, query);
       sendPaginated(res, payments, total, page, limit);

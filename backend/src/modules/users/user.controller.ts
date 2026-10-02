@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { userService } from "./user.service.js";
-import { sendSuccess, sendCreated, sendError, sendPaginated } from "../../utils/response.js";
+import { sendSuccess, sendCreated, sendPaginated } from "../../utils/response.js";
 import { handleError } from "../../utils/errors.js";
 
 export class UserController {
@@ -55,7 +55,7 @@ export class UserController {
   async toggleActive(req: Request, res: Response) {
     try {
       const id = req.params.id as string;
-      const user = await userService.toggleActive(req.user!.tenantId, id);
+      const user = await userService.toggleActive(req.user!.tenantId, id, { id: req.user!.id, role: req.user!.role });
       sendSuccess(res, user);
     } catch (error) {
       handleError(res, error);

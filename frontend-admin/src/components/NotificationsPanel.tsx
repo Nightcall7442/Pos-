@@ -40,6 +40,23 @@ export default function NotificationsPanel({ open, onClose }: NotificationsPanel
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open, onClose]);
 
+  // Escape закрывает и возвращает фокус на колокольчик, откуда панель открыли (D-6).
+  // Кто открыл — запоминаем в момент открытия, а не при каждой перерисовке.
+  const openerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (open) openerRef.current = document.activeElement as HTMLElement | null;
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      onClose();
+      openerRef.current?.focus?.();
+    }
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   const notifications: Notification[] = data?.notifications || [];
@@ -47,13 +64,17 @@ export default function NotificationsPanel({ open, onClose }: NotificationsPanel
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 top-full mt-2 w-96 rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800"
+      id="notifications-panel"
+      role="dialog"
+      aria-label="Уведомления"
+      className="fixed inset-x-3 top-14 z-50 mt-2 rounded-md border border-gray-200 bg-surface shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:w-96"
     >
-      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Уведомления</h3>
+      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+        <h3 className="text-sm font-semibold text-gray-900">Уведомления</h3>
         <button
           onClick={onClose}
-          className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+          aria-label="Закрыть уведомления"
+          className="rounded-lg p-1 text-gray-500 hover:bg-gray-100"
         >
           <X className="h-4 w-4" />
         </button>
@@ -61,7 +82,7 @@ export default function NotificationsPanel({ open, onClose }: NotificationsPanel
 
       <div className="max-h-96 overflow-y-auto">
         {notifications.length === 0 ? (
-          <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+          <div className="p-6 text-center text-sm text-gray-500">
             Нет уведомлений
           </div>
         ) : (
@@ -69,16 +90,16 @@ export default function NotificationsPanel({ open, onClose }: NotificationsPanel
             <div
               key={n.id}
               className={clsx(
-                "flex gap-3 border-b border-gray-100 px-4 py-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50",
-                !n.read && "bg-primary-50/50 dark:bg-primary-900/10"
+                "flex gap-3 border-b border-gray-100 px-4 py-3 transition-colors hover:bg-gray-50",
+                !n.read && "bg-primary-50/50"
               )}
             >
               <div
                 className={clsx(
                   "mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg",
                   n.type === "order"
-                    ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-                    : "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400"
+                    ? "bg-info-100 text-info-600"
+                    : "bg-warning-100 text-warning-600"
                 )}
               >
                 {n.type === "order" ? (
@@ -88,9 +109,9 @@ export default function NotificationsPanel({ open, onClose }: NotificationsPanel
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{n.title}</p>
-                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{n.message}</p>
-                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                <p className="text-sm font-medium text-gray-900">{n.title}</p>
+                <p className="mt-0.5 text-xs text-gray-500">{n.message}</p>
+                <p className="mt-1 text-xs text-gray-500">
                   {format(new Date(n.createdAt), "d MMM, HH:mm", { locale: ru })}
                 </p>
               </div>

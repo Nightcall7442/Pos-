@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import type { Category, Product } from "../types";
 import { useMoney } from "../hooks/useMoney";
 import { weightUnitOf } from "../utils/weight";
+import { apiErrorMessage } from "../utils/apiError";
 
 interface StockReceiptScreenProps {
   onClose: () => void;
@@ -42,7 +43,7 @@ function computeSalePrice(costPrice: number, markupPercent: number): number {
 }
 
 export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps) {
-  const { money, symbol } = useMoney();
+  const { money } = useMoney();
   const qc = useQueryClient();
 
   const [supplierName, setSupplierName] = useState("");
@@ -99,7 +100,11 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
     return 0;
   }, [costPrice, effectiveMarkup, productMode, selectedProduct]);
 
+  // Пока кассир не трогал цену продажи, поле следует за подсказкой (наценка
+  // от себестоимости). Поле при этом редактируемое, поэтому значение живёт в
+  // состоянии, а не вычисляется.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- поле следует за подсказкой, пока его не правили
     if (!salePriceTouched) setSalePrice(suggestedPrice > 0 ? String(suggestedPrice) : "");
   }, [suggestedPrice, salePriceTouched]);
 
@@ -205,15 +210,15 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
       toast.success("Приход оформлен");
       onClose();
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Не удалось оформить приход");
+    onError: (error) => {
+      toast.error(apiErrorMessage(error, "Не удалось оформить приход"));
     },
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" style={{ animation: "fade-in 0.2s ease" }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" style={{ animation: "fade-in 0.2s ease" }}>
       <div
-        className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-3xl border border-dark-600 bg-dark-800 shadow-2xl"
+        className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-md border border-dark-600 bg-dark-800 shadow-2xl"
         style={{ animation: "scale-in 0.2s ease" }}
       >
         <div className="flex items-center justify-between border-b border-dark-700 px-6 py-4 shrink-0">
@@ -221,30 +226,30 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
             <PackagePlus className="h-5 w-5 text-primary-400" />
             <h3 className="text-lg font-bold text-dark-50">Приход товара</h3>
           </div>
-          <button onClick={onClose} className="rounded-xl p-2 text-dark-400 hover:bg-dark-700 hover:text-dark-50 transition-colors">
+          <button onClick={onClose} className="rounded p-2 text-dark-400 hover:bg-dark-700 hover:text-dark-50 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
           <div>
-            <label className="mb-1 block text-xs font-medium text-dark-400">Поставщик (необязательно)</label>
-            <input
+            <label htmlFor="stockreceipt-f1" className="mb-1 block text-xs font-medium text-dark-400">Поставщик (необязательно)</label>
+            <input id="stockreceipt-f1"
               value={supplierName}
               onChange={(e) => setSupplierName(e.target.value)}
               placeholder="Название поставщика"
-              className="w-full rounded-xl border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none"
+              className="w-full rounded border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none"
             />
           </div>
 
-          <div className="rounded-2xl border border-dark-700 bg-dark-900/50 p-4 space-y-4">
+          <div className="rounded border border-dark-700 bg-dark-900/50 p-4 space-y-4">
             {/* Category */}
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-dark-400">Категория</label>
+              <p id="receipt-category" className="mb-1.5 block text-xs font-medium text-dark-400">Категория</p>
               <div className="mb-2 flex gap-1.5">
                 <button
                   onClick={() => handleCategoryModeChange("existing")}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
                     categoryMode === "existing" ? "bg-primary-600 text-white" : "bg-dark-700 text-dark-400 hover:text-white"
                   }`}
                 >
@@ -252,7 +257,7 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
                 </button>
                 <button
                   onClick={() => handleCategoryModeChange("new")}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
                     categoryMode === "new" ? "bg-primary-600 text-white" : "bg-dark-700 text-dark-400 hover:text-white"
                   }`}
                 >
@@ -267,7 +272,7 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
                     setProductMode("existing");
                     resetProductFields();
                   }}
-                  className="w-full rounded-xl border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-50 focus:border-primary-500 focus:outline-none"
+                  className="w-full rounded border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-50 focus:border-primary-500 focus:outline-none"
                 >
                   <option value="">Выберите категорию</option>
                   {categories?.map((c) => (
@@ -281,7 +286,7 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   placeholder="Название новой категории"
-                  className="w-full rounded-xl border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none"
+                  className="w-full rounded border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none"
                 />
               )}
               {categoryMode === "new" && (
@@ -293,7 +298,7 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
 
             {/* Product */}
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-dark-400">Товар</label>
+              <p id="receipt-product" className="mb-1.5 block text-xs font-medium text-dark-400">Товар</p>
               {categoryMode === "existing" && categoryId && (
                 <div className="mb-2 flex gap-1.5">
                   <button
@@ -301,7 +306,7 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
                       setProductMode("existing");
                       resetProductFields();
                     }}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
                       productMode === "existing" ? "bg-primary-600 text-white" : "bg-dark-700 text-dark-400 hover:text-white"
                     }`}
                   >
@@ -312,7 +317,7 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
                       setProductMode("new");
                       resetProductFields();
                     }}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
                       productMode === "new" ? "bg-primary-600 text-white" : "bg-dark-700 text-dark-400 hover:text-white"
                     }`}
                   >
@@ -326,7 +331,7 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
                   value={productId}
                   onChange={(e) => setProductId(e.target.value)}
                   disabled={!categoryId}
-                  className="w-full rounded-xl border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-50 focus:border-primary-500 focus:outline-none disabled:opacity-40"
+                  className="w-full rounded border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-50 focus:border-primary-500 focus:outline-none disabled:opacity-40"
                 >
                   <option value="">{categoryId ? "Выберите товар" : "Сначала выберите категорию"}</option>
                   {categoryProducts?.map((p) => (
@@ -341,13 +346,13 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
                     value={newProductName}
                     onChange={(e) => setNewProductName(e.target.value)}
                     placeholder="Название товара"
-                    className="flex-1 rounded-xl border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none"
+                    className="flex-1 rounded border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none"
                   />
                   <input
                     value={unit}
                     onChange={(e) => setUnit(e.target.value)}
                     placeholder="ед."
-                    className="w-20 rounded-xl border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none"
+                    className="w-20 rounded border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none"
                   />
                 </div>
               )}
@@ -356,35 +361,35 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
             {/* Quantity + cost price */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-dark-400">Количество</label>
-                <input
+                <label htmlFor="stockreceipt-f2" className="mb-1.5 block text-xs font-medium text-dark-400">Количество</label>
+                <input id="stockreceipt-f2"
                   type="number"
                   min="0"
                   step="0.01"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
-                  className="w-full rounded-xl border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-50 focus:border-primary-500 focus:outline-none"
+                  className="w-full rounded border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-50 focus:border-primary-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-dark-400">Цена прихода (за ед.)</label>
-                <input
+                <label htmlFor="stockreceipt-f3" className="mb-1.5 block text-xs font-medium text-dark-400">Цена прихода (за ед.)</label>
+                <input id="stockreceipt-f3"
                   type="number"
                   min="0"
                   step="0.01"
                   value={costPrice}
                   onChange={(e) => setCostPrice(e.target.value)}
-                  className="w-full rounded-xl border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-50 focus:border-primary-500 focus:outline-none"
+                  className="w-full rounded border-2 border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-50 focus:border-primary-500 focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="space-y-2 rounded-xl bg-dark-800 px-4 py-3">
-              <label className="block text-xs text-dark-400">
+            <div className="space-y-2 rounded bg-dark-800 px-4 py-3">
+              <label htmlFor="stockreceipt-f4" className="block text-xs text-dark-400">
                 Цена продажи
                 {effectiveMarkup > 0 ? ` (наценка ${effectiveMarkup}%)` : " — наценка категории не задана"}
               </label>
-              <input
+              <input id="stockreceipt-f4"
                 type="number"
                 inputMode="decimal"
                 value={salePrice}
@@ -393,7 +398,7 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
                   setSalePrice(e.target.value);
                 }}
                 placeholder={productMode === "existing" ? "без изменений" : "укажите цену"}
-                className="w-full rounded-lg border border-dark-600 bg-dark-700 px-3 py-2 text-lg font-bold text-primary-400 focus:border-primary-500 focus:outline-none"
+                className="w-full rounded border border-dark-600 bg-dark-700 px-3 py-2 text-lg font-bold text-primary-400 focus:border-primary-500 focus:outline-none"
               />
               {margin !== null && (
                 <p className={`text-[11px] ${margin > 0 ? "text-success-500" : "text-danger-500"}`}>
@@ -407,7 +412,7 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
             <button
               onClick={handleAddItem}
               disabled={!canAdd}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-dark-700 py-2.5 text-sm font-semibold text-dark-50 transition-colors hover:bg-dark-600 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex w-full items-center justify-center gap-2 rounded bg-dark-700 py-2.5 text-sm font-semibold text-dark-50 transition-colors hover:bg-dark-600 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Plus className="h-4 w-4" />
               Добавить в приход
@@ -419,7 +424,7 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
             <div className="space-y-2">
               <h4 className="text-xs font-semibold uppercase tracking-wider text-dark-500">Позиции прихода ({items.length})</h4>
               {items.map((item) => (
-                <div key={item.key} className="flex items-center gap-3 rounded-xl border border-dark-700 bg-dark-900/50 px-4 py-2.5">
+                <div key={item.key} className="flex items-center gap-3 rounded border border-dark-700 bg-dark-900/50 px-4 py-2.5">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-dark-50">{item.label}</p>
                     <p className="text-[11px] text-dark-500">
@@ -445,7 +450,7 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
           <button
             onClick={() => createMutation.mutate()}
             disabled={items.length === 0 || createMutation.isPending}
-            className="flex items-center gap-2 rounded-xl bg-primary-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary-600/25 transition-all hover:bg-primary-500 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 rounded bg-primary-600 px-6 py-3 text-sm font-bold text-white transition-all hover:bg-primary-500 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             Оформить приход

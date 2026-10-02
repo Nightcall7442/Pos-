@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import LoginScreen from "./screens/LoginScreen";
 import MenuScreen from "./screens/MenuScreen";
 import ShopScreen from "./screens/shop/ShopScreen";
@@ -8,6 +9,9 @@ import ReceiptModal from "./screens/ReceiptScreen";
 import OpenShiftScreen from "./screens/OpenShiftScreen";
 import CloseShiftScreen from "./screens/CloseShiftScreen";
 import { useCartStore } from "./store/cartStore";
+import { ConnectionBar } from "./components/ConnectionStatus";
+import { useConnection } from "./services/connection";
+import { isNoConnection } from "./utils/apiError";
 import { disconnectSocket } from "./services/socket";
 import api, { clearSession } from "./services/api";
 import type { Order, CashShift } from "./types";
@@ -48,48 +52,74 @@ function Workspace({ user, shift, onLogout, onCheckout, onCloseShift }: Workspac
   return <MenuScreen user={user} shift={shift} onLogout={onLogout} onCheckout={onCheckout} onCloseShift={onCloseShift} />;
 }
 
+// Сохранённая сессия планшета: читается один раз при запуске, в начальном
+// значении состояния, а не эффектом после первого рендера.
+function savedSession(): { token: string; user: UserData } | null {
+  const token = localStorage.getItem("pos-token");
+  const user = localStorage.getItem("pos-user");
+  if (!token || !user) return null;
+  try {
+    return { token, user: JSON.parse(user) as UserData };
+  } catch {
+    localStorage.removeItem("pos-user");
+    return null;
+  }
+}
+
 function App() {
-  const [user, setUser] = useState<UserData | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<UserData | null>(() => savedSession()?.user ?? null);
+  const [token, setToken] = useState<string | null>(() => savedSession()?.token ?? null);
   const [showPayment, setShowPayment] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
   const [currentShift, setCurrentShift] = useState<CashShift | null>(null);
   const [shiftLoading, setShiftLoading] = useState(false);
   const [showCloseShift, setShowCloseShift] = useState(false);
+  // Смену не удалось проверить (нет связи) — это не «смены нет»: открывать
+  // вторую нельзя. Счётчик перезапускает проверку.
+  const [shiftUnknown, setShiftUnknown] = useState(false);
+  const [shiftCheck, setShiftCheck] = useState(0);
+  const connected = useConnection((s) => s.problem === null);
   const clearCart = useCartStore((s) => s.clearCart);
+  const queryClient = useQueryClient();
 
+  // Связь вернулась — проверить смену ещё раз, без нажатий.
   useEffect(() => {
-    const savedToken = localStorage.getItem("pos-token");
-    const savedUser = localStorage.getItem("pos-user");
-    if (savedToken && savedUser) {
-      try {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem("pos-user");
-      }
-    }
-  }, []);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- повтор проверки при возврате связи
+    if (connected && shiftUnknown) setShiftCheck((n) => n + 1);
+  }, [connected, shiftUnknown]);
 
   // Check for active shift after login
   useEffect(() => {
     if (!token || !user) return;
+    // Флаг загрузки ставится вместе с запуском запроса; смену дальше меняют и
+    // обработчики открытия/закрытия, поэтому она в состоянии, а не в useQuery.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- начало загрузки при входе
     setShiftLoading(true);
     api
       .get("/cash-shifts/current")
       .then((res) => {
         setCurrentShift(res.data.data || null);
+        setShiftUnknown(false);
       })
-      .catch(() => {
+      .catch((error) => {
+        if (isNoConnection(error)) {
+          setShiftUnknown(true);
+          return;
+        }
         setCurrentShift(null);
+        setShiftUnknown(false);
       })
       .finally(() => {
         setShiftLoading(false);
       });
-  }, [token, user]);
+  }, [token, user, shiftCheck]);
 
+  // Кэш запросов — данные прошлой сессии: настройки точки (тип кассы, валюта,
+  // название), товары, смена. После «Сменить точку» без перезагрузки касса
+  // иначе открывалась бы магазином с чужой валютой.
   const handleLogin = (userData: UserData, userToken: string): void => {
+    queryClient.clear();
     setUser(userData);
     setToken(userToken);
     localStorage.setItem("pos-user", JSON.stringify(userData));
@@ -97,6 +127,7 @@ function App() {
 
   const handleLogout = (): void => {
     disconnectSocket();
+    queryClient.clear();
     setUser(null);
     setToken(null);
     setCurrentShift(null);
@@ -120,7 +151,12 @@ function App() {
 
   // Not logged in
   if (!token || !user) {
-    return <LoginScreen onLogin={handleLogin} />;
+    return (
+      <>
+        <ConnectionBar floating />
+        <LoginScreen onLogin={handleLogin} />
+      </>
+    );
   }
 
   // Loading shift state
@@ -135,13 +171,43 @@ function App() {
     );
   }
 
+  // Не удалось спросить сервер — смена может быть открыта; ждём связь.
+  if (shiftUnknown && !currentShift) {
+    return (
+      <>
+        <ConnectionBar floating />
+        <div className="flex h-screen items-center justify-center bg-dark-950 px-6">
+          <div className="max-w-sm text-center">
+            <p className="text-lg font-semibold text-dark-50">Не удалось проверить смену</p>
+            <p className="mt-2 text-sm text-dark-400">
+              Нет связи с сервером. Смена, скорее всего, открыта — касса проверит её сама, как только связь вернётся.
+            </p>
+            <button
+              onClick={() => setShiftCheck((n) => n + 1)}
+              className="mt-6 min-h-11 rounded-md bg-primary-600 px-6 text-sm font-semibold text-white hover:bg-primary-500"
+            >
+              Проверить сейчас
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   // No shift open — require opening one
   if (!currentShift) {
-    return <OpenShiftScreen user={user} onShiftOpened={handleShiftOpened} />;
+    return (
+      <>
+        <ConnectionBar floating />
+        <OpenShiftScreen user={user} onShiftOpened={handleShiftOpened} />
+      </>
+    );
   }
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-dark-950">
+      {/* В потоке, а не поверх: кнопки оплаты внизу экрана не закрываются. */}
+      <ConnectionBar />
       <Workspace
         user={user}
         shift={currentShift}

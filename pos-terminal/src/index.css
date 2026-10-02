@@ -1,34 +1,57 @@
 @import "tailwindcss";
 
 @theme {
-  --color-dark-950: #0a0c14;
-  --color-dark-900: #0f1117;
-  --color-dark-800: #1a1d27;
-  --color-dark-700: #252836;
-  --color-dark-600: #2e3244;
-  --color-dark-500: #3b3f54;
-  --color-dark-400: #6b7194;
-  --color-dark-300: #9ca3c4;
+  /*
+   * Шкала dark-* — основа всех экранов кассы: тёмная тема по умолчанию,
+   * светлая переопределяет значение каждого шага (ниже). Нейтральный графит
+   * со стальным оттенком — как в макете экрана кассы.
+   */
+  --color-dark-950: #0e1214;
+  --color-dark-900: #15191b;
+  --color-dark-800: #1a1f22;
+  --color-dark-700: #232a2e;
+  --color-dark-600: #2c3337;
+  --color-dark-500: #3e474c;
+  --color-dark-400: #899399;
+  --color-dark-300: #a3adb1;
   --color-dark-50: #ffffff;
   /*
-   * Акцент — фирменный зелёный Qwik (#1f5f3f с сайта и панели). Шаги 400–600
-   * осветлены, чтобы кнопки и подписи читались и на тёмном фоне кассы, и на
-   * белом в светлой теме; 700 — ровно тот зелёный, что на qwik.uz.
+   * Акцент — сталь: выделение, фокус, выбранный режим. Зелёный остаётся
+   * только у оплаты (success) — одна главная кнопка на экране (D-2).
    */
-  --color-primary-50: #eef4f0;
-  --color-primary-100: #d5e7dc;
-  --color-primary-200: #abcdb9;
-  --color-primary-300: #6fae8f;
-  --color-primary-400: #3f8f69;
-  --color-primary-500: #2e8a5f;
-  --color-primary-600: #24734e;
-  --color-primary-700: #1f5f3f;
-  --color-primary-800: #184c33;
-  --color-primary-900: #123c28;
-  --color-success-500: #22c55e;
-  --color-success-600: #16a34a;
-  --color-danger-500: #ef4444;
-  --color-danger-600: #dc2626;
+  --color-primary-50: #f1f4f8;
+  --color-primary-100: #e2e8f0;
+  --color-primary-200: #c6d1de;
+  --color-primary-300: #a2b3c7;
+  --color-primary-400: #7d93ae;
+  --color-primary-500: #62799a;
+  --color-primary-600: #4f6a8a;
+  --color-primary-700: #3f566f;
+  --color-primary-800: #33465b;
+  --color-primary-900: #2a3a4c;
+  --color-success-500: #2f9e61;
+  --color-success-600: #278a53;
+  --color-danger-500: #e5533f;
+  --color-danger-600: #c8402b;
+  /* Предупреждение: «занят», «мало осталось» — янтарь, как --amber у «Магазина». */
+  --color-warning-500: var(--color-amber-500);
+  --color-warning-600: var(--color-amber-600);
+  /*
+   * Рабочие поверхности — те же, что у экрана «Магазина» (screens/shop/shop.css):
+   * строка состояния, цифровые и функциональные клавиши, выбранная строка,
+   * чередование строк. Тёмные значения здесь, светлые — ниже.
+   */
+  --color-bar: #0e1216;
+  --color-bar-fg: #c6ced2;
+  --color-bar-muted: #828c91;
+  --color-key: #2a3440;
+  --color-key-hover: #33404e;
+  --color-fn: #12171d;
+  --color-fn-hover: #1b222a;
+  --color-fn-fg: #cfd6d9;
+  --color-sel: #3d5573;
+  --color-zebra: #191e20;
+  --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
 }
 
 /*
@@ -39,15 +62,25 @@
  * and vice versa. Every component keeps using the exact same classes.
  */
 :root[data-theme="light"] {
-  --color-dark-950: #f4f5f9;
+  --color-dark-950: #eceff1;
   --color-dark-900: #ffffff;
   --color-dark-800: #ffffff;
-  --color-dark-700: #eef0f5;
-  --color-dark-600: #dfe2ea;
-  --color-dark-500: #b8bdcc;
-  --color-dark-400: #6b7280;
-  --color-dark-300: #384152;
-  --color-dark-50: #0f1117;
+  --color-dark-700: #f2f4f5;
+  --color-dark-600: #e1e5e8;
+  --color-dark-500: #c4cbce;
+  --color-dark-400: #646c71;
+  --color-dark-300: #3a4247;
+  --color-dark-50: #15191b;
+  --color-bar: #232b33;
+  --color-bar-fg: #d9e0e5;
+  --color-bar-muted: #8e9aa8;
+  --color-key: #5a6878;
+  --color-key-hover: #66758a;
+  --color-fn: #2c3540;
+  --color-fn-hover: #36414d;
+  --color-fn-fg: #e3e8ea;
+  --color-sel: #5f7595;
+  --color-zebra: #f5f7f8;
 }
 
 @layer base {
@@ -60,7 +93,8 @@
   body {
     background-color: var(--color-dark-950);
     color: var(--color-dark-50);
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overscroll-behavior: none;
@@ -110,26 +144,23 @@
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(46, 138, 95, 0.4); }
-  50% { box-shadow: 0 0 0 12px rgba(46, 138, 95, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(98, 121, 154, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(98, 121, 154, 0); }
 }
 
 /* ── Экран входа ──────────────────────────────────────────────────────────────
-   Оформлен как сайт qwik.uz и вход в панель: бумажный фон, серифный заголовок,
-   зелёный акцент, прямые углы. Кассир приходит сюда с лендинга или по ссылке,
-   и переход не должен выглядеть как переход в другой продукт.
-
-   Отличие от панели — размеры: касса живёт на планшете, поэтому поля и кнопка
-   рассчитаны на палец (56–58 px), а шрифт крупнее. Классы отдельные
-   (.pos-auth-*), рабочие экраны остаются в своём тёмном оформлении.
-   Тема здесь всегда светлая — «бумага» тёмного варианта не имеет, поэтому
-   переменные заданы прямо на экране и не зависят от data-theme. */
+   В том же языке, что экран кассы и панель: светлый фон, белая карточка,
+   графитовая кнопка, шрифт IBM Plex. Касса живёт на планшете, поэтому поля и
+   кнопка рассчитаны на палец (56–58 px). Тема здесь всегда светлая: вход видят
+   до выбора темы, поэтому переменные заданы прямо на экране. */
 .pos-auth {
-  --paper: #f7f5f0;
-  --ink: #14150f;
-  --muted: #6d6c62;
-  --line: #dedbd2;
-  --accent: #1f5f3f;
+  --paper: #eceff1;
+  --ink: #15191b;
+  --muted: #646c71;
+  --line: #dfe3e6;
+  --accent: #2c3540;
+  --accent-hi: #36414d;
+  --accent-text: #4f6a8a;
 
   min-height: 100vh;
   min-height: 100dvh;
@@ -139,7 +170,8 @@
   padding: 40px 24px;
   background: var(--paper);
   color: var(--ink);
-  font-family: Inter, system-ui, -apple-system, sans-serif;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
 }
 
 .pos-auth-box { width: 100%; max-width: 440px; }
@@ -155,19 +187,19 @@
 }
 
 .pos-auth-title {
-  font-family: "Instrument Serif", Georgia, serif;
-  font-weight: 400;
-  font-size: 46px;
-  line-height: 1.05;
+  font-weight: 600;
+  font-size: 38px;
+  line-height: 1.1;
   letter-spacing: -0.02em;
 }
-.pos-auth-title em { font-style: italic; color: var(--accent); }
+.pos-auth-title em { font-style: normal; color: var(--accent-text); }
 
 .pos-auth-sub { margin-top: 10px; color: var(--muted); font-size: 15px; }
 
 .pos-auth-card {
   background: #fff;
   border: 1px solid var(--line);
+  border-radius: 6px;
   padding: 26px 24px;
 }
 
@@ -193,8 +225,8 @@
   border-radius: 4px;
   transition: border-color 0.15s ease;
 }
-.pos-auth-input::placeholder { color: #a8a69c; }
-.pos-auth-input:focus { outline: none; border-color: var(--accent); }
+.pos-auth-input::placeholder { color: #9aa3aa; }
+.pos-auth-input:focus { outline: none; border-color: var(--accent-text); }
 
 .pos-auth-input-wrap { position: relative; }
 .pos-auth-input-wrap .pos-auth-input { padding-right: 52px; }
@@ -218,7 +250,7 @@
   height: 58px;
   margin-top: 24px;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   font-family: inherit;
   color: #fff;
   background: var(--accent);
@@ -227,7 +259,7 @@
   cursor: pointer;
   transition: background 0.15s ease, transform 0.1s ease;
 }
-.pos-auth-submit:hover:not(:disabled) { background: #17492f; }
+.pos-auth-submit:hover:not(:disabled) { background: var(--accent-hi); }
 .pos-auth-submit:active:not(:disabled) { transform: scale(0.99); }
 .pos-auth-submit:disabled { opacity: 0.55; cursor: not-allowed; }
 
@@ -258,11 +290,11 @@
 /* ── Вход по имени и PIN ──────────────────────────────────────────────────────
    Три шага: привязка планшета к точке (один раз), плитки с именами, цифровая
    клавиатура PIN. Всё живёт внутри .pos-auth и пользуется его переменными —
-   те же бумага, тушь и зелёный. Сетке имён и клавиатуре тесно в 440 px,
+   тот же светлый фон, графит и сталь. Сетке имён и клавиатуре тесно в 440 px,
    поэтому для них колонка шире. */
 .pos-auth-box--wide { max-width: 680px; }
 
-.pos-auth-hint { color: #b04a3a; font-size: 13px; margin-top: 10px; }
+.pos-auth-hint { color: #c8402b; font-size: 13px; margin-top: 10px; }
 
 .pos-auth-link {
   display: block;
@@ -304,7 +336,7 @@
   cursor: pointer;
   transition: border-color 0.15s ease, transform 0.1s ease;
 }
-.pos-staff-tile:hover { border-color: var(--accent); }
+.pos-staff-tile:hover { border-color: var(--accent-text); }
 .pos-staff-tile:active { transform: scale(0.97); }
 
 .pos-avatar {
@@ -317,8 +349,8 @@
   border-radius: 50%;
   background: var(--accent);
   color: #fff;
-  font-family: "Instrument Serif", Georgia, serif;
-  font-size: 24px;
+  font-weight: 600;
+  font-size: 22px;
   overflow: hidden;
 }
 .pos-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -379,7 +411,7 @@
   transition: background 0.1s ease, border-color 0.1s ease;
 }
 .pos-pin-dot--on { background: var(--ink); border-color: var(--ink); }
-.pos-pin-dots--error .pos-pin-dot { border-color: #b04a3a; animation: pos-pin-shake 0.35s ease; }
+.pos-pin-dots--error .pos-pin-dot { border-color: #c8402b; animation: pos-pin-shake 0.35s ease; }
 @keyframes pos-pin-shake {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-5px); }
@@ -395,24 +427,25 @@
 }
 .pos-pin-key {
   height: 66px;
-  font-family: "Instrument Serif", Georgia, serif;
-  font-size: 28px;
+  font-family: inherit;
+  font-size: 26px;
+  font-weight: 500;
   color: var(--ink);
-  background: var(--paper);
+  background: #f2f4f5;
   border: 1px solid var(--line);
   border-radius: 4px;
   cursor: pointer;
   transition: border-color 0.12s ease, background 0.12s ease, transform 0.08s ease;
   user-select: none;
 }
-.pos-pin-key:hover { border-color: var(--accent); }
-.pos-pin-key:active { transform: scale(0.96); background: #ece9e1; }
+.pos-pin-key:hover { border-color: var(--accent-text); }
+.pos-pin-key:active { transform: scale(0.96); background: #e1e5e8; }
 .pos-pin-key:disabled { opacity: 0.4; cursor: not-allowed; }
 .pos-pin-key--muted {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: Inter, system-ui, sans-serif;
+  font-family: inherit;
   font-size: 14px;
   color: var(--muted);
 }
@@ -424,4 +457,61 @@
   background: var(--accent);
   border-color: var(--accent);
 }
-.pos-pin-key--go:hover:not(:disabled) { background: #17492f; }
+.pos-pin-key--go:hover:not(:disabled) { background: var(--accent-hi); }
+
+/* ── Связь и отмена (D-7) ───────────────────────────────────────────────── */
+:root {
+  /* Уведомления — графитовая плашка в обеих темах, как строка состояния. */
+  --toast-bg: #232b33;
+  --toast-fg: #eef1f3;
+}
+
+/* Метка связи в верхней строке: спокойная, пока связь есть, красная — когда нет. */
+.pos-net {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0.8;
+}
+.pos-net-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-primary-400); flex: none; }
+.pos-net.is-down {
+  opacity: 1;
+  padding: 0 10px;
+  border-radius: 4px;
+  background: var(--color-danger-600);
+  color: #fff;
+  font-weight: 600;
+}
+.pos-net.is-down .pos-net-dot { background: #fff; animation: pos-net-blink 1s steps(2, start) infinite; }
+@keyframes pos-net-blink { to { visibility: hidden; } }
+
+/* «Позиция убрана · Вернуть»: кнопка — полноценная цель под палец, 44 px. */
+.pos-undo { display: flex; align-items: center; gap: 12px; font-size: 15px; }
+.pos-undo button {
+  min-height: 44px;
+  margin: -10px -14px -10px 0;
+  padding: 0 14px;
+  border-radius: 4px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-primary-300);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.pos-undo button:hover { background: rgba(255, 255, 255, 0.08); }
+
+/* Кассир работает восемь часов: тем, кому движение мешает, анимации не нужны (D-6). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

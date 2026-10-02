@@ -59,6 +59,8 @@ app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
 app.use(compression());
 app.use(morgan("combined", {
   stream: { write: (message: string) => logger.info(message.trim()) },
+  // Кассы проверяют связь по /api/health каждые 20 секунд — в журнале это шум.
+  skip: (req) => req.url === "/health" || req.url === "/api/health",
 }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -66,13 +68,18 @@ app.use(express.urlencoded({ extended: true }));
 // Static files
 app.use("/uploads", express.static(path.join(__dirname, "..", env.UPLOAD_DIR)));
 
-// Health check
-app.get("/health", (_req, res) => {
+// Health check. /api/health — тот же ответ под префиксом API: касса проверяет
+// по нему связь через тот же прокси, что и остальные запросы (nginx, vite).
+app.get(["/health", "/api/health"], (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
 // API Routes
-app.use("/api/auth", authRoutes);
+// У /login, /login-pin и /staff есть свои, более строгие лимиты (см.
+// middleware/rateLimiter.ts), но /refresh и /me до этого не были ограничены
+// ничем: токен можно было перебирать и дёргать обновление без счёта.
+// apiLimiter — общая сетка поверх точечных лимитов.
+app.use("/api/auth", apiLimiter, authRoutes);
 app.use("/api/products", apiLimiter, productRoutes);
 app.use("/api/orders", apiLimiter, orderRoutes);
 app.use("/api/payments", apiLimiter, paymentRoutes);
@@ -101,6 +108,20 @@ async function main() {
   try {
     await prisma.$connect();
     logger.info("Database connected");
+
+    // Две вещи, которые Postgres делает «по настройке», а SQLite не делал вовсе.
+    // Локаль: поиск без учёта регистра (ILIKE) складывает кириллицу, только
+    // если у базы UTF-8-локаль, а не C — иначе «молоко» не найдёт «Молоко».
+    // Часовой пояс сессии: Prisma пишет время в UTC, а значения по умолчанию
+    // (CURRENT_TIMESTAMP) база считает в поясе сессии — они должны совпадать.
+    const [dbCheck] = await prisma.$queryRaw<{ folds: boolean; tz: string }[]>`
+      SELECT lower('МОЛОКО') = 'молоко' AND 'Молоко' ILIKE 'молоко' AS folds, current_setting('TimeZone') AS tz`;
+    if (!dbCheck?.folds) {
+      logger.error("Database locale does not fold Cyrillic case — product search will miss matches. Use a UTF-8 locale (en_US.UTF-8 or ICU)");
+    }
+    if (dbCheck && !["UTC", "Etc/UTC"].includes(dbCheck.tz)) {
+      logger.warn("Database session TimeZone is not UTC — add options=-c%20TimeZone%3DUTC to DATABASE_URL", { timeZone: dbCheck.tz });
+    }
 
     startStaleOrderSweeper(env.PENDING_ORDER_TTL_MINUTES);
 

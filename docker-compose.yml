@@ -1,4 +1,28 @@
 services:
+  # PostgreSQL 16 — образ на Debian, как у Railway: с локалью en_US.UTF-8
+  # поиск без учёта регистра складывает кириллицу. На -alpine (musl) ICU-локали
+  # ведут себя иначе. Локально: `docker compose up -d --wait postgres`.
+  postgres:
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=qwik
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-qwik}
+      - POSTGRES_DB=qwik
+      - POSTGRES_INITDB_ARGS=--encoding=UTF8 --locale=en_US.UTF-8
+      - TZ=UTC
+      - PGTZ=UTC
+    ports:
+      # Только на localhost: база не должна торчать в сеть.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qwik -d qwik"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
@@ -8,19 +32,21 @@ services:
     environment:
       - PORT=3000
       - NODE_ENV=production
-      - DATABASE_URL=file:./dev.db
-      - JWT_SECRET=${JWT_SECRET:-change-me-in-production-use-real-secret}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-change-me-in-production-use-real-secret}
+      # TimeZone=UTC: Prisma хранит время в UTC без пояса, и значения по
+      # умолчанию из базы (CURRENT_TIMESTAMP) должны считаться в том же поясе.
+      - DATABASE_URL=postgresql://qwik:${POSTGRES_PASSWORD:-qwik}@postgres:5432/qwik?schema=public&connection_limit=10&pool_timeout=20&options=-c%20TimeZone%3DUTC
+      # Секреты должны различаться — иначе сервер не стартует (config/env.ts).
+      - JWT_SECRET=${JWT_SECRET:-change-me-access-secret-0123456789}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-change-me-refresh-secret-0123456789}
       - JWT_EXPIRES_IN=15m
       - JWT_REFRESH_EXPIRES_IN=7d
       - CORS_ORIGIN=http://localhost
-      - REDIS_URL=redis://redis:6379
       - PENDING_ORDER_TTL_MINUTES=30
     volumes:
-      - backend-db:/app/prisma
       - backend-uploads:/app/uploads
     depends_on:
-      - redis
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   admin:
@@ -62,12 +88,6 @@ services:
       - CONTACT_EMAIL=hello@example.com
     restart: unless-stopped
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    restart: unless-stopped
-
 volumes:
-  backend-db:
+  postgres-data:
   backend-uploads:

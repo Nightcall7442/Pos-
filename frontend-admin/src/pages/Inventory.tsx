@@ -7,6 +7,8 @@ import Badge from "../components/Badge";
 import Modal from "../components/Modal";
 import toast from "react-hot-toast";
 import { AlertTriangle, Plus, Minus, Package, Truck } from "lucide-react";
+import { Link } from "react-router-dom";
+import EmptyState from "../components/EmptyState";
 import type { Product, Category } from "../services";
 import { useMoney } from "../hooks/useMoney";
 
@@ -21,9 +23,9 @@ interface StockProduct {
   price: number;
   imageUrl?: string;
   trackInventory: boolean;
-  purchaseUnit?: string;
-  saleUnit?: string;
-  conversionFactor?: number;
+  purchaseUnit?: string | null;
+  saleUnit?: string | null;
+  conversionFactor?: number | null;
   category?: Category;
 }
 
@@ -86,14 +88,14 @@ export default function Inventory() {
       </div>
 
       {alerts && alerts.length > 0 && (
-        <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4">
-          <div className="flex items-center gap-2 text-yellow-800">
+        <div className="rounded-xl border border-warning-200 bg-warning-50 p-4">
+          <div className="flex items-center gap-2 text-warning-800">
             <AlertTriangle className="h-5 w-5" />
             <h3 className="font-semibold">Мало на складе ({alerts.length})</h3>
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             {alerts.map((p) => (
-              <span key={p.id} className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-800">
+              <span key={p.id} className="inline-flex items-center gap-1 rounded-full bg-warning-100 px-3 py-1 text-xs font-medium text-warning-800">
                 {p.name} — {p.currentStock} шт.
               </span>
             ))}
@@ -101,10 +103,33 @@ export default function Inventory() {
         </div>
       )}
 
-      <SearchInput value={search} onChange={setSearch} placeholder="Поиск товаров..." className="w-80" />
+      <SearchInput value={search} onChange={setSearch} placeholder="Поиск товаров..." className="w-full sm:w-80" />
 
       {isLoading ? (
         <LoadingSpinner />
+      ) : products.length === 0 ? (
+        <div className="card">
+          {search ? (
+            <EmptyState
+              compact
+              title={`По запросу «${search}» товаров нет`}
+              action={<button onClick={() => setSearch("")} className="btn-secondary">Сбросить поиск</button>}
+            />
+          ) : (
+            <EmptyState
+              compact
+              icon={<Package className="h-6 w-6" />}
+              title="На складе пока пусто"
+              description="Остатки появятся, когда вы заведёте товары и оформите первый приход: остаток вырастет, себестоимость посчитается сама."
+              action={
+                <>
+                  <Link to="/products/new" className="btn-primary">Добавить товар</Link>
+                  <Link to="/stock-receipts" className="btn-secondary">Оформить приход</Link>
+                </>
+              }
+            />
+          )}
+        </div>
       ) : (
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[720px]">
@@ -126,14 +151,14 @@ export default function Inventory() {
                 const totalValue = product.currentStock * product.costPrice;
                 const unitLabel = product.saleUnit || product.purchaseUnit || "шт";
                 return (
-                  <tr key={product.id} className={`hover:bg-gray-50 ${isLow ? "bg-red-50/50" : ""}`}>
+                  <tr key={product.id} className={`hover:bg-gray-50 ${isLow ? "bg-danger-50/50" : ""}`}>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         {product.imageUrl ? (
                           <img src={product.imageUrl} alt="" className="h-8 w-8 rounded-lg object-cover" />
                         ) : (
                           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
-                            <Package className="h-4 w-4 text-gray-400" />
+                            <Package className="h-4 w-4 text-gray-500" />
                           </div>
                         )}
                         <span className="font-medium text-gray-900">{product.name}</span>
@@ -142,7 +167,7 @@ export default function Inventory() {
                     <td className="p-4 text-sm text-gray-500">{product.category?.name || "—"}</td>
                     <td className="p-4 text-sm text-gray-500">{unitLabel}</td>
                     <td className="p-4 text-right">
-                      <span className={`font-semibold ${isLow ? "text-red-600" : "text-gray-900"}`}>
+                      <span className={`font-semibold ${isLow ? "text-danger-600" : "text-gray-900"}`}>
                         {product.currentStock}
                       </span>
                     </td>
@@ -150,7 +175,7 @@ export default function Inventory() {
                       {money(product.costPrice)}
                       {product.costPrice > 0 && product.price <= product.costPrice && (
                         <span
-                          className="ml-2 inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-600"
+                          className="ml-2 inline-flex items-center rounded-md bg-danger-50 px-1.5 py-0.5 text-[11px] font-medium text-danger-600"
                           title="Цена продажи не выше себестоимости"
                         >
                           без маржи
@@ -171,7 +196,7 @@ export default function Inventory() {
                             setAdjustType("increase");
                             setAdjustCost(product.costPrice);
                           }}
-                          className="rounded-lg p-1.5 text-green-600 hover:bg-green-50 transition-colors"
+                          className="rounded-lg p-1.5 text-success-600 hover:bg-success-50 transition-colors"
                           title="Приход"
                         >
                           <Plus className="h-4 w-4" />
@@ -181,7 +206,7 @@ export default function Inventory() {
                             setAdjustModal({ productId: product.id, productName: product.name });
                             setAdjustType("decrease");
                           }}
-                          className="rounded-lg p-1.5 text-red-600 hover:bg-red-50 transition-colors"
+                          className="rounded-lg p-1.5 text-danger-600 hover:bg-danger-50 transition-colors"
                           title="Расход"
                         >
                           <Minus className="h-4 w-4" />
@@ -203,7 +228,7 @@ export default function Inventory() {
               onClick={() => setAdjustType("increase")}
               className={`flex-1 rounded-lg border-2 py-2.5 text-sm font-medium transition-all ${
                 adjustType === "increase"
-                  ? "border-green-500 bg-green-50 text-green-700"
+                  ? "border-success-500 bg-success-50 text-success-700"
                   : "border-gray-200 text-gray-500 hover:border-gray-300"
               }`}
             >
@@ -214,7 +239,7 @@ export default function Inventory() {
               onClick={() => setAdjustType("decrease")}
               className={`flex-1 rounded-lg border-2 py-2.5 text-sm font-medium transition-all ${
                 adjustType === "decrease"
-                  ? "border-red-500 bg-red-50 text-red-700"
+                  ? "border-danger-500 bg-danger-50 text-danger-700"
                   : "border-gray-200 text-gray-500 hover:border-gray-300"
               }`}
             >
@@ -224,8 +249,8 @@ export default function Inventory() {
           </div>
 
           <div>
-            <label className="label">Количество</label>
-            <input
+            <label htmlFor="inventory-f1" className="label">Количество</label>
+            <input id="inventory-f1"
               type="number"
               min="0"
               step="0.01"
@@ -238,8 +263,8 @@ export default function Inventory() {
 
           {adjustType === "increase" && (
             <div>
-              <label className="label">Себестоимость партии ({symbol})</label>
-              <input
+              <label htmlFor="inventory-f2" className="label">Себестоимость партии ({symbol})</label>
+              <input id="inventory-f2"
                 type="number"
                 min="0"
                 step="0.01"
@@ -257,8 +282,8 @@ export default function Inventory() {
           )}
 
           <div>
-            <label className="label">Причина</label>
-            <select
+            <label htmlFor="inventory-f3" className="label">Причина</label>
+            <select id="inventory-f3"
               value={adjustReason}
               onChange={(e) => setAdjustReason(e.target.value)}
               className="input"

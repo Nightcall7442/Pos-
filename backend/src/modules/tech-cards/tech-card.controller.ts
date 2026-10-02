@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { techCardService } from "./tech-card.service.js";
-import { sendSuccess, sendCreated, sendError, sendPaginated } from "../../utils/response.js";
+import { sendSuccess, sendCreated, sendPaginated } from "../../utils/response.js";
 import { handleError } from "../../utils/errors.js";
 import type { TechCardQueryInput } from "./tech-card.schema.js";
 
@@ -10,8 +10,8 @@ export class TechCardController {
       const query: TechCardQueryInput = {
         search: req.query.search as string,
         isActive: req.query.isActive as unknown as boolean | undefined,
-        sort: (req.query.sort as any) || "name",
-        order: (req.query.order as any) || "asc",
+        sort: (req.query.sort as TechCardQueryInput["sort"]) || "name",
+        order: (req.query.order as TechCardQueryInput["order"]) || "asc",
         page: Number(req.query.page) || 1,
         limit: Number(req.query.limit) || 20,
       };

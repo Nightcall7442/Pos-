@@ -1,18 +1,22 @@
+import type { Prisma } from "@prisma/client";
+import type { InventoryQueryInput, MovementQueryInput } from "../common.schema.js";
 import prisma from "../../config/database.js";
-import { round2 } from "./stock.helpers.js";
+import { ci } from "../../utils/search.js";
+import { lockStockRows, roundStock } from "./stock.helpers.js";
+import { inTransaction } from "../../utils/transaction.js";
 import { AppError, NotFoundError } from "../../utils/errors.js";
 
 export class InventoryService {
-  async getStock(tenantId: string, query: any) {
+  async getStock(tenantId: string, query: InventoryQueryInput) {
     const { lowStock, categoryId, search, page = 1, limit = 50 } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId, isActive: true };
+    const where: Prisma.ProductWhereInput = { tenantId, isActive: true };
     if (categoryId) where.categoryId = categoryId;
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { sku: { contains: search } },
+        { name: ci(search) },
+        { sku: ci(search) },
       ];
     }
 
@@ -49,11 +53,11 @@ export class InventoryService {
     return { products: paginated, total: products.length, page, limit };
   }
 
-  async getMovements(tenantId: string, query: any) {
+  async getMovements(tenantId: string, query: MovementQueryInput) {
     const { productId, type, page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId };
+    const where: Prisma.InventoryMovementWhereInput = { tenantId };
     if (productId) where.productId = productId;
     if (type) where.type = type;
 
@@ -75,25 +79,32 @@ export class InventoryService {
   }
 
   async adjustStock(tenantId: string, productId: string, quantity: number, reason: string, userId: string) {
-    const product = await prisma.product.findFirst({ where: { id: productId, tenantId } });
-    if (!product) throw new NotFoundError("Товар не найден");
+    // Под блокировкой строки товара (lockStockRows) и в одной транзакции:
+    // раньше остаток читался до транзакции, и корректировка, совпавшая с
+    // продажей, затирала её списание.
+    return inTransaction(async (tx) => {
+      await lockStockRows(tx, tenantId, [productId]);
+      const product = await tx.product.findFirst({ where: { id: productId, tenantId } });
+      if (!product) throw new NotFoundError("Товар не найден");
 
-    // Stock is kept in sale units. When the product is bought in a larger unit
-    // (kg → g), the adjustment is expressed in the purchase unit and converted
-    // in both directions — converting only additions used to make "+2 kg" add
-    // 2000 g while "-2 kg" removed just 2 g.
-    const factor = product.conversionFactor && product.purchaseUnit && product.saleUnit ? product.conversionFactor : 1;
-    const adjustedQuantity = round2(quantity * factor);
+      // Stock is kept in sale units. When the product is bought in a larger unit
+      // (kg → g), the adjustment is expressed in the purchase unit and converted
+      // in both directions — converting only additions used to make "+2 kg" add
+      // 2000 g while "-2 kg" removed just 2 g.
+      const factor = product.conversionFactor && product.purchaseUnit && product.saleUnit ? product.conversionFactor : 1;
+      const adjustedQuantity = roundStock(quantity * factor);
 
-    const newStock = round2(product.currentStock + adjustedQuantity);
-    if (newStock < 0) throw new AppError("Остаток не может стать отрицательным");
+      // До тысячных, как остаток везде (stock.helpers.roundStock): в
+      // килограммах это грамм. round2 (до сотых) терял граммы — 1,234 кг
+      // плюс 1 г становилось 1,23.
+      const newStock = roundStock(product.currentStock + adjustedQuantity);
+      if (newStock < 0) throw new AppError("Остаток не может стать отрицательным");
 
-    const [updated] = await prisma.$transaction([
-      prisma.product.update({
+      const updated = await tx.product.update({
         where: { id: productId },
         data: { currentStock: newStock },
-      }),
-      prisma.inventoryMovement.create({
+      });
+      await tx.inventoryMovement.create({
         data: {
           tenantId,
           productId,
@@ -102,10 +113,10 @@ export class InventoryService {
           reason,
           userId,
         },
-      }),
-    ]);
+      });
 
-    return updated;
+      return updated;
+    });
   }
 
   async getLowStockAlerts(tenantId: string) {

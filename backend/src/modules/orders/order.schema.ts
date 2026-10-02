@@ -40,8 +40,17 @@ export const checkoutSchema = createOrderSchema.extend({
   }),
 });
 
+// Отмены здесь нет: она возвращает резерв на склад и освобождает стол, а простая
+// смена статуса этого не делает. Отменяют через POST /orders/:id/cancel.
 export const updateOrderStatusSchema = z.object({
-  status: z.enum(["confirmed", "preparing", "ready", "served", "completed", "cancelled"]),
+  status: z.enum(["confirmed", "preparing", "ready", "served", "completed"]),
+});
+
+// Шаги кухни. served — выдан, заказ уходит с экрана; назад можно на любой шаг
+// (повар нажал «Готово» не на той карточке).
+export const KITCHEN_STATUSES = ["new", "cooking", "ready", "served"] as const;
+export const kitchenStatusSchema = z.object({
+  status: z.enum(KITCHEN_STATUSES),
 });
 
 export const orderQuerySchema = z.object({
@@ -61,4 +70,5 @@ export const orderQuerySchema = z.object({
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
+export type KitchenStatusInput = z.infer<typeof kitchenStatusSchema>;
 export type OrderQueryInput = z.infer<typeof orderQuerySchema>;

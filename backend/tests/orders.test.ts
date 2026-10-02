@@ -118,6 +118,31 @@ describe("Orders API", () => {
     expect(data.data.status).toBe("cancelled");
   });
 
+  // Смена статуса на «отменён» не возвращала резерв на склад и не освобождала
+  // стол — панель отменяла заказы именно так. Теперь только через /cancel.
+  it("refuses to cancel through a plain status change", async () => {
+    const product = await prisma.product.findFirst({ where: { tenantId: testTenantId } });
+    const createRes = await fetch(`${BASE_URL}/api/orders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ type: "takeaway", items: [{ productId: product?.id, quantity: 1, unitPrice: 12.99 }] }),
+    });
+    const created = (await createRes.json()) as any;
+
+    const res = await fetch(`${BASE_URL}/api/orders/${created.data.id}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ status: "cancelled" }),
+    });
+    expect(res.status).toBe(400);
+
+    const cancel = await fetch(`${BASE_URL}/api/orders/${created.data.id}/cancel`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    expect(cancel.status).toBe(200);
+  });
+
   it("should get active orders", async () => {
     const res = await fetch(`${BASE_URL}/api/orders/active`, {
       headers: { Authorization: `Bearer ${adminToken}` },

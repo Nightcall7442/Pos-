@@ -40,8 +40,10 @@ export const checkoutSchema = createOrderSchema.extend({
   }),
 });
 
+// Отмены здесь нет: она возвращает резерв на склад и освобождает стол, а простая
+// смена статуса этого не делает. Отменяют через POST /orders/:id/cancel.
 export const updateOrderStatusSchema = z.object({
-  status: z.enum(["confirmed", "preparing", "ready", "served", "completed", "cancelled"]),
+  status: z.enum(["confirmed", "preparing", "ready", "served", "completed"]),
 });
 
 export const orderQuerySchema = z.object({

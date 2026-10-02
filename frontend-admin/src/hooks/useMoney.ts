@@ -1,5 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
-import { settingsService } from "../services";
+import { useSettings } from "./useSettings";
 import { currencySymbol, formatMoney } from "../utils/money";
 
 /**
@@ -8,11 +7,7 @@ import { currencySymbol, formatMoney } from "../utils/money";
  * one answer to "which currency is this shop in".
  */
 export function useMoney() {
-  const { data: settings } = useQuery({
-    queryKey: ["settings"],
-    queryFn: () => settingsService.get().then((r) => r.data.data),
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: settings } = useSettings();
 
   const currency: string = settings?.currency || "USD";
 

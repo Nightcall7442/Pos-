@@ -6,6 +6,7 @@ import SearchInput from "../components/SearchInput";
 import Badge from "../components/Badge";
 import LoadingSpinner from "../components/LoadingSpinner";
 import EmptyState from "../components/EmptyState";
+import { useIsRetail } from "../hooks/useSettings";
 import Modal from "../components/Modal";
 import type { Product, Category } from "../services";
 import { useMoney } from "../hooks/useMoney";
@@ -13,6 +14,7 @@ import { useMoney } from "../hooks/useMoney";
 
 export default function Products() {
   const { money } = useMoney();
+  const retail = useIsRetail();
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [categoryId, setCategoryId] = useState("");
@@ -82,22 +84,50 @@ export default function Products() {
       {isLoading ? (
         <LoadingSpinner />
       ) : products.length === 0 ? (
-        <EmptyState
-          title="Товары не найдены"
-          description="Создайте первый товар для начала работы"
-          action={
-            <div className="flex items-center justify-center gap-3">
-              <Link to="/products/scan" className="btn-secondary">
-                <ScanBarcode className="mr-2 h-4 w-4" />
-                Добавить сканером
-              </Link>
-              <Link to="/products/new" className="btn-primary">
-                <Plus className="mr-2 h-4 w-4" />
-                Добавить товар
-              </Link>
-            </div>
-          }
-        />
+        <div className="card">
+          {search || categoryId ? (
+            <EmptyState
+              compact
+              title={search ? `По запросу «${search}» товаров нет` : "В этой категории товаров нет"}
+              description="Проверьте написание или поищите по штрихкоду."
+              action={
+                <button onClick={() => { setSearch(""); setCategoryId(""); }} className="btn-secondary">
+                  Сбросить поиск
+                </button>
+              }
+            />
+          ) : retail ? (
+            <EmptyState
+              compact
+              title="Товаров пока нет"
+              description="Быстрее всего — сканером: наведите на штрихкод, название и полка подставятся из общей базы, останется ввести цену."
+              action={
+                <>
+                  <Link to="/products/scan" className="btn-primary">
+                    <ScanBarcode className="mr-2 h-4 w-4" />
+                    Добавить сканером
+                  </Link>
+                  <Link to="/products/new" className="btn-secondary">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Вручную
+                  </Link>
+                </>
+              }
+            />
+          ) : (
+            <EmptyState
+              compact
+              title="Меню пока пустое"
+              description="Блюдо — это название, цена и категория. Категории станут клавишами на кассе, блюда — плитками."
+              action={
+                <Link to="/products/new" className="btn-primary">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Добавить блюдо
+                </Link>
+              }
+            />
+          )}
+        </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((product) => (

@@ -88,11 +88,32 @@ export default function Orders() {
       {isLoading ? (
         <LoadingSpinner />
       ) : orders.length === 0 ? (
-        <EmptyState
-          icon={<ShoppingCart className="h-8 w-8" />}
-          title="Заказов не найдено"
-          description="Заказы появятся здесь по мере поступления"
-        />
+        <div className="card">
+          {status || search ? (
+            <EmptyState
+              compact
+              icon={<ShoppingCart className="h-6 w-6" />}
+              title={search ? `По запросу «${search}» заказов нет` : `«${statusTabs.find((t) => t.value === status)?.label}» — сейчас пусто`}
+              action={
+                <button onClick={() => { setStatus(""); setSearch(""); }} className="btn-secondary">
+                  Показать все заказы
+                </button>
+              }
+            />
+          ) : (
+            <EmptyState
+              compact
+              icon={<ShoppingCart className="h-6 w-6" />}
+              title="Заказов пока нет"
+              description="Сюда попадает каждый чек с кассы. Чтобы касса заработала, откройте её на планшете и введите код точки."
+              action={
+                <Link to="/settings" className="btn-primary">
+                  Код точки для кассы
+                </Link>
+              }
+            />
+          )}
+        </div>
       ) : (
         <div className="space-y-3">
           {orders.map((order) => {

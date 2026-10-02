@@ -6,6 +6,8 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { CreditCard, Banknote } from "lucide-react";
+import { Link } from "react-router-dom";
+import EmptyState from "../components/EmptyState";
 import { useMoney } from "../hooks/useMoney";
 
 const methodLabels: Record<string, string> = { cash: "Наличные", card: "Карта", online: "Онлайн" };
@@ -28,7 +30,17 @@ export default function Payments() {
         <p className="text-gray-500">История всех платежей</p>
       </div>
 
-      {isLoading ? <LoadingSpinner /> : (
+      {isLoading ? <LoadingSpinner /> : payments.length === 0 && page === 1 ? (
+        <div className="card">
+          <EmptyState
+            compact
+            icon={<CreditCard className="h-6 w-6" />}
+            title="Оплат пока нет"
+            description="Здесь будет каждая оплата с кассы — наличными, картой или по QR — с чеком и временем."
+            action={<Link to="/settings" className="btn-primary">Код точки для кассы</Link>}
+          />
+        </div>
+      ) : (
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[720px]">
             <thead>

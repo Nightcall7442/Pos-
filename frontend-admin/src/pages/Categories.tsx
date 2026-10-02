@@ -4,7 +4,9 @@ import { categoryService } from "../services";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
 import toast from "react-hot-toast";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Tags } from "lucide-react";
+import EmptyState from "../components/EmptyState";
+import { useIsRetail } from "../hooks/useSettings";
 import type { Category } from "../services";
 
 interface CategoryForm {
@@ -19,6 +21,7 @@ interface CategoryForm {
 const defaultForm: CategoryForm = { name: "", description: "", color: "#62799a", imageUrl: "", isIngredient: false, markupPercent: 0 };
 
 export default function Categories() {
+  const retail = useIsRetail();
   const [showCreate, setShowCreate] = useState(false);
   const [editCat, setEditCat] = useState<Category | null>(null);
   const [form, setForm] = useState<CategoryForm>(defaultForm);
@@ -102,6 +105,25 @@ export default function Categories() {
 
       {isLoading ? (
         <LoadingSpinner />
+      ) : !categories?.length ? (
+        <div className="card">
+          <EmptyState
+            compact
+            icon={<Tags className="h-6 w-6" />}
+            title="Категорий пока нет"
+            description={
+              retail
+                ? "Категории — это полки магазина: по ним касса раскладывает плитки товаров без штрихкода, а отчёты — продажи."
+                : "Категории — это разделы меню: на кассе они станут рядом клавиш над блюдами."
+            }
+            action={
+              <button onClick={() => setShowCreate(true)} className="btn-primary">
+                <Plus className="mr-2 h-4 w-4" />
+                Добавить категорию
+              </button>
+            }
+          />
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {categories?.map((cat) => (

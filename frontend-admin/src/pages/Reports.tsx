@@ -4,7 +4,8 @@ import { reportService } from "../services";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { format, subDays } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { TrendingUp, DollarSign, ShoppingCart, Users } from "lucide-react";
+import { TrendingUp, DollarSign, ShoppingCart, Users, BarChart3 } from "lucide-react";
+import EmptyState from "../components/EmptyState";
 import { useMoney } from "../hooks/useMoney";
 
 // Сталь, графит, светлая сталь, янтарь, коралл — палитра кассы, без синего шаблона.
@@ -34,12 +35,23 @@ export default function Reports() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="card"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50"><DollarSign className="h-5 w-5 text-green-600" /></div><div><p className="text-sm text-gray-500">Выручка</p><p className="text-xl font-bold text-gray-900">{money(salesData?.totalRevenue || 0)}</p></div></div></div>
-        <div className="card"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50"><ShoppingCart className="h-5 w-5 text-blue-600" /></div><div><p className="text-sm text-gray-500">Транзакции</p><p className="text-xl font-bold text-gray-900">{salesData?.totalTransactions || 0}</p></div></div></div>
-        <div className="card"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-50"><TrendingUp className="h-5 w-5 text-yellow-600" /></div><div><p className="text-sm text-gray-500">Чаевые</p><p className="text-xl font-bold text-gray-900">{money(salesData?.totalTips || 0)}</p></div></div></div>
-        <div className="card"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50"><Users className="h-5 w-5 text-purple-600" /></div><div><p className="text-sm text-gray-500">Средний чек</p><p className="text-xl font-bold text-gray-900">{money(salesData && salesData.totalTransactions > 0 ? salesData.totalRevenue / salesData.totalTransactions : 0)}</p></div></div></div>
+        <div className="card"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary-50"><DollarSign className="h-5 w-5 text-primary-700" /></div><div><p className="text-sm text-gray-500">Выручка</p><p className="text-xl font-bold text-gray-900">{money(salesData?.totalRevenue || 0)}</p></div></div></div>
+        <div className="card"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary-50"><ShoppingCart className="h-5 w-5 text-primary-700" /></div><div><p className="text-sm text-gray-500">Транзакции</p><p className="text-xl font-bold text-gray-900">{salesData?.totalTransactions || 0}</p></div></div></div>
+        <div className="card"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary-50"><TrendingUp className="h-5 w-5 text-primary-700" /></div><div><p className="text-sm text-gray-500">Чаевые</p><p className="text-xl font-bold text-gray-900">{money(salesData?.totalTips || 0)}</p></div></div></div>
+        <div className="card"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary-50"><Users className="h-5 w-5 text-primary-700" /></div><div><p className="text-sm text-gray-500">Средний чек</p><p className="text-xl font-bold text-gray-900">{money(salesData && salesData.totalTransactions > 0 ? salesData.totalRevenue / salesData.totalTransactions : 0)}</p></div></div></div>
       </div>
 
+      {!salesData?.totalTransactions ? (
+        // Пустой период — одна фраза вместо двух пустых графиков (D-8).
+        <div className="card">
+          <EmptyState
+            compact
+            icon={<BarChart3 className="h-6 w-6" />}
+            title="За эти даты продаж нет"
+            description="Выберите другой период. Графики по часам и по типам заказов появятся с первым чеком за выбранные дни."
+          />
+        </div>
+      ) : (
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="card">
           <h3 className="mb-4 text-lg font-semibold text-gray-900">Продажи по часам</h3>
@@ -65,6 +77,7 @@ export default function Reports() {
           </ResponsiveContainer>
         </div>
       </div>
+      )}
 
       {employeeData && employeeData.length > 0 && (
         <div className="card">

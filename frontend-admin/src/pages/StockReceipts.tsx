@@ -4,7 +4,8 @@ import { stockReceiptService, productService } from "../services";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
 import toast from "react-hot-toast";
-import { Plus, Trash2, Calendar, Building2, Eye, Search } from "lucide-react";
+import { Plus, Trash2, Calendar, Building2, Eye, Search, Truck } from "lucide-react";
+import EmptyState from "../components/EmptyState";
 import type { Product } from "../services";
 import { useMoney } from "../hooks/useMoney";
 
@@ -232,8 +233,19 @@ export default function StockReceipts() {
               ))}
               {receipts.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-gray-500">
-                    Нет приходов
+                  <td colSpan={7}>
+                    <EmptyState
+                      compact
+                      icon={<Truck className="h-6 w-6" />}
+                      title="Приходов пока нет"
+                      description="Приход — это поступление товара от поставщика: остатки растут, себестоимость пересчитывается по цене закупки."
+                      action={
+                        <button onClick={() => setShowCreate(true)} className="btn-primary">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Оформить приход
+                        </button>
+                      }
+                    />
                   </td>
                 </tr>
               )}

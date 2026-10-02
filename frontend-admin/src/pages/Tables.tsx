@@ -5,7 +5,8 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import Badge, { statusBadge } from "../components/Badge";
 import Modal from "../components/Modal";
 import toast from "react-hot-toast";
-import { Plus } from "lucide-react";
+import { Plus, Armchair } from "lucide-react";
+import EmptyState from "../components/EmptyState";
 import { useMoney } from "../hooks/useMoney";
 
 export default function Tables() {
@@ -37,7 +38,17 @@ export default function Tables() {
         </div>
       )}
 
-      {isLoading ? <LoadingSpinner /> : (
+      {isLoading ? <LoadingSpinner /> : !tables?.length ? (
+        <div className="card">
+          <EmptyState
+            compact
+            icon={<Armchair className="h-6 w-6" />}
+            title="Столов пока нет"
+            description="Добавьте столы зала — на кассе официант выберет стол, а здесь будет видно, какие заняты."
+            action={<button onClick={() => setShowCreate(true)} className="btn-primary"><Plus className="mr-2 h-4 w-4" />Добавить стол</button>}
+          />
+        </div>
+      ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           {tables?.map((table) => {
             const badge = statusBadge(table.status);

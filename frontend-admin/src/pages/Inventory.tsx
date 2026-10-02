@@ -7,6 +7,8 @@ import Badge from "../components/Badge";
 import Modal from "../components/Modal";
 import toast from "react-hot-toast";
 import { AlertTriangle, Plus, Minus, Package, Truck } from "lucide-react";
+import { Link } from "react-router-dom";
+import EmptyState from "../components/EmptyState";
 import type { Product, Category } from "../services";
 import { useMoney } from "../hooks/useMoney";
 
@@ -105,6 +107,29 @@ export default function Inventory() {
 
       {isLoading ? (
         <LoadingSpinner />
+      ) : products.length === 0 ? (
+        <div className="card">
+          {search ? (
+            <EmptyState
+              compact
+              title={`По запросу «${search}» товаров нет`}
+              action={<button onClick={() => setSearch("")} className="btn-secondary">Сбросить поиск</button>}
+            />
+          ) : (
+            <EmptyState
+              compact
+              icon={<Package className="h-6 w-6" />}
+              title="На складе пока пусто"
+              description="Остатки появятся, когда вы заведёте товары и оформите первый приход: остаток вырастет, себестоимость посчитается сама."
+              action={
+                <>
+                  <Link to="/products/new" className="btn-primary">Добавить товар</Link>
+                  <Link to="/stock-receipts" className="btn-secondary">Оформить приход</Link>
+                </>
+              }
+            />
+          )}
+        </div>
       ) : (
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[720px]">

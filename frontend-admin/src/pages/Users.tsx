@@ -7,6 +7,7 @@ import Badge from "../components/Badge";
 import Modal from "../components/Modal";
 import toast from "react-hot-toast";
 import { Plus, Pencil } from "lucide-react";
+import EmptyState from "../components/EmptyState";
 import { apiErrorMessage } from "../utils/apiError";
 import type { User } from "../services";
 
@@ -76,7 +77,22 @@ export default function Users() {
         <button onClick={() => setShowCreate(true)} className="btn-primary"><Plus className="mr-2 h-4 w-4" />Добавить</button>
       </div>
       <SearchInput value={search} onChange={setSearch} placeholder="Поиск сотрудников..." className="w-full sm:w-80" />
-      {isLoading ? <LoadingSpinner /> : (
+      {isLoading ? <LoadingSpinner /> : users.length === 0 ? (
+        <div className="card">
+          <EmptyState
+            compact
+            title={search ? `По запросу «${search}» никого нет` : "Сотрудников пока нет"}
+            description={search ? undefined : "Кассиры входят на кассу по PIN — его задают здесь, у каждого свой."}
+            action={
+              search ? (
+                <button onClick={() => setSearch("")} className="btn-secondary">Сбросить поиск</button>
+              ) : (
+                <button onClick={() => setShowCreate(true)} className="btn-primary"><Plus className="mr-2 h-4 w-4" />Добавить сотрудника</button>
+              )
+            }
+          />
+        </div>
+      ) : (
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[820px]">
             <thead><tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wider text-gray-500">

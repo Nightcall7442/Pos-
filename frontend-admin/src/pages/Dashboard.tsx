@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { DollarSign, ShoppingCart, Package, Clock, TrendingUp, ScanBarcode } from "lucide-react";
+import { DollarSign, ShoppingCart, Package, Clock, TrendingUp, ScanBarcode, Check, Plus } from "lucide-react";
 import { useDashboard } from "../hooks/useReports";
 import StatsCard from "../components/StatsCard";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -8,12 +7,12 @@ import Badge, { statusBadge } from "../components/Badge";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { useMoney } from "../hooks/useMoney";
-import { settingsService } from "../services";
+import { useSettings } from "../hooks/useSettings";
 
 export default function Dashboard() {
   const { money } = useMoney();
   const { data: dashboard, isLoading } = useDashboard();
-  const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: () => settingsService.get().then((r) => r.data.data), staleTime: 5 * 60 * 1000 });
+  const { data: settings } = useSettings();
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -27,6 +26,11 @@ export default function Dashboard() {
     recentOrders: [],
   };
 
+  const retail = settings?.businessType === "retail";
+  const hasProducts = stats.totalProducts > 0;
+  // Продажи были — точка работает; за месяц, чтобы шаги не возвращались после тихого дня.
+  const hasSales = stats.todayOrders > 0 || stats.weekRevenue > 0 || stats.monthRevenue > 0 || (stats.recentOrders?.length ?? 0) > 0;
+
   return (
     <div className="space-y-6">
       <div>
@@ -34,18 +38,57 @@ export default function Dashboard() {
         <p className="text-gray-500">Добро пожаловать! Вот что происходит сегодня.</p>
       </div>
 
-      {settings?.businessType === "retail" && stats.totalProducts === 0 && (
-        <div className="card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Начните с товаров</h2>
-            <p className="mt-1 text-sm text-gray-600">
-              Наведите сканер на штрихкоды — название, объём и полка подставятся из общей базы, останется ввести цену. Каждый товар не нужно набирать руками.
-            </p>
-          </div>
-          <Link to="/products/scan" className="btn-primary whitespace-nowrap">
-            <ScanBarcode className="mr-2 h-4 w-4" />
-            Добавить сканером
-          </Link>
+      {(!hasProducts || !hasSales) && (
+        // Первый запуск (D-8): два шага до первой продажи, отметки ставятся сами.
+        <div className="card">
+          <h2 className="text-lg font-semibold text-gray-900">Первые шаги</h2>
+          <p className="mt-1 text-sm text-gray-500">Два шага — и точка начнёт продавать.</p>
+          <ol className="mt-4 divide-y divide-gray-100 border-y border-gray-100">
+            <FirstStep
+              n={1}
+              done={hasProducts}
+              title={retail ? "Заведите товары" : "Заведите меню"}
+              text={
+                retail
+                  ? "Наведите сканер на штрихкод — название, объём и полка подставятся из общей базы, останется ввести цену."
+                  : "Блюдо — это название, цена и категория. Категории станут клавишами на кассе, блюда — плитками."
+              }
+              action={
+                retail ? (
+                  <Link to="/products/scan" className="btn-primary whitespace-nowrap">
+                    <ScanBarcode className="mr-2 h-4 w-4" />
+                    Добавить сканером
+                  </Link>
+                ) : (
+                  <Link to="/products/new" className="btn-primary whitespace-nowrap">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Добавить блюдо
+                  </Link>
+                )
+              }
+            />
+            <FirstStep
+              n={2}
+              done={hasSales}
+              title="Подключите кассу и пробейте первый чек"
+              text={
+                <>
+                  Откройте кассу на планшете и введите код точки
+                  {settings?.slug ? (
+                    <code className="mx-1 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-gray-900">{settings.slug}</code>
+                  ) : (
+                    " из «Настроек»"
+                  )}
+                  — кассиры входят по своему PIN.
+                </>
+              }
+              action={
+                <Link to="/users" className="btn-secondary whitespace-nowrap">
+                  Сотрудники и PIN
+                </Link>
+              }
+            />
+          </ol>
         </div>
       )}
 
@@ -177,5 +220,28 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+  );
+}
+
+function FirstStep({ n, done, title, text, action }: { n: number; done: boolean; title: string; text: React.ReactNode; action: React.ReactNode }) {
+  return (
+    <li className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center">
+      <span
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+          done ? "bg-primary-600 text-white" : "bg-gray-100 text-gray-600"
+        }`}
+        aria-hidden
+      >
+        {done ? <Check className="h-4 w-4" /> : n}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className={`font-medium ${done ? "text-gray-500 line-through" : "text-gray-900"}`}>
+          {title}
+          {done && <span className="sr-only"> — сделано</span>}
+        </p>
+        {!done && <p className="mt-0.5 text-sm text-gray-500">{text}</p>}
+      </div>
+      {!done && action}
+    </li>
   );
 }

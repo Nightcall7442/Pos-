@@ -11,6 +11,7 @@ import {
   useDeleteTechCard, useCopyTechCard,
 } from "../hooks/useTechCards";
 import LoadingSpinner from "../components/LoadingSpinner";
+import EmptyState from "../components/EmptyState";
 
 export default function TechCards() {
   const [search, setSearch] = useState("");
@@ -89,10 +90,28 @@ export default function TechCards() {
 
       {/* Tech Cards List */}
       {techCards.length === 0 ? (
-        <div className="card flex flex-col items-center justify-center py-12 text-center">
-          <ChefHat className="h-12 w-12 text-gray-300" />
-          <p className="mt-4 text-lg font-medium text-gray-500">Нет техкарт</p>
-          <p className="mt-1 text-sm text-gray-400">Нажмите «Создать техкарту» чтобы добавить рецептуру</p>
+        <div className="card">
+          {search ? (
+            <EmptyState
+              compact
+              icon={<ChefHat className="h-6 w-6" />}
+              title={`По запросу «${search}» техкарт нет`}
+              action={<button onClick={() => setSearch("")} className="btn-secondary">Сбросить поиск</button>}
+            />
+          ) : (
+            <EmptyState
+              compact
+              icon={<ChefHat className="h-6 w-6" />}
+              title="Техкарт пока нет"
+              description="Техкарта — рецепт блюда: сколько каких ингредиентов уходит на порцию. При продаже они списываются со склада сами."
+              action={
+                <button onClick={() => setShowCreate(true)} className="btn-primary">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Создать техкарту
+                </button>
+              }
+            />
+          )}
         </div>
       ) : (
         <div className="space-y-3">

@@ -94,7 +94,7 @@ export default function TileCatalog({ filter, onFilter, items, parts, onPick }: 
         ) : products.length === 0 ? (
           <div className="sh-empty">
             <b>Здесь пока нет товаров</b>
-            <small>Добавьте их в панели управления</small>
+            <small>Отсканируйте штрихкод — менеджеру касса предложит завести товар сразу. Или добавьте товары в панели управления.</small>
           </div>
         ) : (
           <>

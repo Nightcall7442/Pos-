@@ -5,6 +5,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import Badge from "../components/Badge";
 import Modal from "../components/Modal";
 import { User, Clock, Eye } from "lucide-react";
+import EmptyState from "../components/EmptyState";
 import { useMoney } from "../hooks/useMoney";
 
 
@@ -51,7 +52,11 @@ export default function CashShifts() {
       ) : (
         <>
         <div className="space-y-3 md:hidden">
-          {shifts.length === 0 && <div className="card text-center text-gray-500">Нет смен</div>}
+          {shifts.length === 0 && (
+            <div className="card">
+              <EmptyState compact icon={<Clock className="h-6 w-6" />} title="Смен пока нет" description="Смену открывает кассир на кассе при входе. Здесь появятся её итоги: продажи, наличные в кассе и расхождение при закрытии." />
+            </div>
+          )}
           {shifts.map((shift) => (
             <button key={shift.id} type="button" onClick={() => setShowDetail(shift)} className="card block w-full p-4 text-left">
               <div className="flex items-center justify-between gap-2">
@@ -143,8 +148,8 @@ export default function CashShifts() {
               ))}
               {shifts.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-gray-500">
-                    Нет смен
+                  <td colSpan={8}>
+                    <EmptyState compact icon={<Clock className="h-6 w-6" />} title="Смен пока нет" description="Смену открывает кассир на кассе при входе. Здесь появятся её итоги: продажи, наличные в кассе и расхождение при закрытии." />
                   </td>
                 </tr>
               )}

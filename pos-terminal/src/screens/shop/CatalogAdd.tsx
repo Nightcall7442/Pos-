@@ -95,7 +95,7 @@ export default function CatalogAdd({ code, hit, symbol, onAdded, onClose }: Cata
   };
 
   return (
-    <div className="sh-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="sh-scrim" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <form
         className="sh-modal narrow"
         role="dialog"

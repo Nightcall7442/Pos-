@@ -233,8 +233,8 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
           <div>
-            <label className="mb-1 block text-xs font-medium text-dark-400">Поставщик (необязательно)</label>
-            <input
+            <label htmlFor="stockreceipt-f1" className="mb-1 block text-xs font-medium text-dark-400">Поставщик (необязательно)</label>
+            <input id="stockreceipt-f1"
               value={supplierName}
               onChange={(e) => setSupplierName(e.target.value)}
               placeholder="Название поставщика"
@@ -245,7 +245,7 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
           <div className="rounded border border-dark-700 bg-dark-900/50 p-4 space-y-4">
             {/* Category */}
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-dark-400">Категория</label>
+              <p id="receipt-category" className="mb-1.5 block text-xs font-medium text-dark-400">Категория</p>
               <div className="mb-2 flex gap-1.5">
                 <button
                   onClick={() => handleCategoryModeChange("existing")}
@@ -298,7 +298,7 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
 
             {/* Product */}
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-dark-400">Товар</label>
+              <p id="receipt-product" className="mb-1.5 block text-xs font-medium text-dark-400">Товар</p>
               {categoryMode === "existing" && categoryId && (
                 <div className="mb-2 flex gap-1.5">
                   <button
@@ -361,8 +361,8 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
             {/* Quantity + cost price */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-dark-400">Количество</label>
-                <input
+                <label htmlFor="stockreceipt-f2" className="mb-1.5 block text-xs font-medium text-dark-400">Количество</label>
+                <input id="stockreceipt-f2"
                   type="number"
                   min="0"
                   step="0.01"
@@ -372,8 +372,8 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-dark-400">Цена прихода (за ед.)</label>
-                <input
+                <label htmlFor="stockreceipt-f3" className="mb-1.5 block text-xs font-medium text-dark-400">Цена прихода (за ед.)</label>
+                <input id="stockreceipt-f3"
                   type="number"
                   min="0"
                   step="0.01"
@@ -385,11 +385,11 @@ export default function StockReceiptScreen({ onClose }: StockReceiptScreenProps)
             </div>
 
             <div className="space-y-2 rounded bg-dark-800 px-4 py-3">
-              <label className="block text-xs text-dark-400">
+              <label htmlFor="stockreceipt-f4" className="block text-xs text-dark-400">
                 Цена продажи
                 {effectiveMarkup > 0 ? ` (наценка ${effectiveMarkup}%)` : " — наценка категории не задана"}
               </label>
-              <input
+              <input id="stockreceipt-f4"
                 type="number"
                 inputMode="decimal"
                 value={salePrice}

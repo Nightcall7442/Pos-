@@ -61,9 +61,9 @@ export default function Tables() {
                   <span className="text-xl font-bold text-gray-900">{table.number}</span>
                 </div>
                 <p className="mt-2 text-sm text-gray-500">{table.capacity} мест</p>
-                {table.zone && <p className="text-xs text-gray-400">{table.zone}</p>}
+                {table.zone && <p className="text-xs text-gray-500">{table.zone}</p>}
                 <Badge variant={badge.variant} className="mt-2">{badge.label}</Badge>
-                {table.orders?.[0] && <p className="mt-1 text-xs font-medium text-danger-600">{money(table.orders[0].total)}</p>}
+                {table.orders?.[0] && <p className="mt-1 text-xs font-medium text-danger-700">{money(table.orders[0].total)}</p>}
                 <div className="mt-2 flex gap-1 justify-center">
                   {["available", "occupied", "reserved", "maintenance"].map((s) => (
                     <button
@@ -86,9 +86,9 @@ export default function Tables() {
 
       <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title="Добавить стол" size="sm">
         <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate(form); }} className="space-y-4">
-          <div><label className="label">Номер стола</label><input value={form.number} onChange={(e) => setForm({ ...form, number: e.target.value })} className="input" required /></div>
-          <div><label className="label">Вместимость</label><input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: parseInt(e.target.value) || 4 })} className="input" /></div>
-          <div><label className="label">Зона</label><input value={form.zone} onChange={(e) => setForm({ ...form, zone: e.target.value })} className="input" placeholder="Напр., Терраса, VIP" /></div>
+          <div><label htmlFor="tables-f1" className="label">Номер стола</label><input id="tables-f1" value={form.number} onChange={(e) => setForm({ ...form, number: e.target.value })} className="input" required /></div>
+          <div><label htmlFor="tables-f2" className="label">Вместимость</label><input id="tables-f2" type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: parseInt(e.target.value) || 4 })} className="input" /></div>
+          <div><label htmlFor="tables-f3" className="label">Зона</label><input id="tables-f3" value={form.zone} onChange={(e) => setForm({ ...form, zone: e.target.value })} className="input" placeholder="Напр., Терраса, VIP" /></div>
           <div className="flex justify-end gap-3"><button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">Отмена</button><button type="submit" className="btn-primary">Создать</button></div>
         </form>
       </Modal>

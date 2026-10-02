@@ -547,11 +547,11 @@ export default function MenuScreen({ user, onLogout, onCheckout, onCloseShift }:
             <button
               onClick={onCheckout}
               disabled={items.length === 0}
-              className="mt-3 flex h-16 w-full items-center gap-3 rounded bg-success-600 px-5 text-xl font-semibold text-white transition-colors hover:bg-success-500 disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-3 flex h-16 w-full items-center gap-3 rounded bg-success-600 px-5 text-xl font-bold text-white transition-colors hover:bg-success-500 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Banknote className="h-6 w-6" />
               Оплатить
-              <span className="ml-auto rounded-sm border border-white/40 px-2 py-0.5 text-xs font-semibold tracking-wide text-white/85">F8</span>
+              <span className="ml-auto rounded-sm bg-black/25 px-2 py-0.5 text-xs font-semibold tracking-wide text-white">F8</span>
             </button>
           </div>
         </aside>
@@ -601,7 +601,7 @@ export default function MenuScreen({ user, onLogout, onCheckout, onCloseShift }:
                     }`}
                   >
                     {tab.name}
-                    <span className="ml-1.5 text-xs opacity-60">{tab.count}</span>
+                    <span className="ml-1.5 text-xs opacity-90">{tab.count}</span>
                     {on && <span className="absolute inset-x-0 bottom-0 h-[3px] bg-white" />}
                   </button>
                 );
@@ -667,7 +667,7 @@ export default function MenuScreen({ user, onLogout, onCheckout, onCloseShift }:
                         ) : null}
                       </span>
                       {totalQty > 0 && (
-                        <span className="absolute right-2 top-2 flex h-7 min-w-7 items-center justify-center rounded-sm bg-sel px-2 text-sm font-semibold tabular-nums text-white">
+                        <span className="absolute right-2 top-2 flex h-7 min-w-7 items-center justify-center rounded-sm bg-primary-600 px-2 text-sm font-semibold tabular-nums text-white">
                           {totalQty}
                         </span>
                       )}

@@ -6,6 +6,8 @@ import Modal from "../components/Modal";
 import toast from "react-hot-toast";
 import { Plus, Edit, Trash2, Tags } from "lucide-react";
 import EmptyState from "../components/EmptyState";
+import Checkbox from "../components/Checkbox";
+import { readableOn } from "../utils/contrast";
 import { useIsRetail } from "../hooks/useSettings";
 import type { Category } from "../services";
 
@@ -130,18 +132,20 @@ export default function Categories() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {categories?.map((cat) => (
-            <div key={cat.id} className="card group relative cursor-pointer hover:shadow-md transition-shadow" onClick={() => openEdit(cat)}>
+            // Щелчок по карточке — короткий путь для мыши; с клавиатуры — кнопка «Изменить» внутри.
+            <div key={cat.id} role="presentation" className="card group relative cursor-pointer hover:shadow-md transition-shadow" onClick={() => openEdit(cat)}>
               <div className="flex items-start gap-3">
                 {cat.imageUrl ? (
                   <img
                     src={cat.imageUrl}
                     alt={cat.name}
-                    className="h-12 w-12 rounded-xl flex-shrink-0 object-cover"
+                    className="h-12 w-12 rounded-md flex-shrink-0 object-cover"
                   />
                 ) : (
                   <div
-                    className="h-12 w-12 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-lg"
-                    style={{ backgroundColor: cat.color || "var(--gray-200)" }}
+                    className="h-12 w-12 rounded-md flex-shrink-0 flex items-center justify-center font-bold text-xl"
+                    // Цвет выбирает пользователь — подпись белая или графитовая, смотря что читается.
+                    style={{ backgroundColor: cat.color || "var(--gray-200)", color: readableOn(cat.color) }}
                   >
                     {cat.name.slice(0, 2)}
                   </div>
@@ -156,21 +160,24 @@ export default function Categories() {
                   {cat.description && (
                     <p className="mt-0.5 text-sm text-gray-500 line-clamp-2">{cat.description}</p>
                   )}
-                  <p className="mt-1 text-xs text-gray-400">
+                  <p className="mt-1 text-xs text-gray-500">
                     {cat._count?.products || 0} товаров · наценка {Number(cat.markupPercent) || 0}%
                   </p>
                 </div>
               </div>
-              <div className="absolute right-2 top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Кнопки видны при наведении, при фокусе с клавиатуры и всегда — на сенсорном экране. */}
+              <div className="absolute right-2 top-2 flex gap-1 transition-opacity group-focus-within:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
                 <button
-                  onClick={() => openEdit(cat)}
-                  className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                  onClick={(e) => { e.stopPropagation(); openEdit(cat); }}
+                  aria-label={`Изменить категорию «${cat.name}»`}
+                  className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
                 >
                   <Edit className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => { if (confirm("Удалить категорию?")) deleteMutation.mutate(cat.id); }}
-                  className="rounded p-1 text-gray-400 hover:bg-danger-50 hover:text-danger-600"
+                  onClick={(e) => { e.stopPropagation(); if (confirm("Удалить категорию?")) deleteMutation.mutate(cat.id); }}
+                  aria-label={`Удалить категорию «${cat.name}»`}
+                  className="rounded p-1 text-gray-500 hover:bg-danger-50 hover:text-danger-600"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -183,8 +190,8 @@ export default function Categories() {
       <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title="Добавить категорию">
         <form onSubmit={handleCreate} className="space-y-4">
           <div>
-            <label className="label">Название</label>
-            <input
+            <label htmlFor="categories-f1" className="label">Название</label>
+            <input id="categories-f1"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               className="input"
@@ -192,16 +199,16 @@ export default function Categories() {
             />
           </div>
           <div>
-            <label className="label">Описание</label>
-            <input
+            <label htmlFor="categories-f2" className="label">Описание</label>
+            <input id="categories-f2"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               className="input"
             />
           </div>
           <div>
-            <label className="label">URL изображения</label>
-            <input
+            <label htmlFor="categories-f3" className="label">URL изображения</label>
+            <input id="categories-f3"
               value={form.imageUrl || ""}
               onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
               className="input"
@@ -209,9 +216,9 @@ export default function Categories() {
             />
           </div>
           <div>
-            <label className="label">Цвет</label>
+            <label htmlFor="categories-f4" className="label">Цвет</label>
             <div className="flex items-center gap-3">
-              <input
+              <input id="categories-f4"
                 type="color"
                 value={form.color}
                 onChange={(e) => setForm({ ...form, color: e.target.value })}
@@ -221,8 +228,8 @@ export default function Categories() {
             </div>
           </div>
           <div>
-            <label className="label">Наценка, %</label>
-            <input
+            <label htmlFor="categories-f5" className="label">Наценка, %</label>
+            <input id="categories-f5"
               type="number"
               step="0.1"
               min="0"
@@ -232,18 +239,12 @@ export default function Categories() {
             />
             <p className="mt-1 text-xs text-gray-500">Цена продажи = цена прихода × (1 + наценка / 100). Применяется автоматически при приходе товара.</p>
           </div>
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={form.isIngredient}
-              onChange={(e) => setForm({ ...form, isIngredient: e.target.checked })}
-              className="h-4 w-4 rounded border-gray-300 text-primary-600"
-            />
-            <div>
-              <span className="text-sm font-medium text-gray-700">Тип: Ингредиенты</span>
-              <p className="text-xs text-gray-500">Товары в этой категории не будут показываться в терминале</p>
-            </div>
-          </label>
+          <Checkbox
+            label="Тип: Ингредиенты"
+            description="Товары в этой категории не будут показываться в терминале"
+            checked={form.isIngredient}
+            onChange={(e) => setForm({ ...form, isIngredient: e.target.checked })}
+          />
           <div className="flex justify-end gap-3">
             <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">Отмена</button>
             <button type="submit" disabled={createMutation.isPending} className="btn-primary">
@@ -256,8 +257,8 @@ export default function Categories() {
       <Modal isOpen={!!editCat} onClose={() => setEditCat(null)} title="Редактировать категорию">
         <form onSubmit={handleUpdate} className="space-y-4">
           <div>
-            <label className="label">Название</label>
-            <input
+            <label htmlFor="categories-f6" className="label">Название</label>
+            <input id="categories-f6"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               className="input"
@@ -265,16 +266,16 @@ export default function Categories() {
             />
           </div>
           <div>
-            <label className="label">Описание</label>
-            <input
+            <label htmlFor="categories-f7" className="label">Описание</label>
+            <input id="categories-f7"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               className="input"
             />
           </div>
           <div>
-            <label className="label">URL изображения</label>
-            <input
+            <label htmlFor="categories-f8" className="label">URL изображения</label>
+            <input id="categories-f8"
               value={form.imageUrl || ""}
               onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
               className="input"
@@ -282,9 +283,9 @@ export default function Categories() {
             />
           </div>
           <div>
-            <label className="label">Цвет</label>
+            <label htmlFor="categories-f9" className="label">Цвет</label>
             <div className="flex items-center gap-3">
-              <input
+              <input id="categories-f9"
                 type="color"
                 value={form.color}
                 onChange={(e) => setForm({ ...form, color: e.target.value })}
@@ -294,8 +295,8 @@ export default function Categories() {
             </div>
           </div>
           <div>
-            <label className="label">Наценка, %</label>
-            <input
+            <label htmlFor="categories-f10" className="label">Наценка, %</label>
+            <input id="categories-f10"
               type="number"
               step="0.1"
               min="0"
@@ -305,18 +306,12 @@ export default function Categories() {
             />
             <p className="mt-1 text-xs text-gray-500">Цена продажи = цена прихода × (1 + наценка / 100). Применяется автоматически при приходе товара.</p>
           </div>
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={form.isIngredient}
-              onChange={(e) => setForm({ ...form, isIngredient: e.target.checked })}
-              className="h-4 w-4 rounded border-gray-300 text-primary-600"
-            />
-            <div>
-              <span className="text-sm font-medium text-gray-700">Тип: Ингредиенты</span>
-              <p className="text-xs text-gray-500">Товары в этой категории не будут показываться в терминале</p>
-            </div>
-          </label>
+          <Checkbox
+            label="Тип: Ингредиенты"
+            description="Товары в этой категории не будут показываться в терминале"
+            checked={form.isIngredient}
+            onChange={(e) => setForm({ ...form, isIngredient: e.target.checked })}
+          />
           <div className="flex justify-end gap-3">
             <button type="button" onClick={() => setEditCat(null)} className="btn-secondary">Отмена</button>
             <button type="submit" disabled={updateMutation.isPending} className="btn-primary">

@@ -253,7 +253,7 @@ function Ticket({
             )}
             {item.notes && (
               // Заметка к блюду — плашкой, чтобы «без лука» не потерялось.
-              <span className="ml-10 mt-0.5 w-fit rounded-sm bg-warning-500 px-1.5 py-0.5 text-xs font-semibold text-white">{item.notes}</span>
+              <span className="ml-10 mt-0.5 w-fit rounded-sm bg-warning-solid px-1.5 py-0.5 text-xs font-semibold text-white">{item.notes}</span>
             )}
           </li>
         ))}

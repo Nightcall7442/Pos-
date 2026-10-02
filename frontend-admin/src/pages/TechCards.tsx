@@ -78,7 +78,7 @@ export default function TechCards() {
 
       {/* Search */}
       <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
         <input
           type="text"
           value={search}
@@ -126,11 +126,19 @@ export default function TechCards() {
             return (
               <div key={tc.id} className="card overflow-hidden">
                 {/* Card Header */}
+                {/* Щелчок по шапке — для мыши; с клавиатуры раскрывает кнопка с названием. */}
                 <div
+                  role="presentation"
                   className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
                   onClick={() => { if (!isEditing) { setExpandedId(isExpanded ? null : tc.id); setEditingId(null); } }}
                 >
-                  <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    aria-expanded={isExpanded}
+                    disabled={isEditing}
+                    onClick={(e) => { e.stopPropagation(); if (!isEditing) { setExpandedId(isExpanded ? null : tc.id); setEditingId(null); } }}
+                    className="flex items-center gap-3 rounded text-left"
+                  >
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning-100">
                       <ChefHat className="h-5 w-5 text-warning-600" />
                     </div>
@@ -141,7 +149,7 @@ export default function TechCards() {
                         {!!tc.products?.length && ` · Товаров: ${tc.products.length}`}
                       </p>
                     </div>
-                  </div>
+                  </button>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
                       <p className="text-sm font-semibold text-gray-900">
@@ -152,27 +160,30 @@ export default function TechCards() {
                     <div className="flex gap-1">
                       <button
                         onClick={(e) => { e.stopPropagation(); startEdit(tc); }}
-                        className="rounded-lg p-2 text-gray-400 hover:bg-warning-50 hover:text-warning-600"
+                        className="rounded-lg p-2 text-gray-500 hover:bg-warning-50 hover:text-warning-600"
                         title="Редактировать"
+                        aria-label={`Редактировать «${tc.name}»`}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleCopy(tc.id); }}
-                        className="rounded-lg p-2 text-gray-400 hover:bg-info-50 hover:text-info-600"
+                        className="rounded-lg p-2 text-gray-500 hover:bg-info-50 hover:text-info-600"
                         title="Копировать"
+                        aria-label={`Копировать «${tc.name}»`}
                       >
                         <Copy className="h-4 w-4" />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDelete(tc.id); }}
-                        className="rounded-lg p-2 text-gray-400 hover:bg-danger-50 hover:text-danger-600"
+                        className="rounded-lg p-2 text-gray-500 hover:bg-danger-50 hover:text-danger-600"
                         title="Удалить"
+                        aria-label={`Удалить «${tc.name}»`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-                    <ChevronRight className={`h-5 w-5 text-gray-400 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                    <ChevronRight className={`h-5 w-5 text-gray-500 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                   </div>
                 </div>
 
@@ -232,8 +243,8 @@ export default function TechCards() {
                 {isEditing && (
                   <div className="border-t border-gray-100 px-4 pb-4 pt-3 space-y-3">
                     <div>
-                      <label className="label">Название техкарты</label>
-                      <input
+                      <label htmlFor="techcards-f1" className="label">Название техкарты</label>
+                      <input id="techcards-f1"
                         type="text"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
@@ -259,7 +270,7 @@ export default function TechCards() {
                           <select value={item.unit} onChange={(e) => { const a = [...editForm]; a[index] = { ...item, unit: e.target.value }; setEditForm(a); }} className="input text-sm">
                             <option value="г">г</option><option value="мл">мл</option><option value="шт">шт</option><option value="кг">кг</option><option value="л">л</option>
                           </select>
-                          <div className="text-sm text-right font-medium text-gray-700">{ing ? lineCost.toLocaleString("ru-RU") : "—"} <span className="text-xs text-gray-400">СУМ</span></div>
+                          <div className="text-sm text-right font-medium text-gray-700">{ing ? lineCost.toLocaleString("ru-RU") : "—"} <span className="text-xs text-gray-500">СУМ</span></div>
                           <button type="button" onClick={() => setEditForm(editForm.filter((_, i) => i !== index))} className="rounded p-1.5 text-danger-400 hover:bg-danger-50 hover:text-danger-600"><Trash2 className="h-4 w-4" /></button>
                         </div>
                       );
@@ -301,12 +312,12 @@ export default function TechCards() {
           <div className="w-full max-w-lg rounded-2xl bg-surface p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Новая тех карта</h2>
-              <button onClick={() => setShowCreate(false)} className="rounded p-1 text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+              <button onClick={() => setShowCreate(false)} className="rounded p-1 text-gray-500 hover:text-gray-600"><X className="h-5 w-5" /></button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="label">Название техкарты *</label>
-                <input
+                <label htmlFor="techcards-f2" className="label">Название техкарты *</label>
+                <input id="techcards-f2"
                   type="text"
                   value={newCard.name}
                   onChange={(e) => setNewCard({ ...newCard, name: e.target.value })}
@@ -315,7 +326,7 @@ export default function TechCards() {
                 />
               </div>
               <div>
-                <label className="label">Ингредиенты</label>
+                <p className="label">Ингредиенты</p>
                 {newCard.ingredients.map((item, idx) => (
                   <div key={idx} className="flex gap-2 mb-2">
                     <select value={item.ingredientId} onChange={(e) => { const a = [...newCard.ingredients]; a[idx] = { ...item, ingredientId: e.target.value }; setNewCard({ ...newCard, ingredients: a }); }} className="input text-sm flex-1">

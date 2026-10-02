@@ -162,7 +162,7 @@ export default function ScanAdd() {
         </label>
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <ScanBarcode className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <ScanBarcode className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
             <input
               id="scan-code"
               ref={scanRef}
@@ -179,6 +179,7 @@ export default function ScanAdd() {
               placeholder="Наведите сканер на штрихкод…"
               inputMode="numeric"
               autoComplete="off"
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- экран ввода сканером: фокус сразу в поле — и есть работа экрана
               autoFocus
             />
           </div>
@@ -186,7 +187,7 @@ export default function ScanAdd() {
             Найти
           </button>
         </div>
-        <p className="mt-2 text-xs text-gray-400">Сканер сам «набирает» цифры и нажимает Enter. Нет сканера — введите цифры под штрихкодом вручную.</p>
+        <p className="mt-2 text-xs text-gray-500">Сканер сам «набирает» цифры и нажимает Enter. Нет сканера — введите цифры под штрихкодом вручную.</p>
       </form>
 
       {step.kind === "checking" && (
@@ -214,6 +215,8 @@ export default function ScanAdd() {
       )}
 
       {step.kind === "form" && (
+        // Escape в любом поле формы сбрасывает скан — обработчик на форме, куда всплывает нажатие.
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
         <form
           className="card space-y-4"
           onSubmit={(e) => {
@@ -226,7 +229,7 @@ export default function ScanAdd() {
         >
           <div className="flex items-baseline justify-between">
             <h2 className="text-lg font-semibold text-gray-900">Новый товар</h2>
-            <span className="font-mono text-sm text-gray-400">{step.code}</span>
+            <span className="font-mono text-sm text-gray-500">{step.code}</span>
           </div>
 
           <p
@@ -248,14 +251,15 @@ export default function ScanAdd() {
           )}
 
           <div>
-            <label className="label">Название *</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} className="input" maxLength={160} autoFocus={!step.hit} />
+            <label htmlFor="scanadd-f1" className="label">Название *</label>
+            {/* eslint-disable-next-line jsx-a11y/no-autofocus -- экран ввода сканером: фокус сразу в поле — и есть работа экрана */}
+            <input id="scanadd-f1" value={name} onChange={(e) => setName(e.target.value)} className="input" maxLength={160} autoFocus={!step.hit} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">{weighed ? `Цена за кг, ${symbol}` : `Цена, ${symbol}`} *</label>
-              <input
+              <label htmlFor="scanadd-f2" className="label">{weighed ? `Цена за кг, ${symbol}` : `Цена, ${symbol}`} *</label>
+              <input id="scanadd-f2"
                 value={price}
                 onChange={(e) => {
                   // A code scanned into this field by mistake is refused, not saved as a price.
@@ -266,14 +270,15 @@ export default function ScanAdd() {
                 inputMode="decimal"
                 maxLength={10}
                 placeholder="0"
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- экран ввода сканером: фокус сразу в поле — и есть работа экрана
                 autoFocus={Boolean(step.hit)}
               />
             </div>
             <div>
-              <label className="label">
-                Остаток{weighed ? ", кг" : ""} <span className="font-normal text-gray-400">(необязательно)</span>
+              <label htmlFor="scanadd-f3" className="label">
+                Остаток{weighed ? ", кг" : ""} <span className="font-normal text-gray-500">(необязательно)</span>
               </label>
-              <input
+              <input id="scanadd-f3"
                 value={stock}
                 onChange={(e) => {
                   const kept = guard.accept(stock, e.target.value.replace(/[^\d.,]/g, ""));
@@ -289,8 +294,8 @@ export default function ScanAdd() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Полка (категория)</label>
-              <select value={chosenShelf} onChange={(e) => setShelf(e.target.value)} className="input">
+              <label htmlFor="scanadd-f4" className="label">Полка (категория)</label>
+              <select id="scanadd-f4" value={chosenShelf} onChange={(e) => setShelf(e.target.value)} className="input">
                 <option value="none">Без полки</option>
                 {shelves.map((c) => (
                   <option key={c.id} value={`id:${c.id}`}>
@@ -301,12 +306,13 @@ export default function ScanAdd() {
               </select>
             </div>
             <div>
-              <label className="label">Продаётся</label>
-              <div className="flex overflow-hidden rounded-lg border border-gray-200">
+              <p id="scanadd-unit" className="label">Продаётся</p>
+              <div role="group" aria-labelledby="scanadd-unit" className="flex overflow-hidden rounded border border-gray-200">
                 {([false, true] as const).map((byWeight) => (
                   <button
                     key={String(byWeight)}
                     type="button"
+                    aria-pressed={weighed === byWeight}
                     onClick={() => setWeighed(byWeight)}
                     className={`flex-1 px-3 py-2 text-sm font-medium ${weighed === byWeight ? "bg-primary-50 text-primary-700" : "bg-surface text-gray-500 hover:bg-gray-50"}`}
                   >
@@ -318,7 +324,7 @@ export default function ScanAdd() {
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-1">
-            <span className="mr-auto text-xs text-gray-400">Enter — добавить, Esc — пропустить</span>
+            <span className="mr-auto text-xs text-gray-500">Enter — добавить, Esc — пропустить</span>
             <button type="button" className="btn-secondary" onClick={reset}>
               Пропустить
             </button>
@@ -342,7 +348,7 @@ export default function ScanAdd() {
                   <Link to={`/products/${item.id}`} className="block truncate text-sm font-medium text-gray-900 hover:text-primary-600">
                     {item.name}
                   </Link>
-                  <span className="font-mono text-xs text-gray-400">{item.barcode}</span>
+                  <span className="font-mono text-xs text-gray-500">{item.barcode}</span>
                 </div>
                 <span className="whitespace-nowrap text-sm font-medium text-gray-700">
                   {money(item.price)}
@@ -354,7 +360,7 @@ export default function ScanAdd() {
         </div>
       )}
 
-      <p className="text-xs leading-relaxed text-gray-400">
+      <p className="text-xs leading-relaxed text-gray-500">
         {stats ? `Товаров в общей базе: ${stats.total.toLocaleString("ru-RU")}. ` : ""}
         Данные о товарах — национальный каталог товаров Узбекистана (tasnif.soliq.uz, Налоговый комитет), Open Food Facts, Open Beauty Facts, Open Products Facts (© участники проектов, лицензия ODbL) и магазины Qwik. Название из базы — подсказка: проверьте его перед добавлением.
       </p>

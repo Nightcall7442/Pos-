@@ -19,7 +19,7 @@ export default function OrderDetail() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center gap-4">
-        <button onClick={() => navigate("/orders")} className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"><ArrowLeft className="h-5 w-5" /></button>
+        <button onClick={() => navigate("/orders")} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"><ArrowLeft className="h-5 w-5" /></button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Заказ №{order.orderNumber}</h1>
           <p className="text-gray-500">{format(new Date(order.createdAt), "d MMMM yyyy HH:mm", { locale: ru })}</p>
@@ -45,7 +45,7 @@ export default function OrderDetail() {
                     {item.product?.name}
                     {item.weightGrams ? <span className="ml-1 text-xs text-gray-500">({item.weightGrams} г)</span> : null}
                   </p>
-                  {item.notes && <p className="text-xs text-gray-400">{item.notes}</p>}
+                  {item.notes && <p className="text-xs text-gray-500">{item.notes}</p>}
                 </div>
               </div>
               <span className="font-medium text-gray-900">{money(item.totalPrice)}</span>

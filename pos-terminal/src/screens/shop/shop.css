@@ -7,14 +7,14 @@
 
 .sh {
   --paper: #eceff1; --card: #fff; --line: #dfe3e6; --line-soft: #eceff1;
-  --ink: #15191b; --muted: #6b7378; --faint: #9aa3aa;
+  --ink: #15191b; --muted: #60686d; --faint: #666d72;
   --accent: #4f6a8a; --accent-hi: #3f566f; --accent-soft: #e2e8f0; --accent-mid: #c6d1de; --on-accent: #fff;
-  --sel: #62799a; --sel-fg: #fff;
+  --sel: #5f7595; --sel-fg: #fff;
   --bar: #232b33; --bar-fg: #d9e0e5; --bar-muted: #8e9aa8;
   --key: #5a6878; --key-hi: #66758a; --key-press: #4b5866; --key-fg: #fff;
   --fn: #2c3540; --fn-hi: #36414d; --fn-fg: #e3e8ea;
   --pay: #2f9e61; --pay-hi: #35ad6b;
-  --amber: #b26a00; --amber-soft: #f8eed6; --red: #c8402b; --red-soft: #f7e4df;
+  --amber: #b26a00; --amber-ink: #9b5c00; --amber-soft: #f8eed6; --red: #c8402b; --red-soft: #f7e4df;
   --zebra: #f5f7f8; --head: #eceff1; --scrim: rgba(13, 17, 19, 0.5);
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
 
@@ -30,13 +30,13 @@
 }
 :root[data-theme="dark"] .sh {
   --paper: #0e1214; --card: #15191b; --line: #272e31; --line-soft: #1e2427;
-  --ink: #e6eaec; --muted: #8a9499; --faint: #5f6a70;
+  --ink: #e6eaec; --muted: #8a9499; --faint: #848c91;
   --accent: #7d93ae; --accent-hi: #8ea3bd; --accent-soft: rgba(98, 121, 154, 0.18); --accent-mid: rgba(98, 121, 154, 0.45);
   --sel: #3d5573; --sel-fg: #fff;
-  --bar: #0e1216; --bar-fg: #c6ced2; --bar-muted: #6f7b80;
+  --bar: #0e1216; --bar-fg: #c6ced2; --bar-muted: #828c91;
   --key: #2a3440; --key-hi: #33404e; --key-press: #222b35; --key-fg: #e6eaec;
   --fn: #12171d; --fn-hi: #1b222a; --fn-fg: #cfd6d9;
-  --amber: #ffb547; --amber-soft: rgba(255, 181, 71, 0.14); --red: #ff8b7d; --red-soft: rgba(255, 139, 125, 0.14);
+  --amber: #ffb547; --amber-ink: #ffb547; --amber-soft: rgba(255, 181, 71, 0.14); --red: #ff8b7d; --red-soft: rgba(255, 139, 125, 0.14);
   --zebra: #191e20; --head: #1e2427; --scrim: rgba(0, 0, 0, 0.62);
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
 }
@@ -120,7 +120,8 @@
 .sh-row .s { text-align: right; font-weight: 600; font-size: 16px; }
 .sh-rl > .sh-sel, .sh-sel { background: var(--sel); color: var(--sel-fg); }
 .sh-sel .sh-row { border-bottom: 0; }
-.sh-sel .sh-row .n, .sh-sel .sh-row .bc, .sh-sel .sh-row .p, .sh-sel .sh-row .p small { color: rgba(255, 255, 255, 0.75); }
+/* На выделении второстепенное — тоже белым: полупрозрачный белый на стали не держит 4.5 (D-6). */
+.sh-sel .sh-row .n, .sh-sel .sh-row .bc, .sh-sel .sh-row .p, .sh-sel .sh-row .p small { color: #fff; }
 .sh-sel .sh-row .q.kg .i { color: #fff; }
 .sh-ctl { display: flex; align-items: center; gap: 10px; padding: 0 18px 12px 62px; }
 .sh-step { display: flex; align-items: center; background: var(--card); border: 1px solid var(--accent-mid); border-radius: 4px; height: 40px; }
@@ -178,7 +179,7 @@
 .sh-bd.l { left: 9px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; gap: 4px; }
 .sh-bd.l .i { width: 12px; height: 12px; }
 .sh-bd.r { right: 9px; background: var(--paper); color: var(--muted); font-weight: 500; }
-.sh-bd.low { background: var(--amber-soft); color: var(--amber); }
+.sh-bd.low { background: var(--amber-soft); color: var(--amber-ink); }
 .sh-bd.out { background: var(--red-soft); color: var(--red); }
 .sh-t.in { border: 1.5px solid var(--accent); background: var(--accent-soft); }
 .sh-t.in .sh-bd.r { background: var(--sel); color: var(--sel-fg); }
@@ -221,11 +222,12 @@
 .sh-cash:active:not(:disabled) { transform: scale(0.99); }
 .sh-cash:disabled, .sh-alt:disabled { opacity: 0.4; }
 .sh-cash .i { width: 28px; height: 28px; }
-.sh-fk { margin-left: auto; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 3px; padding: 3px 8px; color: rgba(255, 255, 255, 0.85); }
+/* Подпись клавиши — на тёмной подложке: белым по зелёному оплаты 12 px не читается (D-6). */
+.sh-fk { margin-left: auto; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; border-radius: 3px; padding: 3px 8px; background: rgba(0, 0, 0, 0.25); color: #fff; }
 .sh-alts { display: flex; gap: 10px; }
 .sh-alt { flex: 1; height: 56px; border: 0; background: var(--fn); color: var(--fn-fg); border-radius: 4px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; font-size: 17px; transition: background 0.15s ease; }
 .sh-alt:hover:not(:disabled) { background: var(--fn-hi); }
-.sh-alt .sh-fk { margin-left: 6px; border-color: rgba(255, 255, 255, 0.3); color: rgba(255, 255, 255, 0.75); }
+.sh-alt .sh-fk { margin-left: 6px; }
 
 /*
  * Высоты правой колонки — от высоты рабочей области, а не окна: над кассой может
@@ -270,7 +272,7 @@
 .sh-ma { display: flex; gap: 10px; margin-top: 16px; }
 .sh-ma .cancel { width: 150px; height: 62px; border: 1px solid var(--line); border-radius: 4px; font-weight: 600; font-size: 16px; text-align: center; }
 .sh-ma .cancel:hover { border-color: var(--ink); }
-.sh-ma .ok { flex: 1; height: 62px; background: var(--pay); color: var(--on-accent); border-radius: 4px; font-weight: 600; font-size: 19px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.sh-ma .ok { flex: 1; height: 62px; background: var(--pay); color: var(--on-accent); border-radius: 4px; font-weight: 700; font-size: 19px; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .sh-ma .ok:hover:not(:disabled) { background: var(--pay-hi); }
 .sh-ma .ok:disabled { opacity: 0.4; }
 .sh-ma .ok .i { width: 22px; height: 22px; }

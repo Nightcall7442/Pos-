@@ -158,7 +158,7 @@ export default function Inventory() {
                           <img src={product.imageUrl} alt="" className="h-8 w-8 rounded-lg object-cover" />
                         ) : (
                           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
-                            <Package className="h-4 w-4 text-gray-400" />
+                            <Package className="h-4 w-4 text-gray-500" />
                           </div>
                         )}
                         <span className="font-medium text-gray-900">{product.name}</span>
@@ -249,8 +249,8 @@ export default function Inventory() {
           </div>
 
           <div>
-            <label className="label">Количество</label>
-            <input
+            <label htmlFor="inventory-f1" className="label">Количество</label>
+            <input id="inventory-f1"
               type="number"
               min="0"
               step="0.01"
@@ -263,8 +263,8 @@ export default function Inventory() {
 
           {adjustType === "increase" && (
             <div>
-              <label className="label">Себестоимость партии ({symbol})</label>
-              <input
+              <label htmlFor="inventory-f2" className="label">Себестоимость партии ({symbol})</label>
+              <input id="inventory-f2"
                 type="number"
                 min="0"
                 step="0.01"
@@ -282,8 +282,8 @@ export default function Inventory() {
           )}
 
           <div>
-            <label className="label">Причина</label>
-            <select
+            <label htmlFor="inventory-f3" className="label">Причина</label>
+            <select id="inventory-f3"
               value={adjustReason}
               onChange={(e) => setAdjustReason(e.target.value)}
               className="input"

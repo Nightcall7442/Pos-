@@ -213,7 +213,7 @@ export default function StockReceipts() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2 text-sm">
-                      <Building2 className="h-4 w-4 text-gray-400" />
+                      <Building2 className="h-4 w-4 text-gray-500" />
                       {receipt.supplierName || "—"}
                     </div>
                   </td>
@@ -224,7 +224,7 @@ export default function StockReceipts() {
                   <td className="p-4 text-right">
                     <button
                       onClick={() => setShowDetail(receipt)}
-                      className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                      className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
                     >
                       <Eye className="h-4 w-4" />
                     </button>
@@ -258,8 +258,8 @@ export default function StockReceipts() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Поставщик</label>
-              <input
+              <label htmlFor="stockreceipt-f1" className="label">Поставщик</label>
+              <input id="stockreceipt-f1"
                 value={supplierName}
                 onChange={(e) => setSupplierName(e.target.value)}
                 className="input"
@@ -267,8 +267,8 @@ export default function StockReceipts() {
               />
             </div>
             <div>
-              <label className="label">Номер накладной</label>
-              <input
+              <label htmlFor="stockreceipt-f2" className="label">Номер накладной</label>
+              <input id="stockreceipt-f2"
                 value={invoiceNumber}
                 onChange={(e) => setInvoiceNumber(e.target.value)}
                 className="input"
@@ -282,7 +282,7 @@ export default function StockReceipts() {
 
             <div className="relative mb-3" ref={searchRef}>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
                 <input
                   type="text"
                   value={searchQuery}
@@ -399,8 +399,8 @@ export default function StockReceipts() {
           </div>
 
           <div>
-            <label className="label">Примечание</label>
-            <input
+            <label htmlFor="stockreceipt-f3" className="label">Примечание</label>
+            <input id="stockreceipt-f3"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="input"

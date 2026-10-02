@@ -23,6 +23,11 @@ export default function Reports() {
   if (isLoading) return <LoadingSpinner />;
 
   const typeLabels: Record<string, string> = { dine_in: "В зале", takeaway: "Навынос", delivery: "Доставка", online: "Онлайн" };
+  const hours = salesData?.salesByHour ?? [];
+  const peak = hours.reduce<(typeof hours)[number] | null>((best, h) => (!best || h.revenue > best.revenue ? h : best), null);
+  const hourSummary = peak ? `Продажи по часам. Больше всего — в ${peak.hour}: ${money(peak.revenue)}` : "Продажи по часам: продаж нет";
+  const typeSummary =
+    "Заказы по типу: " + ((salesData?.ordersByType ?? []).map((t) => `${typeLabels[t.type] || t.type} — ${t._count}`).join(", ") || "нет");
 
   return (
     <div className="space-y-6">
@@ -30,7 +35,7 @@ export default function Reports() {
         <div><h1 className="text-2xl font-bold text-gray-900">Отчёты</h1><p className="text-gray-500">Аналитика продаж</p></div>
         <div className="flex w-full items-center gap-2 sm:w-auto">
           <input type="date" aria-label="С даты" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="input min-w-0 flex-1 sm:w-auto" />
-          <span className="text-gray-400">—</span>
+          <span className="text-gray-500">—</span>
           <input type="date" aria-label="По дату" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="input min-w-0 flex-1 sm:w-auto" />
         </div>
       </div>
@@ -56,6 +61,8 @@ export default function Reports() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="card">
           <h3 className="mb-4 text-lg font-semibold text-gray-900">Продажи по часам</h3>
+          {/* Диктору — одна фраза с главным, глазам — сама диаграмма. */}
+          <div role="img" aria-label={hourSummary}>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={salesData?.salesByHour || []}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--gray-200)" />
@@ -65,17 +72,20 @@ export default function Reports() {
               <Bar dataKey="revenue" fill="var(--steel-600)" radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          </div>
         </div>
         <div className="card">
           <h3 className="mb-4 text-lg font-semibold text-gray-900">Заказы по типу</h3>
+          <div role="img" aria-label={typeSummary}>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
-              <Pie data={salesData?.ordersByType || []} dataKey="_count" nameKey="type" cx="50%" cy="50%" outerRadius="70%" label={({ type, _count }) => `${typeLabels[type] || type}: ${_count}`}>
+              <Pie rootTabIndex={-1} data={salesData?.ordersByType || []} dataKey="_count" nameKey="type" cx="50%" cy="50%" outerRadius="70%" label={({ type, _count }) => `${typeLabels[type] || type}: ${_count}`}>
                 {(salesData?.ordersByType || []).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
+          </div>
         </div>
       </div>
       )}

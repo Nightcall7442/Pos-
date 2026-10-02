@@ -130,6 +130,11 @@
   --color-bar-fg: var(--bar-fg);
   --color-bar-muted: var(--bar-muted);
   --color-pay: var(--pay);
+  /* Фон под белым текстом — одинаковый в обеих темах, белый на нём держит AA (D-6). */
+  --color-danger-solid: #c8402b;
+  --color-danger-solid-hover: #b43a27;
+  --color-success-solid: #267e4e;
+  --color-warning-solid: #a05f00;
   /*
    * Семантика вместо сырой палитры (D-5): страницы пишут success / warning /
    * danger / info, а не green-600 или yellow-50. Шкалы — от цветов кассы: зелёный
@@ -186,49 +191,49 @@
 
 :root,
 .light {
-  /* Семантика (D-5): от цветов кассы. 600 — сам цвет, остальное — смешение. */
+  /* Семантика (D-5, D-6): от цветов кассы; шаг 600 — текст на белом, держит AA. */
   --success-base: #2f9e61;
+  --warning-base: #b26a00;
+  --danger-base: #c8402b;
   --success-50: color-mix(in oklab, var(--success-base) 8%, white);
   --success-100: color-mix(in oklab, var(--success-base) 15%, white);
   --success-200: color-mix(in oklab, var(--success-base) 28%, white);
   --success-300: color-mix(in oklab, var(--success-base) 45%, white);
   --success-400: color-mix(in oklab, var(--success-base) 70%, white);
-  --success-500: color-mix(in oklab, var(--success-base) 86%, white);
-  --success-600: var(--success-base);
-  --success-700: color-mix(in oklab, var(--success-base) 82%, black);
-  --success-800: color-mix(in oklab, var(--success-base) 66%, black);
-  --success-900: color-mix(in oklab, var(--success-base) 52%, black);
-  --success-950: color-mix(in oklab, var(--success-base) 38%, black);
-  --warning-base: #b26a00;
+  --success-500: var(--success-base);
+  --success-600: color-mix(in oklab, var(--success-base) 80%, black);
+  --success-700: color-mix(in oklab, var(--success-base) 67%, black);
+  --success-800: color-mix(in oklab, var(--success-base) 54%, black);
+  --success-900: color-mix(in oklab, var(--success-base) 43%, black);
+  --success-950: color-mix(in oklab, var(--success-base) 32%, black);
   --warning-50: color-mix(in oklab, var(--warning-base) 8%, white);
   --warning-100: color-mix(in oklab, var(--warning-base) 15%, white);
   --warning-200: color-mix(in oklab, var(--warning-base) 28%, white);
   --warning-300: color-mix(in oklab, var(--warning-base) 45%, white);
   --warning-400: color-mix(in oklab, var(--warning-base) 70%, white);
-  --warning-500: color-mix(in oklab, var(--warning-base) 86%, white);
-  --warning-600: var(--warning-base);
-  --warning-700: color-mix(in oklab, var(--warning-base) 82%, black);
-  --warning-800: color-mix(in oklab, var(--warning-base) 66%, black);
-  --warning-900: color-mix(in oklab, var(--warning-base) 52%, black);
-  --warning-950: color-mix(in oklab, var(--warning-base) 38%, black);
-  --danger-base: #c8402b;
+  --warning-500: var(--warning-base);
+  --warning-600: color-mix(in oklab, var(--warning-base) 90%, black);
+  --warning-700: color-mix(in oklab, var(--warning-base) 76%, black);
+  --warning-800: color-mix(in oklab, var(--warning-base) 61%, black);
+  --warning-900: color-mix(in oklab, var(--warning-base) 49%, black);
+  --warning-950: color-mix(in oklab, var(--warning-base) 36%, black);
   --danger-50: color-mix(in oklab, var(--danger-base) 8%, white);
   --danger-100: color-mix(in oklab, var(--danger-base) 15%, white);
   --danger-200: color-mix(in oklab, var(--danger-base) 28%, white);
   --danger-300: color-mix(in oklab, var(--danger-base) 45%, white);
   --danger-400: color-mix(in oklab, var(--danger-base) 70%, white);
-  --danger-500: color-mix(in oklab, var(--danger-base) 86%, white);
+  --danger-500: var(--danger-base);
   --danger-600: var(--danger-base);
-  --danger-700: color-mix(in oklab, var(--danger-base) 82%, black);
-  --danger-800: color-mix(in oklab, var(--danger-base) 66%, black);
-  --danger-900: color-mix(in oklab, var(--danger-base) 52%, black);
-  --danger-950: color-mix(in oklab, var(--danger-base) 38%, black);
+  --danger-700: color-mix(in oklab, var(--danger-base) 84%, black);
+  --danger-800: color-mix(in oklab, var(--danger-base) 68%, black);
+  --danger-900: color-mix(in oklab, var(--danger-base) 54%, black);
+  --danger-950: color-mix(in oklab, var(--danger-base) 40%, black);
   --gray-50: #f5f7f8;
   --gray-100: #eceff1;
   --gray-200: #e1e5e8;
   --gray-300: #c9cfd4;
   --gray-400: #9aa3aa;
-  --gray-500: #6b7378;
+  --gray-500: #646c71;
   --gray-600: #525a60;
   --gray-700: #3a4247;
   --gray-800: #2c3337;
@@ -331,7 +336,7 @@
   --bar-hover: #36414d;
   --bar-active: #5a6878;
   --bar-fg: #d9e0e5;
-  --bar-muted: #8e9aa8;
+  --bar-muted: #a5aeb9;
   --pay: #2f9e61;
   --toast-bg: #232b33;
   --toast-fg: #e6eaec;
@@ -339,40 +344,40 @@
 }
 
 .dark {
-  /* Семантика (D-5): фоновые шаги — с графитом, текстовые — светлее. */
+  /* Семантика (D-5, D-6): фоновые шаги — с графитом, текстовые — светлее, 4.5 на графите и подложке. */
   --success-50: color-mix(in oklab, var(--success-base) 16%, #15191b);
   --success-100: color-mix(in oklab, var(--success-base) 24%, #15191b);
   --success-200: color-mix(in oklab, var(--success-base) 36%, #15191b);
   --success-300: color-mix(in oklab, var(--success-base) 55%, #15191b);
   --success-400: color-mix(in oklab, var(--success-base) 78%, #15191b);
-  --success-500: var(--success-base);
-  --success-600: color-mix(in oklab, var(--success-base) 86%, white);
-  --success-700: color-mix(in oklab, var(--success-base) 62%, white);
-  --success-800: color-mix(in oklab, var(--success-base) 45%, white);
-  --success-900: color-mix(in oklab, var(--success-base) 30%, white);
-  --success-950: color-mix(in oklab, var(--success-base) 18%, white);
+  --success-500: color-mix(in oklab, var(--success-base) 86%, white);
+  --success-600: color-mix(in oklab, var(--success-base) 72%, white);
+  --success-700: color-mix(in oklab, var(--success-base) 60%, white);
+  --success-800: color-mix(in oklab, var(--success-base) 48%, white);
+  --success-900: color-mix(in oklab, var(--success-base) 36%, white);
+  --success-950: color-mix(in oklab, var(--success-base) 24%, white);
   --warning-50: color-mix(in oklab, var(--warning-base) 16%, #15191b);
   --warning-100: color-mix(in oklab, var(--warning-base) 24%, #15191b);
   --warning-200: color-mix(in oklab, var(--warning-base) 36%, #15191b);
   --warning-300: color-mix(in oklab, var(--warning-base) 55%, #15191b);
   --warning-400: color-mix(in oklab, var(--warning-base) 78%, #15191b);
-  --warning-500: var(--warning-base);
-  --warning-600: color-mix(in oklab, var(--warning-base) 86%, white);
-  --warning-700: color-mix(in oklab, var(--warning-base) 62%, white);
-  --warning-800: color-mix(in oklab, var(--warning-base) 45%, white);
-  --warning-900: color-mix(in oklab, var(--warning-base) 30%, white);
-  --warning-950: color-mix(in oklab, var(--warning-base) 18%, white);
+  --warning-500: color-mix(in oklab, var(--warning-base) 86%, white);
+  --warning-600: color-mix(in oklab, var(--warning-base) 72%, white);
+  --warning-700: color-mix(in oklab, var(--warning-base) 60%, white);
+  --warning-800: color-mix(in oklab, var(--warning-base) 48%, white);
+  --warning-900: color-mix(in oklab, var(--warning-base) 36%, white);
+  --warning-950: color-mix(in oklab, var(--warning-base) 24%, white);
   --danger-50: color-mix(in oklab, var(--danger-base) 16%, #15191b);
   --danger-100: color-mix(in oklab, var(--danger-base) 24%, #15191b);
   --danger-200: color-mix(in oklab, var(--danger-base) 36%, #15191b);
   --danger-300: color-mix(in oklab, var(--danger-base) 55%, #15191b);
   --danger-400: color-mix(in oklab, var(--danger-base) 78%, #15191b);
-  --danger-500: var(--danger-base);
-  --danger-600: color-mix(in oklab, var(--danger-base) 86%, white);
-  --danger-700: color-mix(in oklab, var(--danger-base) 62%, white);
-  --danger-800: color-mix(in oklab, var(--danger-base) 45%, white);
-  --danger-900: color-mix(in oklab, var(--danger-base) 30%, white);
-  --danger-950: color-mix(in oklab, var(--danger-base) 18%, white);
+  --danger-500: color-mix(in oklab, var(--danger-base) 86%, white);
+  --danger-600: color-mix(in oklab, var(--danger-base) 72%, white);
+  --danger-700: color-mix(in oklab, var(--danger-base) 60%, white);
+  --danger-800: color-mix(in oklab, var(--danger-base) 48%, white);
+  --danger-900: color-mix(in oklab, var(--danger-base) 36%, white);
+  --danger-950: color-mix(in oklab, var(--danger-base) 24%, white);
   --gray-50: #101416;
   --gray-100: #171c1f;
   --gray-200: #262d31;
@@ -481,7 +486,7 @@
   --bar-hover: #1b222a;
   --bar-active: #2a3440;
   --bar-fg: #c6ced2;
-  --bar-muted: #6f7b80;
+  --bar-muted: #828c91;
   --pay: #2f9e61;
   --toast-bg: #2a3440;
   --toast-fg: #e6eaec;
@@ -513,7 +518,7 @@
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center rounded-md bg-danger-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-danger-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-danger-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center rounded-md bg-danger-solid px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-danger-solid-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-danger-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .card {
@@ -521,7 +526,7 @@
   }
 
   .input {
-    @apply block w-full rounded border border-gray-300 bg-surface px-3.5 py-2.5 text-sm text-gray-900 transition-colors placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500;
+    @apply block w-full rounded border border-gray-300 bg-surface px-3.5 py-2.5 text-sm text-gray-900 transition-colors placeholder:text-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500;
   }
 
   .label {
@@ -549,7 +554,7 @@
 .auth-screen {
   --paper: #eceff1;
   --ink: #15191b;
-  --muted: #6b7378;
+  --muted: #646c71;
   --line: #dfe3e6;
   --accent: #2c3540;
   --accent-text: #4f6a8a;

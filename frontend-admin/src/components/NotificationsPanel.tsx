@@ -40,6 +40,23 @@ export default function NotificationsPanel({ open, onClose }: NotificationsPanel
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open, onClose]);
 
+  // Escape закрывает и возвращает фокус на колокольчик, откуда панель открыли (D-6).
+  // Кто открыл — запоминаем в момент открытия, а не при каждой перерисовке.
+  const openerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (open) openerRef.current = document.activeElement as HTMLElement | null;
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      onClose();
+      openerRef.current?.focus?.();
+    }
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   const notifications: Notification[] = data?.notifications || [];
@@ -47,13 +64,17 @@ export default function NotificationsPanel({ open, onClose }: NotificationsPanel
   return (
     <div
       ref={panelRef}
+      id="notifications-panel"
+      role="dialog"
+      aria-label="Уведомления"
       className="fixed inset-x-3 top-14 z-50 mt-2 rounded-md border border-gray-200 bg-surface shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:w-96"
     >
       <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
         <h3 className="text-sm font-semibold text-gray-900">Уведомления</h3>
         <button
           onClick={onClose}
-          className="rounded-lg p-1 text-gray-400 hover:bg-gray-100"
+          aria-label="Закрыть уведомления"
+          className="rounded-lg p-1 text-gray-500 hover:bg-gray-100"
         >
           <X className="h-4 w-4" />
         </button>
@@ -90,7 +111,7 @@ export default function NotificationsPanel({ open, onClose }: NotificationsPanel
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900">{n.title}</p>
                 <p className="mt-0.5 text-xs text-gray-500">{n.message}</p>
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-gray-500">
                   {format(new Date(n.createdAt), "d MMM, HH:mm", { locale: ru })}
                 </p>
               </div>

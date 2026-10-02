@@ -144,7 +144,7 @@ export default function ShopPayment({ method, total, shiftId, onClose, onPaid }:
   const totalParts = parts(total);
 
   return (
-    <div className="sh-scrim" onMouseDown={(e) => e.target === e.currentTarget && !checkout.isPending && onClose()}>
+    <div className="sh-scrim" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && !checkout.isPending && onClose()}>
       <div className="sh-modal" role="dialog" aria-label={`Оплата: ${METHODS[method].label}`}>
         <div className="sh-mh">
           <div className="emo">

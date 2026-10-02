@@ -33,6 +33,13 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-canvas">
+      {/* Первая остановка Tab: без неё до содержимого 18 шагов по меню и шапке (WCAG 2.4.1). */}
+      <a
+        href="#main"
+        className="sr-only z-50 rounded-md bg-action px-4 py-2 text-sm font-semibold text-white focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
+      >
+        Перейти к содержимому
+      </a>
       <Sidebar />
       {mobileNavOpen && (
         <button
@@ -45,7 +52,7 @@ export default function Layout() {
       {/* На узком экране меню не занимает места — оно выезжает поверх (D-4). */}
       <div className={`flex min-w-0 flex-1 flex-col overflow-hidden transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
         <Header />
-        <main className="flex-1 overflow-y-auto p-3 sm:p-6">
+        <main id="main" tabIndex={-1} className="flex-1 overflow-y-auto p-3 outline-none sm:p-6">
           <Outlet />
         </main>
       </div>

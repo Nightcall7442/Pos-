@@ -68,13 +68,17 @@ export default function Products() {
         <div className="flex rounded-lg border border-gray-200">
           <button
             onClick={() => setViewMode("grid")}
-            className={`p-2 ${viewMode === "grid" ? "bg-gray-100 text-gray-900" : "text-gray-400"}`}
+            aria-label="Плитками"
+            aria-pressed={viewMode === "grid"}
+            className={`p-2 ${viewMode === "grid" ? "bg-gray-100 text-gray-900" : "text-gray-500"}`}
           >
             <Grid3X3 className="h-4 w-4" />
           </button>
           <button
             onClick={() => setViewMode("list")}
-            className={`p-2 ${viewMode === "list" ? "bg-gray-100 text-gray-900" : "text-gray-400"}`}
+            aria-label="Списком"
+            aria-pressed={viewMode === "list"}
+            className={`p-2 ${viewMode === "list" ? "bg-gray-100 text-gray-900" : "text-gray-500"}`}
           >
             <List className="h-4 w-4" />
           </button>
@@ -144,7 +148,7 @@ export default function Products() {
                   <h3 className="font-semibold text-gray-900 line-clamp-1">{product.name}</h3>
                   {product.category && <Badge variant="gray">{product.category.name}</Badge>}
                 </div>
-                {product.sku && <p className="mt-0.5 text-xs text-gray-400">Артикул: {product.sku}</p>}
+                {product.sku && <p className="mt-0.5 text-xs text-gray-500">Артикул: {product.sku}</p>}
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-lg font-bold text-gray-900">{money(product.price)}</span>
                   {product.trackInventory && (
@@ -181,7 +185,7 @@ export default function Products() {
                     <img src={product.imageUrl} alt="" className="h-11 w-11 flex-shrink-0 rounded-md object-cover" />
                   ) : (
                     <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md bg-gray-100">
-                      <Package className="h-5 w-5 text-gray-400" />
+                      <Package className="h-5 w-5 text-gray-500" />
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
@@ -243,12 +247,12 @@ export default function Products() {
                         <img src={product.imageUrl} alt="" className="h-10 w-10 rounded-lg object-cover" />
                       ) : (
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100">
-                          <Package className="h-5 w-5 text-gray-400" />
+                          <Package className="h-5 w-5 text-gray-500" />
                         </div>
                       )}
                       <div>
                         <span className="font-medium text-gray-900">{product.name}</span>
-                        {product.sku && <p className="text-xs text-gray-400">{product.sku}</p>}
+                        {product.sku && <p className="text-xs text-gray-500">{product.sku}</p>}
                       </div>
                     </div>
                   </td>

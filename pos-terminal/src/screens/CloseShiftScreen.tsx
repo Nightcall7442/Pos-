@@ -102,12 +102,12 @@ export default function CloseShiftScreen({ shiftId, onShiftClosed, onCancel }: C
 
           {/* Closing cash input */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-dark-300">
+            <label htmlFor="closeshiftsc-f1" className="mb-2 block text-sm font-medium text-dark-300">
               Фактическая наличность в кассе
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-dark-400">{symbol}</span>
-              <input
+              <input id="closeshiftsc-f1"
                 type="number"
                 step="10000"
                 value={closingCash}
@@ -162,8 +162,8 @@ export default function CloseShiftScreen({ shiftId, onShiftClosed, onCancel }: C
 
           {/* Notes */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-dark-300">Примечания</label>
-            <textarea
+            <label htmlFor="closeshiftsc-f2" className="mb-2 block text-sm font-medium text-dark-300">Примечания</label>
+            <textarea id="closeshiftsc-f2"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Необязательно..."

@@ -108,10 +108,10 @@ export default function Users() {
                     {user.hasPin ? (
                       <div className="flex items-center gap-2">
                         <Badge variant="success">PIN задан</Badge>
-                        <button onClick={() => clearPinMutation.mutate(user.id)} className="text-xs text-gray-400 hover:text-gray-600">снять</button>
+                        <button onClick={() => clearPinMutation.mutate(user.id)} className="text-xs text-gray-500 hover:text-gray-600">снять</button>
                       </div>
                     ) : (
-                      <span className="text-xs text-gray-400">нет входа на кассе</span>
+                      <span className="text-xs text-gray-500">нет входа на кассе</span>
                     )}
                   </td>
                   <td className="p-4"><Badge variant={user.isActive ? "success" : "gray"}>{user.isActive ? "Активен" : "Неактивен"}</Badge></td>
@@ -130,22 +130,22 @@ export default function Users() {
       <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title="Добавить сотрудника">
         <form onSubmit={(e) => { e.preventDefault(); if (!pinInvalid) createMutation.mutate(form); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="label">Имя</label><input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="input" required /></div>
-            <div><label className="label">Фамилия</label><input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="input" required /></div>
+            <div><label htmlFor="users-f1" className="label">Имя</label><input id="users-f1" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="input" required /></div>
+            <div><label htmlFor="users-f2" className="label">Фамилия</label><input id="users-f2" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="input" required /></div>
           </div>
-          <div><label className="label">Email</label><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input" required /></div>
-          <div><label className="label">Пароль</label><input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input" required /></div>
-          <div><label className="label">Роль</label><select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="input">{roles.map((r) => <option key={r} value={r}>{roleLabels[r]}</option>)}</select></div>
+          <div><label htmlFor="users-f3" className="label">Email</label><input id="users-f3" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input" required /></div>
+          <div><label htmlFor="users-f4" className="label">Пароль</label><input id="users-f4" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input" required /></div>
+          <div><label htmlFor="users-f5" className="label">Роль</label><select id="users-f5" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="input">{roles.map((r) => <option key={r} value={r}>{roleLabels[r]}</option>)}</select></div>
           <div>
-            <label className="label">PIN для кассы (необязательно)</label>
-            <input
+            <label htmlFor="users-f6" className="label">PIN для кассы (необязательно)</label>
+            <input id="users-f6"
               value={form.pin}
               onChange={(e) => setForm({ ...form, pin: e.target.value.replace(/\D/g, "").slice(0, 10) })}
               className="input"
               inputMode="numeric"
               placeholder="4–10 цифр"
             />
-            <p className="mt-1 text-xs text-gray-400">С этим PIN сотрудник входит на кассе, нажав своё имя — email и пароль там не нужны.</p>
+            <p className="mt-1 text-xs text-gray-500">С этим PIN сотрудник входит на кассе, нажав своё имя — email и пароль там не нужны.</p>
             {pinInvalid && <p className="mt-1 text-xs text-danger-500">PIN — от 4 до 10 цифр</p>}
           </div>
           <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">Отмена</button><button type="submit" disabled={createMutation.isPending || pinInvalid} className="btn-primary">{createMutation.isPending ? "Создание..." : "Создать"}</button></div>
@@ -154,15 +154,15 @@ export default function Users() {
       <Modal isOpen={editingId !== null} onClose={() => setEditingId(null)} title="Изменить сотрудника">
         <form onSubmit={(e) => { e.preventDefault(); if (editingId && !editPinInvalid) updateMutation.mutate({ id: editingId, form: editForm }); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="label">Имя</label><input value={editForm.firstName} onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })} className="input" required /></div>
-            <div><label className="label">Фамилия</label><input value={editForm.lastName} onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })} className="input" required /></div>
+            <div><label htmlFor="users-f7" className="label">Имя</label><input id="users-f7" value={editForm.firstName} onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })} className="input" required /></div>
+            <div><label htmlFor="users-f8" className="label">Фамилия</label><input id="users-f8" value={editForm.lastName} onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })} className="input" required /></div>
           </div>
-          <div><label className="label">Телефон</label><input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} className="input" /></div>
-          <div><label className="label">Роль</label><select value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })} className="input">{roles.map((r) => <option key={r} value={r}>{roleLabels[r]}</option>)}</select></div>
-          <div><label className="label">Новый пароль</label><input type="password" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} className="input" placeholder="оставьте пустым — не менять" /></div>
+          <div><label htmlFor="users-f9" className="label">Телефон</label><input id="users-f9" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} className="input" /></div>
+          <div><label htmlFor="users-f10" className="label">Роль</label><select id="users-f10" value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })} className="input">{roles.map((r) => <option key={r} value={r}>{roleLabels[r]}</option>)}</select></div>
+          <div><label htmlFor="users-f11" className="label">Новый пароль</label><input id="users-f11" type="password" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} className="input" placeholder="оставьте пустым — не менять" /></div>
           <div>
-            <label className="label">Новый PIN для кассы</label>
-            <input
+            <label htmlFor="users-f12" className="label">Новый PIN для кассы</label>
+            <input id="users-f12"
               value={editForm.pin}
               onChange={(e) => setEditForm({ ...editForm, pin: e.target.value.replace(/\D/g, "").slice(0, 10) })}
               className="input"

@@ -37,7 +37,8 @@ export default function Header() {
         <input
           type="text"
           placeholder="Поиск товаров, заказов..."
-          className="block h-9 w-full rounded border border-white/10 bg-white/5 pl-10 pr-3 text-sm text-bar-fg placeholder:text-bar-muted focus:border-white/30 focus:outline-none"
+          aria-label="Поиск по панели"
+          className="block h-9 w-full rounded border border-white/10 bg-white/5 pl-10 pr-3 text-sm text-bar-fg placeholder:text-bar-muted focus:border-white/40 focus:outline-none focus:ring-2 focus:ring-primary-400/60"
         />
       </div>
 
@@ -53,11 +54,13 @@ export default function Header() {
           <button
             onClick={() => setNotificationsOpen(!notificationsOpen)}
             aria-label={unreadCount > 0 ? `Уведомления: ${unreadCount} новых` : "Уведомления"}
+            aria-expanded={notificationsOpen}
+            aria-controls="notifications-panel"
             className="relative rounded p-2 text-bar-muted hover:bg-bar-hover hover:text-white"
           >
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger-500 text-[10px] font-bold text-white">
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger-solid text-[10px] font-bold text-white">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}

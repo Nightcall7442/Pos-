@@ -137,7 +137,7 @@ export default function Settings() {
                 </button>
               ))}
             </div>
-            <p className="text-xs text-gray-400">От типа зависит, как выглядит касса. Сохраните настройки, а на кассе обновите страницу.</p>
+            <p className="text-xs text-gray-500">От типа зависит, как выглядит касса. Сохраните настройки, а на кассе обновите страницу.</p>
           </div>
           {settings?.slug && (
             <div className="card space-y-3">
@@ -167,19 +167,19 @@ export default function Settings() {
           )}
           <div className="card space-y-4">
             <h2 className="text-lg font-semibold text-gray-900">Информация о бизнесе</h2>
-            <div><label className="label">Название</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input" /></div>
+            <div><label htmlFor="settings-f1" className="label">Название</label><input id="settings-f1" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input" /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div><label className="label">Телефон</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="input" /></div>
-              <div><label className="label">Email</label><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input" /></div>
+              <div><label htmlFor="settings-f2" className="label">Телефон</label><input id="settings-f2" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="input" /></div>
+              <div><label htmlFor="settings-f3" className="label">Email</label><input id="settings-f3" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input" /></div>
             </div>
-            <div><label className="label">Адрес</label><textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="input min-h-[80px]" /></div>
+            <div><label htmlFor="settings-f4" className="label">Адрес</label><textarea id="settings-f4" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="input min-h-[80px]" /></div>
           </div>
           <div className="card space-y-4">
             <h2 className="text-lg font-semibold text-gray-900">Региональные</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
-                <label className="label">Часовой пояс</label>
-                <select value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })} className="input">
+                <label htmlFor="settings-f5" className="label">Часовой пояс</label>
+                <select id="settings-f5" value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })} className="input">
                   <option value="UTC">UTC</option>
                   <option value="Asia/Tashkent">Ташкент</option>
                   <option value="Asia/Dubai">Дубай</option>
@@ -188,22 +188,22 @@ export default function Settings() {
                 </select>
               </div>
               <div>
-                <label className="label">Валюта</label>
-                <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className="input">
+                <label htmlFor="settings-f6" className="label">Валюта</label>
+                <select id="settings-f6" value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className="input">
                   <option value="USD">USD ($)</option>
                   <option value="UZS">UZS (сўм)</option>
                   <option value="RUB">RUB (₽)</option>
                   <option value="EUR">EUR (€)</option>
                 </select>
               </div>
-              <div><label className="label">Налог (%)</label><input type="number" step="0.01" value={form.taxRate} onChange={(e) => setForm({ ...form, taxRate: parseFloat(e.target.value) || 0 })} className="input" /></div>
+              <div><label htmlFor="settings-f7" className="label">Налог (%)</label><input id="settings-f7" type="number" step="0.01" value={form.taxRate} onChange={(e) => setForm({ ...form, taxRate: parseFloat(e.target.value) || 0 })} className="input" /></div>
             </div>
           </div>
           <div className="card space-y-4">
             <h2 className="text-lg font-semibold text-gray-900">Наценка</h2>
             <div>
-              <label className="label">Наценка по умолчанию, %</label>
-              <input
+              <label htmlFor="settings-f8" className="label">Наценка по умолчанию, %</label>
+              <input id="settings-f8"
                 type="number"
                 step="0.1"
                 min="0"
@@ -243,7 +243,7 @@ export default function Settings() {
               <input type="checkbox" checked={catalogSharing} onChange={(e) => setCatalogSharing(e.target.checked)} className="mt-1 h-4 w-4 rounded border-gray-300" />
               <span className="text-sm text-gray-700">
                 Делиться с общей базой названиями моих товаров
-                <span className="block text-xs text-gray-400">
+                <span className="block text-xs text-gray-500">
                   Передаются только штрихкод, название и полка из стандартного списка. Цены, остатки, продажи и названия ваших категорий не передаются никогда.
                 </span>
               </span>
@@ -253,8 +253,8 @@ export default function Settings() {
             <h2 className="text-lg font-semibold text-gray-900">Единицы измерения</h2>
             <p className="text-sm text-gray-500">Управьте единицами, которые доступны при добавлении товаров</p>
             <div>
-              <label className="label">Единица по умолчанию</label>
-              <select value={defaultUnit} onChange={(e) => setDefaultUnit(e.target.value)} className="input">
+              <label htmlFor="settings-f9" className="label">Единица по умолчанию</label>
+              <select id="settings-f9" value={defaultUnit} onChange={(e) => setDefaultUnit(e.target.value)} className="input">
                 {units.map((u) => <option key={u.key} value={u.key}>{u.label}</option>)}
               </select>
             </div>
@@ -263,9 +263,9 @@ export default function Settings() {
                 <div key={u.key} className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2">
                   <div>
                     <span className="font-medium text-gray-900">{u.label}</span>
-                    <span className="ml-2 text-sm text-gray-400">({u.key})</span>
+                    <span className="ml-2 text-sm text-gray-500">({u.key})</span>
                   </div>
-                  <button type="button" onClick={() => handleRemoveUnit(u.key)} className="text-gray-400 hover:text-danger-500 transition-colors">
+                  <button type="button" onClick={() => handleRemoveUnit(u.key)} className="text-gray-500 hover:text-danger-500 transition-colors">
                     <X className="h-4 w-4" />
                   </button>
                 </div>
@@ -273,12 +273,12 @@ export default function Settings() {
             </div>
             <div className="flex items-end gap-3">
               <div className="flex-1">
-                <label className="label">Название</label>
-                <input value={newUnitLabel} onChange={(e) => setNewUnitLabel(e.target.value)} className="input" placeholder="Напр., Килограмм" />
+                <label htmlFor="settings-f10" className="label">Название</label>
+                <input id="settings-f10" value={newUnitLabel} onChange={(e) => setNewUnitLabel(e.target.value)} className="input" placeholder="Напр., Килограмм" />
               </div>
               <div className="flex-1">
-                <label className="label">Ключ</label>
-                <input value={newUnitKey} onChange={(e) => setNewUnitKey(e.target.value)} className="input" placeholder="Напр., kg" />
+                <label htmlFor="settings-f11" className="label">Ключ</label>
+                <input id="settings-f11" value={newUnitKey} onChange={(e) => setNewUnitKey(e.target.value)} className="input" placeholder="Напр., kg" />
               </div>
               <button type="button" onClick={handleAddUnit} className="btn-primary mb-0.5">
                 <Plus className="mr-1 h-4 w-4" />Добавить

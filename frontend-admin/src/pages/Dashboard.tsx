@@ -228,7 +228,7 @@ function FirstStep({ n, done, title, text, action }: { n: number; done: boolean;
     <li className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center">
       <span
         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
-          done ? "bg-primary-600 text-white" : "bg-gray-100 text-gray-600"
+          done ? "bg-action text-white" : "bg-gray-100 text-gray-600"
         }`}
         aria-hidden
       >

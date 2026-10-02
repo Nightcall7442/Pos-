@@ -30,7 +30,7 @@ const time = (ts: number): string => new Date(ts).toLocaleTimeString("ru-RU", { 
 export function ParkedModal({ parked, hasCurrent, money, onRestore, onDiscard, onClose }: ParkedModalProps) {
   useEscape(onClose);
   return (
-    <div className="sh-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="sh-scrim" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="sh-modal narrow" role="dialog" aria-label="Отложенные чеки">
         <div className="sh-mh">
           <div className="emo">
@@ -89,7 +89,7 @@ export function CustomerModal({ name = "", phone = "", onSave, onClose }: Custom
   const [n, setN] = useState(name);
   const [p, setP] = useState(phone);
   return (
-    <div className="sh-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="sh-scrim" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <form
         className="sh-modal narrow"
         role="dialog"

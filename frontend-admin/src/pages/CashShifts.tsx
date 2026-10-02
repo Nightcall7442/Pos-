@@ -79,7 +79,7 @@ export default function CashShifts() {
                 </div>
                 <div>
                   <dt className="text-xs text-gray-500">Разница</dt>
-                  <dd className={shift.difference === null ? "text-gray-400" : shift.difference === 0 ? "font-medium text-success-600" : "font-semibold text-danger-600"}>
+                  <dd className={shift.difference === null ? "text-gray-500" : shift.difference === 0 ? "font-medium text-success-600" : "font-semibold text-danger-600"}>
                     {shift.difference === null ? "—" : shift.difference === 0 ? "Сходится" : money(shift.difference)}
                   </dd>
                 </div>
@@ -111,7 +111,7 @@ export default function CashShifts() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2 text-sm">
-                      <User className="h-4 w-4 text-gray-400" />
+                      <User className="h-4 w-4 text-gray-500" />
                       {shift.user.firstName} {shift.user.lastName}
                     </div>
                   </td>
@@ -132,14 +132,14 @@ export default function CashShifts() {
                         {shift.difference === 0 ? "Сходится" : money(shift.difference)}
                       </span>
                     ) : (
-                      <span className="text-sm text-gray-400">—</span>
+                      <span className="text-sm text-gray-500">—</span>
                     )}
                   </td>
                   <td className="p-4 text-right">
                     <button
                       onClick={() => setShowDetail(shift)}
                       aria-label="Детали смены"
-                      className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                      className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
                     >
                       <Eye className="h-4 w-4" />
                     </button>

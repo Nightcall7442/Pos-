@@ -6,6 +6,7 @@ import { useProduct, useCreateProduct, useUpdateProduct, useCategories } from ".
 import { useTechCards } from "../hooks/useTechCards";
 import { settingsService } from "../services";
 import LoadingSpinner from "../components/LoadingSpinner";
+import Checkbox from "../components/Checkbox";
 import { useMoney } from "../hooks/useMoney";
 import type { ProductInput, TechCardItem } from "../services";
 
@@ -148,7 +149,7 @@ export default function ProductEdit() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center gap-4">
-        <button onClick={() => navigate("/products")} className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"><ArrowLeft className="h-5 w-5" /></button>
+        <button onClick={() => navigate("/products")} aria-label="Назад к товарам" className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"><ArrowLeft className="h-5 w-5" /></button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{isNew ? "Новый товар" : "Редактирование товара"}</h1>
           <p className="text-gray-500">{isNew ? "Создайте новый товар" : "Обновите данные товара"}</p>
@@ -159,41 +160,39 @@ export default function ProductEdit() {
         <div className="card space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Основная информация</h2>
           <div>
-            <label className="label">Название товара *</label>
-            <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input" placeholder="Напр., Классический бургер" required />
+            <label htmlFor="productedit-f1" className="label">Название товара *</label>
+            <input id="productedit-f1" type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input" placeholder="Напр., Классический бургер" required />
           </div>
           <div>
-            <label className="label">Описание</label>
-            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="input min-h-[80px]" placeholder="Описание товара..." />
+            <label htmlFor="productedit-f2" className="label">Описание</label>
+            <textarea id="productedit-f2" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="input min-h-[80px]" placeholder="Описание товара..." />
           </div>
           <div className="space-y-3">
-            <label className="label">Объем / Граммовка</label>
-            <div className="flex gap-2">
+            <p id="productedit-volume" className="label">Объем / Граммовка</p>
+            <div role="group" aria-labelledby="productedit-volume" className="flex gap-2">
               <button
                 type="button"
+                aria-pressed={form.volumeType === "liter"}
                 onClick={() => setForm({ ...form, volumeType: "liter", volume: "" })}
-                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                  form.volumeType === "liter"
-                    ? "bg-info-600 text-white shadow-md shadow-info-600/20"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                className={`rounded px-5 py-2.5 text-sm font-semibold transition-colors ${
+                  form.volumeType === "liter" ? "bg-action text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
                 Объем
               </button>
               <button
                 type="button"
+                aria-pressed={form.volumeType === "gram"}
                 onClick={() => setForm({ ...form, volumeType: "gram", volume: "" })}
-                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                  form.volumeType === "gram"
-                    ? "bg-success-600 text-white shadow-md shadow-success-600/20"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                className={`rounded px-5 py-2.5 text-sm font-semibold transition-colors ${
+                  form.volumeType === "gram" ? "bg-action text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
                 Граммы
               </button>
             </div>
             {form.volumeType === "liter" ? (
-              <select value={form.volume} onChange={(e) => setForm({ ...form, volume: e.target.value })} className="input">
+              <select aria-label="Объём" value={form.volume} onChange={(e) => setForm({ ...form, volume: e.target.value })} className="input">
                 <option value="">Без объема</option>
                 <option value="0.5 л">0.5 л</option>
                 <option value="0.7 л">0.7 л</option>
@@ -205,6 +204,7 @@ export default function ProductEdit() {
               <div className="space-y-2">
                 <input
                   type="text"
+                  aria-label="Граммовка"
                   value={form.volume}
                   onChange={(e) => setForm({ ...form, volume: e.target.value })}
                   className="input"
@@ -216,9 +216,10 @@ export default function ProductEdit() {
                       key={g}
                       type="button"
                       onClick={() => setForm({ ...form, volume: g })}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      aria-pressed={form.volume === g}
+                      className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
                         form.volume === g
-                          ? "bg-success-600 text-white"
+                          ? "bg-action text-white"
                           : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       }`}
                     >
@@ -231,15 +232,15 @@ export default function ProductEdit() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Категория</label>
-              <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="input">
+              <label htmlFor="productedit-f3" className="label">Категория</label>
+              <select id="productedit-f3" value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="input">
                 <option value="">Без категории</option>
                 {categories?.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="label">Цех приготовления</label>
-              <select value={form.preparationArea} onChange={(e) => setForm({ ...form, preparationArea: e.target.value })} className="input">
+              <label htmlFor="productedit-f4" className="label">Цех приготовления</label>
+              <select id="productedit-f4" value={form.preparationArea} onChange={(e) => setForm({ ...form, preparationArea: e.target.value })} className="input">
                 <option value="">Не указан</option>
                 <option value="Кухня">Кухня</option>
                 <option value="Бар">Бар</option>
@@ -251,8 +252,8 @@ export default function ProductEdit() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Метод приготовления</label>
-              <select value={form.cookingMethod} onChange={(e) => setForm({ ...form, cookingMethod: e.target.value })} className="input">
+              <label htmlFor="productedit-f5" className="label">Метод приготовления</label>
+              <select id="productedit-f5" value={form.cookingMethod} onChange={(e) => setForm({ ...form, cookingMethod: e.target.value })} className="input">
                 <option value="">Не указан</option>
                 <option value="Итальянская кофемашина">Итальянская кофемашина</option>
                 <option value="Френч-пресс">Френч-пресс</option>
@@ -281,8 +282,8 @@ export default function ProductEdit() {
               </p>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="label text-xs">Закупка</label>
-                  <select value={form.purchaseUnit || ""} onChange={(e) => setForm({ ...form, purchaseUnit: e.target.value })} className="input text-sm">
+                  <label htmlFor="productedit-f6" className="label text-xs">Закупка</label>
+                  <select id="productedit-f6" value={form.purchaseUnit || ""} onChange={(e) => setForm({ ...form, purchaseUnit: e.target.value })} className="input text-sm">
                     <option value="">Штука</option>
                     <option value="кг">Кг</option>
                     <option value="л">Литр</option>
@@ -290,8 +291,8 @@ export default function ProductEdit() {
                   </select>
                 </div>
                 <div>
-                  <label className="label text-xs">Продажа</label>
-                  <select value={form.saleUnit || ""} onChange={(e) => setForm({ ...form, saleUnit: e.target.value })} className="input text-sm">
+                  <label htmlFor="productedit-f7" className="label text-xs">Продажа</label>
+                  <select id="productedit-f7" value={form.saleUnit || ""} onChange={(e) => setForm({ ...form, saleUnit: e.target.value })} className="input text-sm">
                     <option value="">Штука</option>
                     <option value="кг">Килограмм (весовой товар)</option>
                     <option value="г">Грамм</option>
@@ -301,8 +302,8 @@ export default function ProductEdit() {
                 </div>
                 {form.purchaseUnit && form.saleUnit && form.purchaseUnit !== form.saleUnit && (
                   <div>
-                    <label className="label text-xs">Себестоимость закупки</label>
-                    <input
+                    <label htmlFor="productedit-f8" className="label text-xs">Себестоимость закупки</label>
+                    <input id="productedit-f8"
                       type="number"
                       step="0.01"
                       value={form.purchaseCost || ""}
@@ -330,25 +331,25 @@ export default function ProductEdit() {
           <h2 className="text-lg font-semibold text-gray-900">Цены</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <label className="label">Цена продажи за {form.saleUnit || "шт"} *</label>
-              <input type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })} className="input" required />
+              <label htmlFor="productedit-f9" className="label">Цена продажи за {form.saleUnit || "шт"} *</label>
+              <input id="productedit-f9" type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })} className="input" required />
             </div>
             <div>
-              <label className="label">Себестоимость за {form.saleUnit || "шт"}</label>
+              <label htmlFor="productedit-f10" className="label">Себестоимость за {form.saleUnit || "шт"}</label>
               {form.purchaseUnit && form.saleUnit && form.purchaseUnit !== form.saleUnit ? (
-                <input type="text" readOnly value={`${money(form.costPrice)} (авто)`} className="input bg-gray-100 text-gray-600 cursor-not-allowed" />
+                <input id="productedit-f10" type="text" readOnly value={`${money(form.costPrice)} (авто)`} className="input bg-gray-100 text-gray-600 cursor-not-allowed" />
               ) : (
-                <input type="number" step="0.01" value={form.costPrice} onChange={(e) => setForm({ ...form, costPrice: parseFloat(e.target.value) || 0 })} className="input" />
+                <input id="productedit-f10" type="number" step="0.01" value={form.costPrice} onChange={(e) => setForm({ ...form, costPrice: parseFloat(e.target.value) || 0 })} className="input" />
               )}
             </div>
             <div>
-              <label className="label">Моржа за {form.saleUnit || "шт"}</label>
-              <input type="text" readOnly value={`${money(form.price - form.costPrice)} (${form.costPrice > 0 ? Math.round(((form.price - form.costPrice) / form.costPrice) * 100) : 0}%)`} className="input bg-gray-50 text-gray-700 cursor-not-allowed" />
+              <label htmlFor="productedit-f11" className="label">Моржа за {form.saleUnit || "шт"}</label>
+              <input id="productedit-f11" type="text" readOnly value={`${money(form.price - form.costPrice)} (${form.costPrice > 0 ? Math.round(((form.price - form.costPrice) / form.costPrice) * 100) : 0}%)`} className="input bg-gray-50 text-gray-700 cursor-not-allowed" />
             </div>
           </div>
           <div>
-            <label className="label">Налог (%)</label>
-            <input type="number" step="0.01" value={form.taxRate} onChange={(e) => setForm({ ...form, taxRate: parseFloat(e.target.value) || 0 })} className="input w-32" />
+            <label htmlFor="productedit-f12" className="label">Налог (%)</label>
+            <input id="productedit-f12" type="number" step="0.01" value={form.taxRate} onChange={(e) => setForm({ ...form, taxRate: parseFloat(e.target.value) || 0 })} className="input w-32" />
           </div>
         </div>
 
@@ -360,8 +361,8 @@ export default function ProductEdit() {
           </label>
           {form.trackInventory && (
             <div className="grid grid-cols-2 gap-4">
-              <div><label className="label">Текущий остаток{form.saleUnit === "кг" ? ", кг" : form.saleUnit === "г" ? ", г" : ""}</label><input type="number" value={form.currentStock} onChange={(e) => setForm({ ...form, currentStock: parseFloat(e.target.value) || 0 })} className="input" step="any" /></div>
-              <div><label className="label">Минимальный остаток{form.saleUnit === "кг" ? ", кг" : form.saleUnit === "г" ? ", г" : ""}</label><input type="number" value={form.minStock} onChange={(e) => setForm({ ...form, minStock: parseFloat(e.target.value) || 0 })} className="input" step="any" /></div>
+              <div><label htmlFor="productedit-f13" className="label">Текущий остаток{form.saleUnit === "кг" ? ", кг" : form.saleUnit === "г" ? ", г" : ""}</label><input id="productedit-f13" type="number" value={form.currentStock} onChange={(e) => setForm({ ...form, currentStock: parseFloat(e.target.value) || 0 })} className="input" step="any" /></div>
+              <div><label htmlFor="productedit-f14" className="label">Минимальный остаток{form.saleUnit === "кг" ? ", кг" : form.saleUnit === "г" ? ", г" : ""}</label><input id="productedit-f14" type="number" value={form.minStock} onChange={(e) => setForm({ ...form, minStock: parseFloat(e.target.value) || 0 })} className="input" step="any" /></div>
             </div>
           )}
         </div>
@@ -384,8 +385,8 @@ export default function ProductEdit() {
           <p className="text-sm text-gray-500">Выберите техкарту для товара. При оплате заказа остатки ингредиентов спишутся автоматически.</p>
 
           <div>
-            <label className="label">Тех карта</label>
-            <select
+            <label htmlFor="productedit-f15" className="label">Тех карта</label>
+            <select id="productedit-f15"
               value={form.techCardId}
               onChange={(e) => setForm({ ...form, techCardId: e.target.value })}
               className="input"
@@ -446,7 +447,7 @@ export default function ProductEdit() {
             <div className="rounded-lg border-2 border-dashed border-gray-200 p-6 text-center">
               <ChefHat className="mx-auto h-8 w-8 text-gray-300" />
               <p className="mt-2 text-sm text-gray-500">Тех карта не выбрана</p>
-              <p className="text-xs text-gray-400">Выберите техкарту или создайте новую</p>
+              <p className="text-xs text-gray-500">Выберите техкарту или создайте новую</p>
             </div>
           )}
         </div>
@@ -455,29 +456,28 @@ export default function ProductEdit() {
           <h2 className="text-lg font-semibold text-gray-900">Идентификация</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">{form.saleUnit === "кг" ? "Код на весах (PLU)" : "Артикул / короткий код"}</label>
-              <input type="text" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} className="input" placeholder={form.saleUnit === "кг" ? "например, 104" : "Артикул товара"} />
-              <p className="mt-1 text-xs text-gray-400">Его можно набрать на кассе цифрами, если штрихкода нет.</p>
+              <label htmlFor="productedit-f16" className="label">{form.saleUnit === "кг" ? "Код на весах (PLU)" : "Артикул / короткий код"}</label>
+              <input id="productedit-f16" type="text" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} className="input" placeholder={form.saleUnit === "кг" ? "например, 104" : "Артикул товара"} />
+              <p className="mt-1 text-xs text-gray-500">Его можно набрать на кассе цифрами, если штрихкода нет.</p>
             </div>
             <div>
-              <label className="label">Штрихкод</label>
-              <input type="text" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} className="input" placeholder="Штрихкод" />
+              <label htmlFor="productedit-f17" className="label">Штрихкод</label>
+              <input id="productedit-f17" type="text" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} className="input" placeholder="Штрихкод" />
               {ikpu && (
                 <p className="mt-1 text-xs text-gray-500">
                   ИКПУ (национальный каталог): <span className="font-mono text-gray-700">{ikpu}</span>
                 </p>
               )}
-              <p className="mt-1 text-xs text-gray-400">Кассир сканирует его — товар сразу попадает в чек.</p>
+              <p className="mt-1 text-xs text-gray-500">Кассир сканирует его — товар сразу попадает в чек.</p>
             </div>
           </div>
-          <label className="flex items-start gap-3">
-            <input type="checkbox" checked={form.quick} onChange={(e) => setForm({ ...form, quick: e.target.checked })} className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600" />
-            <span>
-              <span className="text-sm font-medium text-gray-700">Быстрая кнопка на кассе</span>
-              <span className="block text-xs text-gray-400">Для товаров без штрихкода — хлеб, пакет: одно касание на экране кассы магазина.</span>
-            </span>
-          </label>
-          <div><label className="label">URL изображения</label><input type="url" value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} className="input" placeholder="https://..." /></div>
+          <Checkbox
+            label="Быстрая кнопка на кассе"
+            description="Для товаров без штрихкода — хлеб, пакет: одно касание на экране кассы магазина."
+            checked={form.quick}
+            onChange={(e) => setForm({ ...form, quick: e.target.checked })}
+          />
+          <div><label htmlFor="productedit-f18" className="label">URL изображения</label><input id="productedit-f18" type="url" value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} className="input" placeholder="https://..." /></div>
         </div>
 
         <div className="flex items-center justify-end gap-3">

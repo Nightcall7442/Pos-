@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X, Banknote, CreditCard, QrCode, ArrowRight, Smartphone } from "lucide-react";
 import { useCartStore } from "../store/cartStore";
@@ -82,6 +82,16 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
     },
   });
 
+  // Escape закрывает окно, как в «Магазине», — но не посреди проведения оплаты.
+  const pending = createOrder.isPending;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !pending) onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose, pending]);
+
   const total = getTotal();
   const paid = paidAmount ? parseFloat(paidAmount) : total;
   const change = Math.max(0, paid - total);
@@ -89,15 +99,18 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ animation: "fade-in 0.2s ease" }}>
-      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/70" role="presentation" onClick={onClose} />
 
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="payment-title"
         className="relative mx-4 w-full max-w-lg rounded-md border border-dark-600 bg-dark-800 shadow-2xl overflow-hidden"
         style={{ animation: "scale-in 0.25s ease" }}
       >
         <div className="flex items-center justify-between border-b border-dark-700 px-6 py-4">
-          <h2 className="text-lg font-bold text-dark-50">Оплата</h2>
-          <button onClick={onClose} className="rounded p-2 text-dark-400 hover:bg-dark-700 hover:text-dark-50 transition-colors">
+          <h2 id="payment-title" className="text-lg font-bold text-dark-50">Оплата</h2>
+          <button onClick={onClose} aria-label="Закрыть" className="rounded p-2 text-dark-400 hover:bg-dark-700 hover:text-dark-50 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -135,7 +148,7 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
                 }`}
               >
                 <Icon className={`h-8 w-8 ${selectedMethod === key ? textColor : "text-dark-300"}`} />
-                <span className={`text-sm font-semibold ${selectedMethod === key ? textColor : "text-dark-300"}`}>{label}</span>
+                <span className={`text-sm font-semibold ${selectedMethod === key ? "text-dark-50" : "text-dark-300"}`}>{label}</span>
               </button>
             ))}
           </div>
@@ -144,16 +157,16 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
         {selectedMethod === "cash" && (
           <div className="px-6 pb-4 space-y-3" style={{ animation: "slide-up 0.2s ease" }}>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-dark-400">Внесено</label>
+              <label htmlFor="paymentscree-f1" className="mb-1.5 block text-xs font-medium text-dark-400">Внесено</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-dark-400">{symbol}</span>
-                <input
+                <input id="paymentscree-f1"
                   type="number"
                   step="1000"
                   value={paidAmount}
                   onChange={(e) => setPaidAmount(e.target.value)}
                   placeholder="0"
-                  className="w-full rounded border-2 border-dark-600 bg-dark-700 py-3.5 pl-14 pr-4 text-center text-2xl font-bold text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none transition-colors"
+                  className="w-full rounded border-2 border-dark-600 bg-dark-700 py-3.5 pl-14 pr-4 text-center text-2xl font-bold text-dark-50 placeholder:text-dark-400 focus:border-primary-500 focus:outline-none transition-colors"
                 />
               </div>
             </div>
@@ -183,7 +196,7 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
           <button
             onClick={() => createOrder.mutate()}
             disabled={createOrder.isPending || !canPay}
-            className="flex w-full items-center justify-center gap-2 rounded bg-success-600 py-4 text-base font-bold text-white transition-all hover:bg-success-500 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded bg-success-600 py-4 text-xl font-bold text-white transition-all hover:bg-success-500 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {createOrder.isPending ? (
               <>

@@ -155,7 +155,7 @@ export default function Orders() {
                       {nextStatusLabels[s] || s}
                     </button>
                   ))}
-                  <Link to={`/orders/${order.id}`} aria-label={`Открыть заказ №${order.orderNumber}`} className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+                  <Link to={`/orders/${order.id}`} aria-label={`Открыть заказ №${order.orderNumber}`} className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600">
                     <Eye className="h-4 w-4" />
                   </Link>
                 </div>

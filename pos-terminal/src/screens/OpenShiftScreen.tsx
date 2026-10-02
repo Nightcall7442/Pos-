@@ -55,12 +55,12 @@ export default function OpenShiftScreen({ user, onShiftOpened }: OpenShiftScreen
         {/* Content */}
         <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="mb-2 block text-sm font-medium text-dark-300">
+            <label htmlFor="openshiftscr-f1" className="mb-2 block text-sm font-medium text-dark-300">
               Начальная наличность в кассе
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-dark-400">{symbol}</span>
-              <input
+              <input id="openshiftscr-f1"
                 type="number"
                 step="10000"
                 value={openingCash}

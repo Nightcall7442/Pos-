@@ -12,7 +12,7 @@
   --color-dark-700: #232a2e;
   --color-dark-600: #2c3337;
   --color-dark-500: #3e474c;
-  --color-dark-400: #7a868c;
+  --color-dark-400: #899399;
   --color-dark-300: #a3adb1;
   --color-dark-50: #ffffff;
   /*
@@ -43,7 +43,7 @@
    */
   --color-bar: #0e1216;
   --color-bar-fg: #c6ced2;
-  --color-bar-muted: #6f7b80;
+  --color-bar-muted: #828c91;
   --color-key: #2a3440;
   --color-key-hover: #33404e;
   --color-fn: #12171d;
@@ -68,7 +68,7 @@
   --color-dark-700: #f2f4f5;
   --color-dark-600: #e1e5e8;
   --color-dark-500: #c4cbce;
-  --color-dark-400: #6b7378;
+  --color-dark-400: #646c71;
   --color-dark-300: #3a4247;
   --color-dark-50: #15191b;
   --color-bar: #232b33;
@@ -79,7 +79,7 @@
   --color-fn: #2c3540;
   --color-fn-hover: #36414d;
   --color-fn-fg: #e3e8ea;
-  --color-sel: #62799a;
+  --color-sel: #5f7595;
   --color-zebra: #f5f7f8;
 }
 
@@ -156,7 +156,7 @@
 .pos-auth {
   --paper: #eceff1;
   --ink: #15191b;
-  --muted: #6b7378;
+  --muted: #646c71;
   --line: #dfe3e6;
   --accent: #2c3540;
   --accent-hi: #36414d;

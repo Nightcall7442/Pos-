@@ -227,6 +227,20 @@
 .sh-alt:hover:not(:disabled) { background: var(--fn-hi); }
 .sh-alt .sh-fk { margin-left: 6px; border-color: rgba(255, 255, 255, 0.3); color: rgba(255, 255, 255, 0.75); }
 
+/*
+ * Высоты правой колонки — от высоты рабочей области, а не окна: над кассой может
+ * встать полоса «нет связи», и тогда кнопки оплаты не должны уезжать под край
+ * (D-7). На 716 px области значения совпадают с прежними vh. Браузер без
+ * контейнерных единиц оставит vh выше.
+ */
+.sh-main { container-type: size; }
+@supports (height: 1cqh) {
+  .sh-side { gap: clamp(8px, 1.7cqh, 16px); }
+  .sh-tot .v { font-size: clamp(52px, 12cqh, 92px); }
+  .sh-pad button { height: clamp(44px, 8cqh, 62px); }
+  .sh-cash { height: clamp(56px, 9.6cqh, 78px); }
+}
+
 /* ── окна ───────────────────────────────────────────────────────────────── */
 .sh-scrim { position: fixed; inset: 0; z-index: 60; background: var(--scrim); display: flex; align-items: center; justify-content: center; padding: 16px; animation: fade-in 0.15s ease; }
 .sh-modal { width: 100%; max-width: 660px; max-height: 100%; overflow-y: auto; background: var(--card); color: var(--ink); border-radius: 6px; box-shadow: var(--shadow); padding: 24px 26px 26px; animation: scale-in 0.18s ease; }
@@ -341,3 +355,6 @@
 .sh-seg button { flex: 1; font-size: 15px; font-weight: 600; color: var(--muted); background: var(--card); text-align: center; }
 .sh-seg button + button { border-left: 1px solid var(--line); }
 .sh-seg button.on { background: var(--accent-soft); color: var(--accent); }
+
+/* Подпись горячей клавиши на кнопке верхней строки — мелко и всегда (D-7). */
+.sh-chip-fk { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; padding: 1px 5px; border: 1px solid currentColor; border-radius: 3px; opacity: 0.6; }

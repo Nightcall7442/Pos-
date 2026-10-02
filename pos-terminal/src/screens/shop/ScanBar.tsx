@@ -13,6 +13,7 @@ interface ScanBarProps {
   suggestions: Product[];
   suggestOpen: boolean;
   suggestLoading: boolean;
+  suggestError?: string | null;
   suggestIndex: number;
   onSuggestIndex: (index: number) => void;
   onPick: (product: Product) => void;
@@ -29,7 +30,7 @@ interface ScanBarProps {
  * code, "5*" for a multiplier) goes through the same field.
  */
 export default function ScanBar(props: ScanBarProps) {
-  const { inputRef, value, onChange, onEnter, onArrow, onEscape, suggestions, suggestOpen, suggestLoading, suggestIndex, onSuggestIndex, onPick, view, onToggleView, screenKeyboard, onToggleKeyboard, money } = props;
+  const { inputRef, value, onChange, onEnter, onArrow, onEscape, suggestions, suggestOpen, suggestLoading, suggestError, suggestIndex, onSuggestIndex, onPick, view, onToggleView, screenKeyboard, onToggleKeyboard, money } = props;
 
   return (
     <div className="sh-scan">
@@ -79,7 +80,7 @@ export default function ScanBar(props: ScanBarProps) {
       {suggestOpen && (
         <div className="sh-sugg" role="listbox">
           {suggestions.length === 0 ? (
-            <div className="sh-sugg-empty">{suggestLoading ? "Ищем…" : "Ничего не найдено"}</div>
+            <div className="sh-sugg-empty">{suggestLoading ? "Ищем…" : suggestError ?? "Ничего не найдено"}</div>
           ) : (
             suggestions.map((product, index) => {
               const price = shelfPrice(product);

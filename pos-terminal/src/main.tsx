@@ -3,7 +3,10 @@ import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 import App from "./App";
+import { watchConnection } from "./services/connection";
 import "./index.css";
+
+watchConnection();
 
 // Apply the saved theme before the first paint, synchronously, so the app
 // never flashes dark before switching to a saved light preference.
@@ -33,11 +36,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         toastOptions={{
           duration: 2000,
           style: {
-            background: "#1f2937",
-            color: "#f9fafb",
-            borderRadius: "16px",
+            background: "var(--toast-bg)",
+            color: "var(--toast-fg)",
+            borderRadius: "6px",
             fontSize: "16px",
             padding: "12px 24px",
+            maxWidth: "560px",
           },
         }}
       />

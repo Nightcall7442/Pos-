@@ -7,6 +7,7 @@ import type { Category, Product } from "../../types";
 import { productEmoji } from "../../utils/emoji";
 import { useBurstGuard } from "../../hooks/useBurstGuard";
 import { parseDecimal } from "../../utils/weight";
+import { apiErrorMessage } from "../../utils/apiError";
 import { useEscape } from "./Modals";
 
 /** What the shared barcode catalogue knows about a code — see GET /catalog/lookup. */
@@ -88,8 +89,7 @@ export default function CatalogAdd({ code, hit, symbol, onAdded, onClose }: Cata
       });
       onAdded(res.data.data as Product);
     } catch (error) {
-      const message = (error as { response?: { data?: { error?: string } } }).response?.data?.error;
-      toast.error(message ?? "Не удалось добавить товар", { id: "shop-error" });
+      toast.error(apiErrorMessage(error, "Не удалось добавить товар"), { id: "shop-error" });
       setSaving(false);
     }
   };

@@ -59,6 +59,8 @@ app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
 app.use(compression());
 app.use(morgan("combined", {
   stream: { write: (message: string) => logger.info(message.trim()) },
+  // Кассы проверяют связь по /api/health каждые 20 секунд — в журнале это шум.
+  skip: (req) => req.url === "/health" || req.url === "/api/health",
 }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -66,8 +68,9 @@ app.use(express.urlencoded({ extended: true }));
 // Static files
 app.use("/uploads", express.static(path.join(__dirname, "..", env.UPLOAD_DIR)));
 
-// Health check
-app.get("/health", (_req, res) => {
+// Health check. /api/health — тот же ответ под префиксом API: касса проверяет
+// по нему связь через тот же прокси, что и остальные запросы (nginx, vite).
+app.get(["/health", "/api/health"], (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 

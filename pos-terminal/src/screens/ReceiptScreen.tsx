@@ -105,7 +105,7 @@ export default function ReceiptModal({ order, onNewOrder }: ReceiptModalProps) {
 
   if (showSuccess) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-dark-950/90 backdrop-blur-sm" style={{ animation: "fade-in 0.3s ease" }}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-dark-950/90" style={{ animation: "fade-in 0.3s ease" }}>
         <div className="text-center" style={{ animation: "scale-in 0.4s ease" }}>
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-success-500/15">
             <CheckCircle className="h-12 w-12 text-success-500" />
@@ -119,10 +119,10 @@ export default function ReceiptModal({ order, onNewOrder }: ReceiptModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ animation: "fade-in 0.2s ease" }}>
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/70" />
 
       <div
-        className="relative mx-4 w-full max-w-md max-h-[85vh] overflow-y-auto rounded-3xl border border-dark-600 bg-dark-800 shadow-2xl"
+        className="relative mx-4 w-full max-w-md max-h-[85vh] overflow-y-auto rounded-md border border-dark-600 bg-dark-800 shadow-2xl"
         style={{ animation: "scale-in 0.25s ease" }}
       >
         <div className="p-6">
@@ -165,7 +165,7 @@ export default function ReceiptModal({ order, onNewOrder }: ReceiptModalProps) {
             </div>
           </div>
 
-          <div className="mt-4 rounded-xl bg-dark-700/50 p-3 text-center">
+          <div className="mt-4 rounded bg-dark-700/50 p-3 text-center">
             <p className="text-[11px] font-medium text-primary-400 leading-relaxed">
               {quote}
             </p>
@@ -177,7 +177,7 @@ export default function ReceiptModal({ order, onNewOrder }: ReceiptModalProps) {
             <button
               onClick={handlePrint}
               disabled={printing}
-              className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-dark-600 bg-dark-700 py-3 text-sm font-semibold text-dark-300 transition-all hover:border-dark-500 hover:text-dark-50 active:scale-[0.97] disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-2 rounded border border-dark-600 bg-dark-700 py-3 text-sm font-semibold text-dark-300 transition-all hover:border-dark-500 hover:text-dark-50 active:scale-[0.97] disabled:opacity-50"
             >
               {printing ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-dark-400 border-t-white" />
@@ -188,7 +188,7 @@ export default function ReceiptModal({ order, onNewOrder }: ReceiptModalProps) {
             </button>
             <button
               onClick={handleDownload}
-              className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-dark-600 bg-dark-700 py-3 text-sm font-semibold text-dark-300 transition-all hover:border-dark-500 hover:text-dark-50 active:scale-[0.97]"
+              className="flex flex-1 items-center justify-center gap-2 rounded border border-dark-600 bg-dark-700 py-3 text-sm font-semibold text-dark-300 transition-all hover:border-dark-500 hover:text-dark-50 active:scale-[0.97]"
             >
               <Download className="h-4 w-4" />
               Скачать
@@ -196,7 +196,7 @@ export default function ReceiptModal({ order, onNewOrder }: ReceiptModalProps) {
           </div>
           <button
             onClick={onNewOrder}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary-600/30 transition-all hover:bg-primary-500 active:scale-[0.98]"
+            className="flex w-full items-center justify-center gap-2 rounded bg-primary-600 py-3.5 text-sm font-bold text-white transition-all hover:bg-primary-500 active:scale-[0.98]"
           >
             <RotateCcw className="h-4 w-4" />
             Новый заказ

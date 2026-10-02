@@ -33,6 +33,21 @@
   --color-success-600: #278a53;
   --color-danger-500: #e5533f;
   --color-danger-600: #c8402b;
+  /*
+   * Рабочие поверхности — те же, что у экрана «Магазина» (screens/shop/shop.css):
+   * строка состояния, цифровые и функциональные клавиши, выбранная строка,
+   * чередование строк. Тёмные значения здесь, светлые — ниже.
+   */
+  --color-bar: #0e1216;
+  --color-bar-fg: #c6ced2;
+  --color-bar-muted: #6f7b80;
+  --color-key: #2a3440;
+  --color-key-hover: #33404e;
+  --color-fn: #12171d;
+  --color-fn-hover: #1b222a;
+  --color-fn-fg: #cfd6d9;
+  --color-sel: #3d5573;
+  --color-zebra: #191e20;
   --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
 }
 
@@ -53,6 +68,16 @@
   --color-dark-400: #6b7378;
   --color-dark-300: #3a4247;
   --color-dark-50: #15191b;
+  --color-bar: #232b33;
+  --color-bar-fg: #d9e0e5;
+  --color-bar-muted: #8e9aa8;
+  --color-key: #5a6878;
+  --color-key-hover: #66758a;
+  --color-fn: #2c3540;
+  --color-fn-hover: #36414d;
+  --color-fn-fg: #e3e8ea;
+  --color-sel: #62799a;
+  --color-zebra: #f5f7f8;
 }
 
 @layer base {
@@ -430,6 +455,52 @@
   border-color: var(--accent);
 }
 .pos-pin-key--go:hover:not(:disabled) { background: var(--accent-hi); }
+
+/* ── Связь и отмена (D-7) ───────────────────────────────────────────────── */
+:root {
+  /* Уведомления — графитовая плашка в обеих темах, как строка состояния. */
+  --toast-bg: #232b33;
+  --toast-fg: #eef1f3;
+}
+
+/* Метка связи в верхней строке: спокойная, пока связь есть, красная — когда нет. */
+.pos-net {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0.8;
+}
+.pos-net-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-primary-400); flex: none; }
+.pos-net.is-down {
+  opacity: 1;
+  padding: 0 10px;
+  border-radius: 4px;
+  background: var(--color-danger-600);
+  color: #fff;
+  font-weight: 600;
+}
+.pos-net.is-down .pos-net-dot { background: #fff; animation: pos-net-blink 1s steps(2, start) infinite; }
+@keyframes pos-net-blink { to { visibility: hidden; } }
+
+/* «Позиция убрана · Вернуть»: кнопка — полноценная цель под палец, 44 px. */
+.pos-undo { display: flex; align-items: center; gap: 12px; font-size: 15px; }
+.pos-undo button {
+  min-height: 44px;
+  margin: -10px -14px -10px 0;
+  padding: 0 14px;
+  border-radius: 4px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-primary-300);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.pos-undo button:hover { background: rgba(255, 255, 255, 0.08); }
 
 /* Кассир работает восемь часов: тем, кому движение мешает, анимации не нужны (D-6). */
 @media (prefers-reduced-motion: reduce) {

@@ -5,6 +5,7 @@ import api from "../services/api";
 import toast from "react-hot-toast";
 import type { CashShift } from "../types";
 import { useMoney } from "../hooks/useMoney";
+import { apiErrorMessage } from "../utils/apiError";
 
 
 interface CloseShiftScreenProps {
@@ -35,8 +36,8 @@ export default function CloseShiftScreen({ shiftId, onShiftClosed, onCancel }: C
       toast.success("Смена закрыта!");
       onShiftClosed(closedShift);
     },
-    onError: (error: Error & { response?: { data?: { error?: string } } }) => {
-      toast.error(error.response?.data?.error || "Ошибка закрытия смены");
+    onError: (error) => {
+      toast.error(apiErrorMessage(error, "Не удалось закрыть смену — повторите"));
     },
   });
 
@@ -54,15 +55,15 @@ export default function CloseShiftScreen({ shiftId, onShiftClosed, onCancel }: C
   const quickAmounts = [expectedCash, Math.round(expectedCash / 10000) * 10000, Math.ceil(expectedCash / 50000) * 50000];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" style={{ animation: "fade-in 0.2s ease" }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" style={{ animation: "fade-in 0.2s ease" }}>
       <div
-        className="relative mx-4 w-full max-w-lg max-h-[90vh] rounded-3xl border border-dark-600 bg-dark-800 shadow-2xl overflow-hidden flex flex-col"
+        className="relative mx-4 w-full max-w-lg max-h-[90vh] rounded-md border border-dark-600 bg-dark-800 shadow-2xl overflow-hidden flex flex-col"
         style={{ animation: "scale-in 0.25s ease" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-dark-700 px-6 py-4 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-danger-500/15">
+            <div className="flex h-10 w-10 items-center justify-center rounded bg-danger-500/15">
               <Lock className="h-5 w-5 text-danger-400" />
             </div>
             <div>
@@ -72,7 +73,7 @@ export default function CloseShiftScreen({ shiftId, onShiftClosed, onCancel }: C
               </p>
             </div>
           </div>
-          <button onClick={onCancel} className="rounded-xl p-2 text-dark-400 hover:bg-dark-700 hover:text-dark-50 transition-colors">
+          <button onClick={onCancel} className="rounded p-2 text-dark-400 hover:bg-dark-700 hover:text-dark-50 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -88,7 +89,7 @@ export default function CloseShiftScreen({ shiftId, onShiftClosed, onCancel }: C
           </div>
 
           {/* Opening / Expected */}
-          <div className="rounded-xl border border-dark-600 bg-dark-700/50 p-4 space-y-2">
+          <div className="rounded border border-dark-600 bg-dark-700/50 p-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-dark-400">Начальная наличность</span>
               <span className="font-medium text-dark-50">{money(shift.openingCash)}</span>
@@ -112,7 +113,7 @@ export default function CloseShiftScreen({ shiftId, onShiftClosed, onCancel }: C
                 value={closingCash}
                 onChange={(e) => setClosingCash(e.target.value)}
                 placeholder="0"
-                className="w-full rounded-xl border-2 border-dark-600 bg-dark-700 py-4 pl-12 pr-4 text-center text-3xl font-bold text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none transition-colors"
+                className="w-full rounded border-2 border-dark-600 bg-dark-700 py-4 pl-12 pr-4 text-center text-3xl font-bold text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none transition-colors"
                 autoFocus
               />
             </div>
@@ -124,7 +125,7 @@ export default function CloseShiftScreen({ shiftId, onShiftClosed, onCancel }: C
               <button
                 key={amount}
                 onClick={() => setClosingCash(String(Math.round(amount)))}
-                className="rounded-xl border border-dark-600 bg-dark-700 py-2 text-xs font-semibold text-dark-300 transition-all hover:border-primary-500/50 hover:text-dark-50 active:scale-95"
+                className="rounded border border-dark-600 bg-dark-700 py-2 text-xs font-semibold text-dark-300 transition-all hover:border-primary-500/50 hover:text-dark-50 active:scale-95"
               >
                 {money(amount)}
               </button>
@@ -134,7 +135,7 @@ export default function CloseShiftScreen({ shiftId, onShiftClosed, onCancel }: C
           {/* Difference indicator */}
           {closingCash && (
             <div
-              className={`rounded-xl border p-4 text-center ${
+              className={`rounded border p-4 text-center ${
                 difference === 0
                   ? "border-success-500/30 bg-success-500/10"
                   : difference > 0
@@ -167,7 +168,7 @@ export default function CloseShiftScreen({ shiftId, onShiftClosed, onCancel }: C
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Необязательно..."
               rows={2}
-              className="w-full rounded-xl border-2 border-dark-600 bg-dark-700 py-3 px-4 text-sm text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none transition-colors resize-none"
+              className="w-full rounded border-2 border-dark-600 bg-dark-700 py-3 px-4 text-sm text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none transition-colors resize-none"
             />
           </div>
         </div>
@@ -177,14 +178,14 @@ export default function CloseShiftScreen({ shiftId, onShiftClosed, onCancel }: C
           <div className="flex gap-3">
             <button
               onClick={onCancel}
-              className="flex-1 rounded-xl border border-dark-600 bg-dark-700 py-3 text-sm font-medium text-dark-300 hover:text-dark-50 transition-colors"
+              className="flex-1 rounded border border-dark-600 bg-dark-700 py-3 text-sm font-medium text-dark-300 hover:text-dark-50 transition-colors"
             >
               Отмена
             </button>
             <button
               onClick={() => closeShift.mutate()}
               disabled={closeShift.isPending || !closingCash}
-              className="flex-[2] flex items-center justify-center gap-2 rounded-xl bg-danger-600 py-3 text-sm font-bold text-white shadow-lg shadow-danger-600/30 transition-all hover:bg-danger-500 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-[2] flex items-center justify-center gap-2 rounded bg-danger-600 py-3 text-sm font-bold text-white transition-all hover:bg-danger-500 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {closeShift.isPending ? (
                 <>
@@ -207,7 +208,7 @@ export default function CloseShiftScreen({ shiftId, onShiftClosed, onCancel }: C
 
 function SummaryCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-dark-600 bg-dark-700/50 p-3">
+    <div className="rounded border border-dark-600 bg-dark-700/50 p-3">
       <div className="flex items-center gap-2 mb-1">
         {icon}
         <span className="text-[11px] text-dark-400">{label}</span>

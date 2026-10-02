@@ -167,3 +167,27 @@ describe("order type", () => {
     expect(cart().tableId).toBeUndefined();
   });
 });
+
+describe("undo", () => {
+  // «Очистить» на кассе — без подтверждения, но с «Вернуть»: всё ложится на место.
+  it("restores lines, table and customer after a clear", () => {
+    cart().addPieces(bread, 2);
+    cart().setTable("table-3");
+    cart().setCustomer("Азиза", "+998901234567");
+    const { items, tableId, customerName, customerPhone } = cart();
+    cart().clearCart();
+    expect(cart().items).toHaveLength(0);
+    cart().restoreCart({ items, tableId, customerName, customerPhone });
+    expect(cart()).toMatchObject({ tableId: "table-3", customerName: "Азиза", customerPhone: "+998901234567" });
+    expect(cart().items[0]).toMatchObject({ productId: "bread", quantity: 2 });
+  });
+
+  it("puts a removed line back in its place", () => {
+    cart().addPieces(bread, 1);
+    cart().addPieces({ productId: "milk", name: "Молоко", price: 13500 }, 1);
+    const line = cart().items[0];
+    cart().removeItem(line.id);
+    cart().insertItem(line, 0);
+    expect(cart().items.map((i) => i.productId)).toEqual(["bread", "milk"]);
+  });
+});

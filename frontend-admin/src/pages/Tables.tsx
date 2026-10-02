@@ -9,6 +9,8 @@ import { Plus, Armchair } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 import { useMoney } from "../hooks/useMoney";
 
+const STATUS_LABELS: Record<string, string> = { available: "Свободен", occupied: "Занят", reserved: "Забронирован", maintenance: "Обслуживание" };
+
 export default function Tables() {
   const { money } = useMoney();
   const [showCreate, setShowCreate] = useState(false);
@@ -20,7 +22,8 @@ export default function Tables() {
   const createMutation = useMutation({ mutationFn: (data: { number: string; capacity: number; zone: string }) => tableService.create(data), onSuccess: () => { qc.invalidateQueries({ queryKey: ["tables"] }); setShowCreate(false); setForm({ number: "", capacity: 4, zone: "" }); toast.success("Стол добавлен"); } });
   const statusMutation = useMutation({ mutationFn: ({ id, status }: { id: string; status: string }) => tableService.updateStatus(id, status), onSuccess: () => { qc.invalidateQueries({ queryKey: ["tables"] }); toast.success("Статус обновлён"); } });
 
-  const statusColors: Record<string, string> = { available: "border-success-300 bg-success-50", occupied: "border-danger-300 bg-danger-50", reserved: "border-info-300 bg-info-50", maintenance: "border-warning-300 bg-warning-50" };
+  // Свободный стол — обычное состояние, без цвета; подсвечиваем только то, что требует внимания.
+  const statusColors: Record<string, string> = { available: "border-gray-200 bg-surface", occupied: "border-danger-300 bg-danger-50", reserved: "border-info-300 bg-info-50", maintenance: "border-warning-300 bg-warning-50" };
 
   return (
     <div className="space-y-6">
@@ -32,7 +35,7 @@ export default function Tables() {
       {stats && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div className="card text-center"><p className="text-2xl font-bold text-gray-900">{stats.total}</p><p className="text-sm text-gray-500">Всего</p></div>
-          <div className="card text-center"><p className="text-2xl font-bold text-success-600">{stats.available}</p><p className="text-sm text-gray-500">Свободны</p></div>
+          <div className="card text-center"><p className="text-2xl font-bold text-gray-900">{stats.available}</p><p className="text-sm text-gray-500">Свободны</p></div>
           <div className="card text-center"><p className="text-2xl font-bold text-danger-600">{stats.occupied}</p><p className="text-sm text-gray-500">Заняты</p></div>
           <div className="card text-center"><p className="text-2xl font-bold text-info-600">{stats.reserved}</p><p className="text-sm text-gray-500">Забронированы</p></div>
         </div>
@@ -53,7 +56,7 @@ export default function Tables() {
           {tables?.map((table) => {
             const badge = statusBadge(table.status);
             return (
-              <div key={table.id} className={`rounded-xl border-2 p-4 text-center transition-all hover:shadow-md ${statusColors[table.status] || "border-gray-200"}`}>
+              <div key={table.id} className={`rounded-md border p-4 text-center transition-colors hover:border-gray-400 ${statusColors[table.status] || "border-gray-200 bg-surface"}`}>
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-surface shadow-sm">
                   <span className="text-xl font-bold text-gray-900">{table.number}</span>
                 </div>
@@ -63,7 +66,16 @@ export default function Tables() {
                 {table.orders?.[0] && <p className="mt-1 text-xs font-medium text-danger-600">{money(table.orders[0].total)}</p>}
                 <div className="mt-2 flex gap-1 justify-center">
                   {["available", "occupied", "reserved", "maintenance"].map((s) => (
-                    <button key={s} onClick={() => statusMutation.mutate({ id: table.id, status: s })} className={`h-2 w-2 rounded-full ${s === "available" ? "bg-success-500" : s === "occupied" ? "bg-danger-500" : s === "reserved" ? "bg-info-500" : "bg-warning-500"}`} title={s === "available" ? "Свободен" : s === "occupied" ? "Занят" : s === "reserved" ? "Забронирован" : "Обслуживание"} />
+                    <button
+                      key={s}
+                      onClick={() => statusMutation.mutate({ id: table.id, status: s })}
+                      aria-label={`Стол ${table.number}: ${STATUS_LABELS[s]}`}
+                      aria-pressed={table.status === s}
+                      title={STATUS_LABELS[s]}
+                      className={`flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-gray-100 ${table.status === s ? "bg-gray-100" : ""}`}
+                    >
+                      <span className={`h-2.5 w-2.5 rounded-full ${s === "available" ? "bg-success-500" : s === "occupied" ? "bg-danger-500" : s === "reserved" ? "bg-info-500" : "bg-warning-500"}`} />
+                    </button>
                   ))}
                 </div>
               </div>

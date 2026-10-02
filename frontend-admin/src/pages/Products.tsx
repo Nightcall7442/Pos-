@@ -38,13 +38,15 @@ export default function Products() {
           <p className="text-gray-500">Управление каталогом товаров</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link to="/products/scan" className="btn-secondary" title="Наведите сканер на штрихкод — название подставится из общей базы">
+          <Link to="/products/scan" aria-label="Добавить сканером" className="btn-secondary whitespace-nowrap" title="Наведите сканер на штрихкод — название подставится из общей базы">
             <ScanBarcode className="mr-2 h-4 w-4" />
-            Добавить сканером
+            <span className="sm:hidden">Сканер</span>
+            <span className="hidden sm:inline">Добавить сканером</span>
           </Link>
-          <Link to="/products/new" className="btn-primary">
+          <Link to="/products/new" aria-label="Добавить товар" className="btn-primary whitespace-nowrap">
             <Plus className="mr-2 h-4 w-4" />
-            Добавить товар
+            <span className="sm:hidden">Товар</span>
+            <span className="hidden sm:inline">Добавить товар</span>
           </Link>
         </div>
       </div>

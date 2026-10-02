@@ -9,12 +9,15 @@ interface StatsCardProps {
   color?: "blue" | "green" | "yellow" | "red" | "purple";
 }
 
+// Иконки показателей — в одной стальной гамме: цвет в панели несут только
+// статусы и оплата. Проп color оставлен, чтобы выделить тревожный показатель.
+const steel = "bg-primary-50 text-primary-700";
 const colorMap = {
-  blue: "bg-blue-50 text-blue-600",
-  green: "bg-green-50 text-green-600",
-  yellow: "bg-yellow-50 text-yellow-600",
+  blue: steel,
+  green: steel,
+  yellow: steel,
   red: "bg-red-50 text-red-600",
-  purple: "bg-purple-50 text-purple-600",
+  purple: steel,
 };
 
 export default function StatsCard({ title, value, change, icon, color = "blue" }: StatsCardProps) {
@@ -30,7 +33,7 @@ export default function StatsCard({ title, value, change, icon, color = "blue" }
           </div>
         )}
       </div>
-      <div className={clsx("flex h-12 w-12 items-center justify-center rounded-xl", colorMap[color])}>
+      <div className={clsx("flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md", colorMap[color])}>
         {icon}
       </div>
     </div>

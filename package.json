@@ -24,7 +24,7 @@
     "typecheck:admin": "tsc --noEmit -p frontend-admin/tsconfig.json",
     "typecheck:terminal": "tsc --noEmit -p pos-terminal/tsconfig.json",
     "ci": "npm run lint:budget && npm run typecheck && npm run test:frontend && npm test",
-    "lint:budget": "eslint . --max-warnings 215",
+    "lint:budget": "eslint . --max-warnings 5",
     "test:frontend": "npm test --prefix frontend-admin && npm test --prefix pos-terminal",
     "test:e2e": "playwright test --config e2e/playwright.config.ts",
     "typecheck:e2e": "tsc --noEmit -p e2e/tsconfig.json"

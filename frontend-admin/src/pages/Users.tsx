@@ -146,7 +146,7 @@ export default function Users() {
               placeholder="4–10 цифр"
             />
             <p className="mt-1 text-xs text-gray-400">С этим PIN сотрудник входит на кассе, нажав своё имя — email и пароль там не нужны.</p>
-            {pinInvalid && <p className="mt-1 text-xs text-red-500">PIN — от 4 до 10 цифр</p>}
+            {pinInvalid && <p className="mt-1 text-xs text-danger-500">PIN — от 4 до 10 цифр</p>}
           </div>
           <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">Отмена</button><button type="submit" disabled={createMutation.isPending || pinInvalid} className="btn-primary">{createMutation.isPending ? "Создание..." : "Создать"}</button></div>
         </form>
@@ -169,7 +169,7 @@ export default function Users() {
               inputMode="numeric"
               placeholder="оставьте пустым — не менять"
             />
-            {editPinInvalid && <p className="mt-1 text-xs text-red-500">PIN — от 4 до 10 цифр</p>}
+            {editPinInvalid && <p className="mt-1 text-xs text-danger-500">PIN — от 4 до 10 цифр</p>}
           </div>
           <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={() => setEditingId(null)} className="btn-secondary">Отмена</button><button type="submit" disabled={updateMutation.isPending || editPinInvalid} className="btn-primary">{updateMutation.isPending ? "Сохранение..." : "Сохранить"}</button></div>
         </form>

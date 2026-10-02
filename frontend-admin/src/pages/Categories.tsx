@@ -18,7 +18,10 @@ interface CategoryForm {
   markupPercent: number;
 }
 
-const defaultForm: CategoryForm = { name: "", description: "", color: "#62799a", imageUrl: "", isIngredient: false, markupPercent: 0 };
+// Цвет категории — данные (хранится в базе и уходит на кассу), поэтому hex, а не токен. По умолчанию — сталь.
+const DEFAULT_CATEGORY_COLOR = "#62799a";
+
+const defaultForm: CategoryForm = { name: "", description: "", color: DEFAULT_CATEGORY_COLOR, imageUrl: "", isIngredient: false, markupPercent: 0 };
 
 export default function Categories() {
   const retail = useIsRetail();
@@ -73,7 +76,7 @@ export default function Categories() {
     setForm({
       name: cat.name,
       description: cat.description || "",
-      color: cat.color || "#62799a",
+      color: cat.color || DEFAULT_CATEGORY_COLOR,
       imageUrl: cat.imageUrl || "",
       isIngredient: cat.isIngredient || false,
       markupPercent: Number(cat.markupPercent) || 0,
@@ -147,7 +150,7 @@ export default function Categories() {
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-gray-900">{cat.name}</h3>
                     {cat.isIngredient && (
-                      <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-medium text-orange-700">Ингредиенты</span>
+                      <span className="rounded-full bg-warning-100 px-2 py-0.5 text-[10px] font-medium text-warning-700">Ингредиенты</span>
                     )}
                   </div>
                   {cat.description && (
@@ -167,7 +170,7 @@ export default function Categories() {
                 </button>
                 <button
                   onClick={() => { if (confirm("Удалить категорию?")) deleteMutation.mutate(cat.id); }}
-                  className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                  className="rounded p-1 text-gray-400 hover:bg-danger-50 hover:text-danger-600"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>

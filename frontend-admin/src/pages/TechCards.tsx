@@ -131,8 +131,8 @@ export default function TechCards() {
                   onClick={() => { if (!isEditing) { setExpandedId(isExpanded ? null : tc.id); setEditingId(null); } }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100">
-                      <ChefHat className="h-5 w-5 text-orange-600" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning-100">
+                      <ChefHat className="h-5 w-5 text-warning-600" />
                     </div>
                     <div>
                       <p className="font-semibold text-gray-900">{tc.name}</p>
@@ -152,21 +152,21 @@ export default function TechCards() {
                     <div className="flex gap-1">
                       <button
                         onClick={(e) => { e.stopPropagation(); startEdit(tc); }}
-                        className="rounded-lg p-2 text-gray-400 hover:bg-orange-50 hover:text-orange-600"
+                        className="rounded-lg p-2 text-gray-400 hover:bg-warning-50 hover:text-warning-600"
                         title="Редактировать"
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleCopy(tc.id); }}
-                        className="rounded-lg p-2 text-gray-400 hover:bg-blue-50 hover:text-blue-600"
+                        className="rounded-lg p-2 text-gray-400 hover:bg-info-50 hover:text-info-600"
                         title="Копировать"
                       >
                         <Copy className="h-4 w-4" />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDelete(tc.id); }}
-                        className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                        className="rounded-lg p-2 text-gray-400 hover:bg-danger-50 hover:text-danger-600"
                         title="Удалить"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -208,7 +208,7 @@ export default function TechCards() {
                       <tfoot>
                         <tr className="border-t border-gray-200">
                           <td colSpan={5} className="pt-2 text-right font-semibold text-gray-700">Итого:</td>
-                          <td className="pt-2 text-right font-bold text-orange-600">{totalCost.toLocaleString("ru-RU")} СУМ</td>
+                          <td className="pt-2 text-right font-bold text-warning-600">{totalCost.toLocaleString("ru-RU")} СУМ</td>
                         </tr>
                       </tfoot>
                     </table>
@@ -260,18 +260,18 @@ export default function TechCards() {
                             <option value="г">г</option><option value="мл">мл</option><option value="шт">шт</option><option value="кг">кг</option><option value="л">л</option>
                           </select>
                           <div className="text-sm text-right font-medium text-gray-700">{ing ? lineCost.toLocaleString("ru-RU") : "—"} <span className="text-xs text-gray-400">СУМ</span></div>
-                          <button type="button" onClick={() => setEditForm(editForm.filter((_, i) => i !== index))} className="rounded p-1.5 text-red-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
+                          <button type="button" onClick={() => setEditForm(editForm.filter((_, i) => i !== index))} className="rounded p-1.5 text-danger-400 hover:bg-danger-50 hover:text-danger-600"><Trash2 className="h-4 w-4" /></button>
                         </div>
                       );
                     })}
-                    <button type="button" onClick={() => setEditForm([...editForm, { ingredientId: "", quantity: 0, unit: "г", grossWeight: 0, netWeight: 0 }])} className="flex items-center gap-1 rounded-lg bg-orange-50 px-3 py-1.5 text-sm font-medium text-orange-600 hover:bg-orange-100">
+                    <button type="button" onClick={() => setEditForm([...editForm, { ingredientId: "", quantity: 0, unit: "г", grossWeight: 0, netWeight: 0 }])} className="flex items-center gap-1 rounded-lg bg-warning-50 px-3 py-1.5 text-sm font-medium text-warning-600 hover:bg-warning-100">
                       <Plus className="h-4 w-4" /> Добавить ингредиент
                     </button>
                     {editForm.length > 0 && (() => {
                       const t = calcTotal(editForm);
                       const o = calcOutput(editForm);
                       return (
-                        <div className="flex items-center justify-between rounded-lg bg-orange-50 p-3 text-sm text-orange-700">
+                        <div className="flex items-center justify-between rounded-lg bg-warning-50 p-3 text-sm text-warning-700">
                           <span>{editForm.length} ингред. · Выход: {o} {tc.unit}</span>
                           <span className="font-semibold">{t.toLocaleString("ru-RU")} СУМ</span>
                         </div>
@@ -327,10 +327,10 @@ export default function TechCards() {
                     <select value={item.unit} onChange={(e) => { const a = [...newCard.ingredients]; a[idx] = { ...item, unit: e.target.value }; setNewCard({ ...newCard, ingredients: a }); }} className="input text-sm w-20">
                       <option value="г">г</option><option value="мл">мл</option><option value="шт">шт</option>
                     </select>
-                    <button type="button" onClick={() => setNewCard({ ...newCard, ingredients: newCard.ingredients.filter((_, i) => i !== idx) })} className="rounded p-2 text-red-400 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>
+                    <button type="button" onClick={() => setNewCard({ ...newCard, ingredients: newCard.ingredients.filter((_, i) => i !== idx) })} className="rounded p-2 text-danger-400 hover:bg-danger-50"><Trash2 className="h-4 w-4" /></button>
                   </div>
                 ))}
-                <button type="button" onClick={() => setNewCard({ ...newCard, ingredients: [...newCard.ingredients, { ingredientId: "", quantity: 0, unit: "г", grossWeight: 0, netWeight: 0 }] })} className="flex items-center gap-1 rounded-lg bg-orange-50 px-3 py-1.5 text-sm font-medium text-orange-600 hover:bg-orange-100 mt-2">
+                <button type="button" onClick={() => setNewCard({ ...newCard, ingredients: [...newCard.ingredients, { ingredientId: "", quantity: 0, unit: "г", grossWeight: 0, netWeight: 0 }] })} className="flex items-center gap-1 rounded-lg bg-warning-50 px-3 py-1.5 text-sm font-medium text-warning-600 hover:bg-warning-100 mt-2">
                   <Plus className="h-4 w-4" /> Добавить ингредиент
                 </button>
               </div>
@@ -338,7 +338,7 @@ export default function TechCards() {
                 const t = calcTotal(newCard.ingredients);
                 const o = calcOutput(newCard.ingredients);
                 return (
-                  <div className="flex items-center justify-between rounded-lg bg-orange-50 p-3 text-sm text-orange-700">
+                  <div className="flex items-center justify-between rounded-lg bg-warning-50 p-3 text-sm text-warning-700">
                     <span>{newCard.ingredients.length} ингред. · Выход: {o} г</span>
                     <span className="font-semibold">{t.toLocaleString("ru-RU")} СУМ</span>
                   </div>

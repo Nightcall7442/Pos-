@@ -27,6 +27,12 @@ describe("who may open the panel", () => {
     expect(homePathFor("admin")).toBe("/");
   });
 
+  it("shows the design showcase to admins only", () => {
+    expect(canOpenPath("admin", "/_design")).toBe(true);
+    expect(canOpenPath("manager", "/_design")).toBe(false);
+    expect(canOpenPath("kitchen", "/_design")).toBe(false);
+  });
+
   it("opens nothing to a cashier who still has an old session", () => {
     expect(canOpenPath("cashier", "/")).toBe(false);
     expect(canOpenPath(undefined, "/")).toBe(false);

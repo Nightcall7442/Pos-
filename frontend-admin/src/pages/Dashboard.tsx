@@ -134,7 +134,7 @@ export default function Dashboard() {
         </div>
         <div className="card">
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-green-500" />
+            <TrendingUp className="h-5 w-5 text-success-500" />
             <p className="text-sm font-medium text-gray-500">Средний чек</p>
           </div>
           <p className="mt-1 text-2xl font-bold text-gray-900">

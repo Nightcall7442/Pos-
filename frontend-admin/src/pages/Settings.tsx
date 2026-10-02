@@ -216,7 +216,7 @@ export default function Settings() {
                 Цена продажи считается как цена прихода × (1 + наценка / 100). Наценку отдельной категории можно задать на странице «Категории».
               </p>
               {form.defaultMarkupPercent <= 0 && (
-                <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                <p className="mt-2 rounded-lg bg-warning-50 px-3 py-2 text-sm text-warning-700">
                   Наценка 0% — цены продажи задаются вручную. Автоматический пересчёт при этом отключён:
                   иначе цена продажи стала бы равна себестоимости.
                 </p>
@@ -265,7 +265,7 @@ export default function Settings() {
                     <span className="font-medium text-gray-900">{u.label}</span>
                     <span className="ml-2 text-sm text-gray-400">({u.key})</span>
                   </div>
-                  <button type="button" onClick={() => handleRemoveUnit(u.key)} className="text-gray-400 hover:text-red-500 transition-colors">
+                  <button type="button" onClick={() => handleRemoveUnit(u.key)} className="text-gray-400 hover:text-danger-500 transition-colors">
                     <X className="h-4 w-4" />
                   </button>
                 </div>

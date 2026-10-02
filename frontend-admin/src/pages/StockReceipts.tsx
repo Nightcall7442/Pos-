@@ -374,7 +374,7 @@ export default function StockReceipts() {
                       {item.salePrice !== "" && item.costPrice > 0 && (
                         <p
                           className={`mt-0.5 text-[11px] ${
-                            parseFloat(item.salePrice) > item.costPrice ? "text-green-600" : "text-red-600"
+                            parseFloat(item.salePrice) > item.costPrice ? "text-success-600" : "text-danger-600"
                           }`}
                         >
                           маржа {money(parseFloat(item.salePrice) - item.costPrice)}
@@ -382,7 +382,7 @@ export default function StockReceipts() {
                       )}
                     </div>
                     <div className="col-span-1 text-right">
-                      <button onClick={() => removeItem(index)} className="text-red-500 hover:text-red-700">
+                      <button onClick={() => removeItem(index)} className="text-danger-500 hover:text-danger-700">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>

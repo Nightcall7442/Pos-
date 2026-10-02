@@ -16,6 +16,9 @@ const FULL_ACCESS = ["admin", "manager"];
 /** Единственная страница, доступная повару. */
 const KITCHEN_PATH = "/kitchen";
 
+/** Витрина интерфейса (D-5) — инструмент разработки, только администратору. */
+export const DESIGN_PATH = "/_design";
+
 /**
  * Адрес кассы — куда отправлять тех, кому панель не положена.
  *
@@ -40,6 +43,7 @@ export function canOpenPanel(role?: string | null): boolean {
 /** Доступна ли роли конкретная страница панели. */
 export function canOpenPath(role: string | null | undefined, path: string): boolean {
   if (!role) return false;
+  if (path === DESIGN_PATH) return role === "admin";
   if (FULL_ACCESS.includes(role)) return true;
   if (role === "kitchen") return path === KITCHEN_PATH;
   return false;

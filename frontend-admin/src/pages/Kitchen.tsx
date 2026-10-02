@@ -25,8 +25,8 @@ type Urgency = { bar: string; text: string; label: string };
 
 // До 5 минут — спокойно, 5–10 — внимание, дольше — горит.
 function urgency(minutes: number): Urgency {
-  if (minutes >= 10) return { bar: "bg-red-500", text: "text-red-600", label: "горит" };
-  if (minutes >= 5) return { bar: "bg-amber-500", text: "text-amber-600", label: "внимание" };
+  if (minutes >= 10) return { bar: "bg-danger-500", text: "text-danger-600", label: "горит" };
+  if (minutes >= 5) return { bar: "bg-warning-500", text: "text-warning-600", label: "внимание" };
   return { bar: "bg-primary-500", text: "text-gray-900", label: "в норме" };
 }
 
@@ -126,8 +126,8 @@ export default function Kitchen() {
         <span className="ml-auto flex items-center gap-4">
           {[
             ["bg-primary-500", "до 5 мин"],
-            ["bg-amber-500", "5–10"],
-            ["bg-red-500", "10+"],
+            ["bg-warning-500", "5–10"],
+            ["bg-danger-500", "10+"],
           ].map(([color, label]) => (
             <span key={label} className="hidden items-center gap-1.5 text-bar-muted sm:flex">
               <span className={`h-3 w-1 rounded-[1px] ${color}`} />
@@ -237,12 +237,12 @@ function Ticket({
             )}
             {item.notes && (
               // Заметка к блюду — плашкой, чтобы «без лука» не потерялось.
-              <span className="ml-10 mt-0.5 w-fit rounded-sm bg-amber-500 px-1.5 py-0.5 text-xs font-semibold text-white">{item.notes}</span>
+              <span className="ml-10 mt-0.5 w-fit rounded-sm bg-warning-500 px-1.5 py-0.5 text-xs font-semibold text-white">{item.notes}</span>
             )}
           </li>
         ))}
       </ul>
-      {order.notes && <p className="mx-4 mb-3 rounded-sm bg-amber-50 px-2 py-1.5 text-sm text-amber-700">{order.notes}</p>}
+      {order.notes && <p className="mx-4 mb-3 rounded-sm bg-warning-50 px-2 py-1.5 text-sm text-warning-700">{order.notes}</p>}
       <button
         onClick={onNext}
         disabled={busy}

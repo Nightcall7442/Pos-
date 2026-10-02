@@ -386,7 +386,7 @@ export default function MenuScreen({ user, onLogout, onCheckout, onCloseShift }:
                         tableId === table.id
                           ? "border-primary-500 bg-primary-600/20 text-primary-400"
                           : busy
-                          ? "border-amber-500/40 bg-amber-500/10 text-amber-500"
+                          ? "border-warning-500/40 bg-warning-500/10 text-warning-500"
                           : "border-dark-600 bg-dark-700 text-dark-300 hover:border-dark-400 hover:text-dark-50"
                       }`}
                     >
@@ -661,7 +661,7 @@ export default function MenuScreen({ user, onLogout, onCheckout, onCloseShift }:
                         {hasVariants ? (
                           <span className="text-xs text-dark-400">{variants.length} вар.</span>
                         ) : product.trackInventory ? (
-                          <span className={`text-xs font-medium ${out ? "text-danger-500" : low ? "text-amber-500" : "text-dark-400"}`}>
+                          <span className={`text-xs font-medium ${out ? "text-danger-500" : low ? "text-warning-500" : "text-dark-400"}`}>
                             {out ? "нет" : `ост. ${product.currentStock}`}
                           </span>
                         ) : null}

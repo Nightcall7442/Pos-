@@ -88,14 +88,14 @@ export default function Inventory() {
       </div>
 
       {alerts && alerts.length > 0 && (
-        <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4">
-          <div className="flex items-center gap-2 text-yellow-800">
+        <div className="rounded-xl border border-warning-200 bg-warning-50 p-4">
+          <div className="flex items-center gap-2 text-warning-800">
             <AlertTriangle className="h-5 w-5" />
             <h3 className="font-semibold">Мало на складе ({alerts.length})</h3>
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             {alerts.map((p) => (
-              <span key={p.id} className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-800">
+              <span key={p.id} className="inline-flex items-center gap-1 rounded-full bg-warning-100 px-3 py-1 text-xs font-medium text-warning-800">
                 {p.name} — {p.currentStock} шт.
               </span>
             ))}
@@ -151,7 +151,7 @@ export default function Inventory() {
                 const totalValue = product.currentStock * product.costPrice;
                 const unitLabel = product.saleUnit || product.purchaseUnit || "шт";
                 return (
-                  <tr key={product.id} className={`hover:bg-gray-50 ${isLow ? "bg-red-50/50" : ""}`}>
+                  <tr key={product.id} className={`hover:bg-gray-50 ${isLow ? "bg-danger-50/50" : ""}`}>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         {product.imageUrl ? (
@@ -167,7 +167,7 @@ export default function Inventory() {
                     <td className="p-4 text-sm text-gray-500">{product.category?.name || "—"}</td>
                     <td className="p-4 text-sm text-gray-500">{unitLabel}</td>
                     <td className="p-4 text-right">
-                      <span className={`font-semibold ${isLow ? "text-red-600" : "text-gray-900"}`}>
+                      <span className={`font-semibold ${isLow ? "text-danger-600" : "text-gray-900"}`}>
                         {product.currentStock}
                       </span>
                     </td>
@@ -175,7 +175,7 @@ export default function Inventory() {
                       {money(product.costPrice)}
                       {product.costPrice > 0 && product.price <= product.costPrice && (
                         <span
-                          className="ml-2 inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-600"
+                          className="ml-2 inline-flex items-center rounded-md bg-danger-50 px-1.5 py-0.5 text-[11px] font-medium text-danger-600"
                           title="Цена продажи не выше себестоимости"
                         >
                           без маржи
@@ -196,7 +196,7 @@ export default function Inventory() {
                             setAdjustType("increase");
                             setAdjustCost(product.costPrice);
                           }}
-                          className="rounded-lg p-1.5 text-green-600 hover:bg-green-50 transition-colors"
+                          className="rounded-lg p-1.5 text-success-600 hover:bg-success-50 transition-colors"
                           title="Приход"
                         >
                           <Plus className="h-4 w-4" />
@@ -206,7 +206,7 @@ export default function Inventory() {
                             setAdjustModal({ productId: product.id, productName: product.name });
                             setAdjustType("decrease");
                           }}
-                          className="rounded-lg p-1.5 text-red-600 hover:bg-red-50 transition-colors"
+                          className="rounded-lg p-1.5 text-danger-600 hover:bg-danger-50 transition-colors"
                           title="Расход"
                         >
                           <Minus className="h-4 w-4" />
@@ -228,7 +228,7 @@ export default function Inventory() {
               onClick={() => setAdjustType("increase")}
               className={`flex-1 rounded-lg border-2 py-2.5 text-sm font-medium transition-all ${
                 adjustType === "increase"
-                  ? "border-green-500 bg-green-50 text-green-700"
+                  ? "border-success-500 bg-success-50 text-success-700"
                   : "border-gray-200 text-gray-500 hover:border-gray-300"
               }`}
             >
@@ -239,7 +239,7 @@ export default function Inventory() {
               onClick={() => setAdjustType("decrease")}
               className={`flex-1 rounded-lg border-2 py-2.5 text-sm font-medium transition-all ${
                 adjustType === "decrease"
-                  ? "border-red-500 bg-red-50 text-red-700"
+                  ? "border-danger-500 bg-danger-50 text-danger-700"
                   : "border-gray-200 text-gray-500 hover:border-gray-300"
               }`}
             >

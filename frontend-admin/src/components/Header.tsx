@@ -57,7 +57,7 @@ export default function Header() {
           >
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger-500 text-[10px] font-bold text-white">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -77,7 +77,7 @@ export default function Header() {
           <button
             onClick={logout}
             aria-label="Выйти"
-            className="rounded p-2 text-bar-muted hover:bg-bar-hover hover:text-red-400"
+            className="rounded p-2 text-bar-muted hover:bg-bar-hover hover:text-danger-400"
           >
             <LogOut className="h-5 w-5" />
           </button>

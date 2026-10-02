@@ -231,7 +231,7 @@ export default function ScanAdd() {
 
           <p
             className={`rounded-lg px-3 py-2 text-sm ${
-              step.hit ? "bg-green-50 text-green-800" : step.valid ? "bg-amber-50 text-amber-800" : "bg-gray-100 text-gray-600"
+              step.hit ? "bg-success-50 text-success-800" : step.valid ? "bg-warning-50 text-warning-800" : "bg-gray-100 text-gray-600"
             }`}
           >
             {step.hit

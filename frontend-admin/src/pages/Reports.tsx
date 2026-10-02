@@ -8,8 +8,9 @@ import { TrendingUp, DollarSign, ShoppingCart, Users, BarChart3 } from "lucide-r
 import EmptyState from "../components/EmptyState";
 import { useMoney } from "../hooks/useMoney";
 
-// Сталь, графит, светлая сталь, янтарь, коралл — палитра кассы, без синего шаблона.
-const COLORS = ["#4f6a8a", "#2c3540", "#a2b3c7", "#b26a00", "#c8402b"];
+// Сталь, графит, светлая сталь, янтарь, коралл — палитра кассы. Токены темы, а не hex:
+// в тёмной теме диаграмма перекрашивается вместе с панелью.
+const COLORS = ["var(--steel-600)", "var(--gray-700)", "var(--steel-300)", "var(--amber-600)", "var(--red-600)"];
 
 export default function Reports() {
   const { money } = useMoney();

@@ -174,7 +174,7 @@ export default function ProductEdit() {
                 onClick={() => setForm({ ...form, volumeType: "liter", volume: "" })}
                 className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
                   form.volumeType === "liter"
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                    ? "bg-info-600 text-white shadow-md shadow-info-600/20"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
@@ -185,7 +185,7 @@ export default function ProductEdit() {
                 onClick={() => setForm({ ...form, volumeType: "gram", volume: "" })}
                 className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
                   form.volumeType === "gram"
-                    ? "bg-green-600 text-white shadow-md shadow-green-600/20"
+                    ? "bg-success-600 text-white shadow-md shadow-success-600/20"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
@@ -218,7 +218,7 @@ export default function ProductEdit() {
                       onClick={() => setForm({ ...form, volume: g })}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         form.volume === g
-                          ? "bg-green-600 text-white"
+                          ? "bg-success-600 text-white"
                           : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       }`}
                     >
@@ -369,13 +369,13 @@ export default function ProductEdit() {
         <div className="card space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <ChefHat className="h-5 w-5 text-orange-500" />
+              <ChefHat className="h-5 w-5 text-warning-500" />
               <h2 className="text-lg font-semibold text-gray-900">Тех карта (рецептура)</h2>
             </div>
             <button
               type="button"
               onClick={() => navigate("/tech-cards?create=true")}
-              className="flex items-center gap-1 rounded-lg bg-orange-50 px-3 py-1.5 text-sm font-medium text-orange-600 hover:bg-orange-100"
+              className="flex items-center gap-1 rounded-lg bg-warning-50 px-3 py-1.5 text-sm font-medium text-warning-600 hover:bg-warning-100"
             >
               <Plus className="h-4 w-4" />
               Создать техкарту
@@ -407,13 +407,13 @@ export default function ProductEdit() {
               : 0;
 
             return (
-              <div className="rounded-lg bg-orange-50 p-4 space-y-2">
+              <div className="rounded-lg bg-warning-50 p-4 space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="font-medium text-orange-800">{selected.name}</p>
+                  <p className="font-medium text-warning-800">{selected.name}</p>
                   <button
                     type="button"
                     onClick={() => navigate(`/tech-cards`)}
-                    className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-800"
+                    className="flex items-center gap-1 text-xs text-warning-600 hover:text-warning-800"
                   >
                     Открыть <ExternalLink className="h-3 w-3" />
                   </button>
@@ -433,9 +433,9 @@ export default function ProductEdit() {
                   </div>
                 </div>
                 {form.price > 0 && (
-                  <div className="pt-2 border-t border-orange-200 flex justify-between text-xs">
+                  <div className="pt-2 border-t border-warning-200 flex justify-between text-xs">
                     <span className="text-gray-600">Цена: <span className="font-semibold text-gray-900">{form.price.toLocaleString("ru-RU")} СУМ</span></span>
-                    <span className="text-gray-600">Маржа: <span className="font-semibold text-green-600">{(form.price - selected.totalCost).toLocaleString("ru-RU")} СУМ ({markup}%)</span></span>
+                    <span className="text-gray-600">Маржа: <span className="font-semibold text-success-600">{(form.price - selected.totalCost).toLocaleString("ru-RU")} СУМ ({markup}%)</span></span>
                   </div>
                 )}
               </div>

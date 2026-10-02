@@ -5,7 +5,8 @@ import Badge, { statusBadge } from "../components/Badge";
 import LoadingSpinner from "../components/LoadingSpinner";
 import EmptyState from "../components/EmptyState";
 import SearchInput from "../components/SearchInput";
-import Modal from "../components/Modal";
+import ConfirmDialog from "../components/ConfirmDialog";
+import Tabs from "../components/Tabs";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { ShoppingCart, Eye } from "lucide-react";
@@ -41,7 +42,13 @@ export default function Orders() {
 
   const orders = data?.data || [];
 
+  // Отмена — отдельный запрос (/cancel): он возвращает резерв на склад и
+  // освобождает стол. Простая смена статуса этого не делала.
   const handleStatusChange = (orderId: string, newStatus: string) => {
+    if (newStatus === "cancelled") {
+      setCancelId(orderId);
+      return;
+    }
     updateStatus.mutate({ id: orderId, status: newStatus });
   };
 
@@ -69,19 +76,7 @@ export default function Orders() {
         </div>
       </div>
 
-      <div className="flex gap-1 overflow-x-auto border-b border-gray-200 pb-px">
-        {statusTabs.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setStatus(tab.value)}
-            className={`whitespace-nowrap rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors ${
-              status === tab.value ? "border-b-2 border-primary-600 text-primary-600" : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <Tabs label="Статус заказов" items={statusTabs} value={status} onChange={setStatus} />
 
       <SearchInput value={search} onChange={setSearch} placeholder="Поиск заказов..." className="w-full sm:w-80" />
 
@@ -148,7 +143,7 @@ export default function Orders() {
                       key={s}
                       onClick={() => handleStatusChange(order.id, s)}
                       className={`rounded-md px-3 py-2 text-sm font-medium transition-colors sm:py-1.5 sm:text-xs ${
-                        s === "cancelled" ? "bg-red-50 text-red-700 hover:bg-red-100" : "bg-primary-50 text-primary-700 hover:bg-primary-100"
+                        s === "cancelled" ? "bg-danger-50 text-danger-700 hover:bg-danger-100" : "bg-primary-50 text-primary-700 hover:bg-primary-100"
                       }`}
                     >
                       {nextStatusLabels[s] || s}
@@ -164,13 +159,17 @@ export default function Orders() {
         </div>
       )}
 
-      <Modal isOpen={!!cancelId} onClose={() => setCancelId(null)} title="Отмена заказа" size="sm">
-        <p className="text-gray-600">Вы уверены, что хотите отменить этот заказ?</p>
-        <div className="mt-4 flex justify-end gap-3">
-          <button onClick={() => setCancelId(null)} className="btn-secondary">Нет</button>
-          <button onClick={handleCancel} className="btn-danger">Да, отменить</button>
-        </div>
-      </Modal>
+      <ConfirmDialog
+        open={!!cancelId}
+        danger
+        title="Отменить заказ?"
+        description="Товар из заказа вернётся на склад, стол освободится. Отменённый заказ не восстановить."
+        confirmLabel="Отменить заказ"
+        cancelLabel="Не отменять"
+        loading={cancelOrder.isPending}
+        onConfirm={handleCancel}
+        onCancel={() => setCancelId(null)}
+      />
     </div>
   );
 }

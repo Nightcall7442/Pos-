@@ -77,8 +77,8 @@ export default function NotificationsPanel({ open, onClose }: NotificationsPanel
                 className={clsx(
                   "mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg",
                   n.type === "order"
-                    ? "bg-blue-100 text-blue-600"
-                    : "bg-yellow-100 text-yellow-600"
+                    ? "bg-info-100 text-info-600"
+                    : "bg-warning-100 text-warning-600"
                 )}
               >
                 {n.type === "order" ? (

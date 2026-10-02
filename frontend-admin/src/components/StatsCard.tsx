@@ -16,7 +16,7 @@ const colorMap = {
   blue: steel,
   green: steel,
   yellow: steel,
-  red: "bg-red-50 text-red-600",
+  red: "bg-danger-50 text-danger-600",
   purple: steel,
 };
 
@@ -27,7 +27,7 @@ export default function StatsCard({ title, value, change, icon, color = "blue" }
         <p className="text-sm font-medium text-gray-500">{title}</p>
         <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
         {change !== undefined && (
-          <div className={clsx("mt-1 flex items-center gap-1 text-xs font-medium", change >= 0 ? "text-green-600" : "text-red-600")}>
+          <div className={clsx("mt-1 flex items-center gap-1 text-xs font-medium", change >= 0 ? "text-success-600" : "text-danger-600")}>
             {change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
             {Math.abs(change)}% ко вчера
           </div>

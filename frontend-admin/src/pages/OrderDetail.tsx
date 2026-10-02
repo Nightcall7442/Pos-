@@ -55,7 +55,7 @@ export default function OrderDetail() {
         <div className="mt-4 border-t border-gray-200 pt-4 space-y-2">
           <div className="flex justify-between text-sm text-gray-500"><span>Подытог</span><span>{money(order.subtotal)}</span></div>
           {Number(order.taxAmount) > 0 && <div className="flex justify-between text-sm text-gray-500"><span>Налог</span><span>{money(order.taxAmount)}</span></div>}
-          {Number(order.discountAmount) > 0 && <div className="flex justify-between text-sm text-green-600"><span>Скидка</span><span>-{money(order.discountAmount)}</span></div>}
+          {Number(order.discountAmount) > 0 && <div className="flex justify-between text-sm text-success-600"><span>Скидка</span><span>-{money(order.discountAmount)}</span></div>}
           <div className="flex justify-between text-lg font-bold text-gray-900"><span>Итого</span><span>{money(order.total)}</span></div>
         </div>
       </div>

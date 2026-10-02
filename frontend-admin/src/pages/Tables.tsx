@@ -20,7 +20,7 @@ export default function Tables() {
   const createMutation = useMutation({ mutationFn: (data: { number: string; capacity: number; zone: string }) => tableService.create(data), onSuccess: () => { qc.invalidateQueries({ queryKey: ["tables"] }); setShowCreate(false); setForm({ number: "", capacity: 4, zone: "" }); toast.success("Стол добавлен"); } });
   const statusMutation = useMutation({ mutationFn: ({ id, status }: { id: string; status: string }) => tableService.updateStatus(id, status), onSuccess: () => { qc.invalidateQueries({ queryKey: ["tables"] }); toast.success("Статус обновлён"); } });
 
-  const statusColors: Record<string, string> = { available: "border-green-300 bg-green-50", occupied: "border-red-300 bg-red-50", reserved: "border-blue-300 bg-blue-50", maintenance: "border-yellow-300 bg-yellow-50" };
+  const statusColors: Record<string, string> = { available: "border-success-300 bg-success-50", occupied: "border-danger-300 bg-danger-50", reserved: "border-info-300 bg-info-50", maintenance: "border-warning-300 bg-warning-50" };
 
   return (
     <div className="space-y-6">
@@ -32,9 +32,9 @@ export default function Tables() {
       {stats && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div className="card text-center"><p className="text-2xl font-bold text-gray-900">{stats.total}</p><p className="text-sm text-gray-500">Всего</p></div>
-          <div className="card text-center"><p className="text-2xl font-bold text-green-600">{stats.available}</p><p className="text-sm text-gray-500">Свободны</p></div>
-          <div className="card text-center"><p className="text-2xl font-bold text-red-600">{stats.occupied}</p><p className="text-sm text-gray-500">Заняты</p></div>
-          <div className="card text-center"><p className="text-2xl font-bold text-blue-600">{stats.reserved}</p><p className="text-sm text-gray-500">Забронированы</p></div>
+          <div className="card text-center"><p className="text-2xl font-bold text-success-600">{stats.available}</p><p className="text-sm text-gray-500">Свободны</p></div>
+          <div className="card text-center"><p className="text-2xl font-bold text-danger-600">{stats.occupied}</p><p className="text-sm text-gray-500">Заняты</p></div>
+          <div className="card text-center"><p className="text-2xl font-bold text-info-600">{stats.reserved}</p><p className="text-sm text-gray-500">Забронированы</p></div>
         </div>
       )}
 
@@ -60,10 +60,10 @@ export default function Tables() {
                 <p className="mt-2 text-sm text-gray-500">{table.capacity} мест</p>
                 {table.zone && <p className="text-xs text-gray-400">{table.zone}</p>}
                 <Badge variant={badge.variant} className="mt-2">{badge.label}</Badge>
-                {table.orders?.[0] && <p className="mt-1 text-xs font-medium text-red-600">{money(table.orders[0].total)}</p>}
+                {table.orders?.[0] && <p className="mt-1 text-xs font-medium text-danger-600">{money(table.orders[0].total)}</p>}
                 <div className="mt-2 flex gap-1 justify-center">
                   {["available", "occupied", "reserved", "maintenance"].map((s) => (
-                    <button key={s} onClick={() => statusMutation.mutate({ id: table.id, status: s })} className={`h-2 w-2 rounded-full ${s === "available" ? "bg-green-500" : s === "occupied" ? "bg-red-500" : s === "reserved" ? "bg-blue-500" : "bg-yellow-500"}`} title={s === "available" ? "Свободен" : s === "occupied" ? "Занят" : s === "reserved" ? "Забронирован" : "Обслуживание"} />
+                    <button key={s} onClick={() => statusMutation.mutate({ id: table.id, status: s })} className={`h-2 w-2 rounded-full ${s === "available" ? "bg-success-500" : s === "occupied" ? "bg-danger-500" : s === "reserved" ? "bg-info-500" : "bg-warning-500"}`} title={s === "available" ? "Свободен" : s === "occupied" ? "Занят" : s === "reserved" ? "Забронирован" : "Обслуживание"} />
                   ))}
                 </div>
               </div>

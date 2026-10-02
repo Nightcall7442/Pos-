@@ -100,11 +100,16 @@ export default tseslint.config(
       // Доступность: берём ровно то, что включено в recommended (правила,
       // выключенные там специально — например устаревшее label-has-for, — не
       // поднимаем), и понижаем до предупреждений. Это рабочий список для
-      // задачи D-6, а не повод ронять сборку сегодня.
+      // задачи D-6, а не повод ронять сборку сегодня. Опции правил сохраняем:
+      // без них, например, control-has-associated-label теряет список
+      // исключений (input, textarea, tr) и ругается на каждое поле с <label htmlFor>.
       ...Object.fromEntries(
         Object.entries(jsxA11y.flatConfigs.recommended.rules)
-          .filter(([, level]) => level !== "off" && level !== 0)
-          .map(([rule]) => [rule, "warn"])
+          .filter(([, value]) => {
+            const level = Array.isArray(value) ? value[0] : value;
+            return level !== "off" && level !== 0;
+          })
+          .map(([rule, value]) => [rule, Array.isArray(value) ? ["warn", ...value.slice(1)] : "warn"])
       ),
       "no-console": ["warn", { allow: ["warn", "error"] }],
     },

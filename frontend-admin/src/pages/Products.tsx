@@ -7,7 +7,7 @@ import Badge from "../components/Badge";
 import LoadingSpinner from "../components/LoadingSpinner";
 import EmptyState from "../components/EmptyState";
 import { useIsRetail } from "../hooks/useSettings";
-import Modal from "../components/Modal";
+import ConfirmDialog from "../components/ConfirmDialog";
 import type { Product, Category } from "../services";
 import { useMoney } from "../hooks/useMoney";
 
@@ -148,7 +148,7 @@ export default function Products() {
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-lg font-bold text-gray-900">{money(product.price)}</span>
                   {product.trackInventory && (
-                    <span className={`text-sm ${product.currentStock <= product.minStock ? "text-red-600 font-medium" : "text-gray-500"}`}>
+                    <span className={`text-sm ${product.currentStock <= product.minStock ? "text-danger-600 font-medium" : "text-gray-500"}`}>
                       Остаток: {product.currentStock}
                     </span>
                   )}
@@ -201,18 +201,18 @@ export default function Products() {
                   </div>
                   <div>
                     <dt className="text-xs text-gray-500">Остаток</dt>
-                    <dd className={`font-semibold ${low ? "text-red-600" : "text-gray-900"}`}>{product.trackInventory ? product.currentStock : "—"}</dd>
+                    <dd className={`font-semibold ${low ? "text-danger-600" : "text-gray-900"}`}>{product.trackInventory ? product.currentStock : "—"}</dd>
                   </div>
                 </dl>
                 {noMargin && (
-                  <span className="w-fit rounded-md bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-600">без маржи — проверьте цену</span>
+                  <span className="w-fit rounded-md bg-danger-50 px-1.5 py-0.5 text-[11px] font-medium text-danger-600">без маржи — проверьте цену</span>
                 )}
                 <div className="flex gap-2">
                   <Link to={`/products/${product.id}`} className="btn-secondary flex-1">
                     <Pencil className="mr-2 h-4 w-4" />
                     Изменить
                   </Link>
-                  <button onClick={() => setDeleteId(product.id)} className="btn-secondary flex-1 text-red-600">
+                  <button onClick={() => setDeleteId(product.id)} className="btn-secondary flex-1 text-danger-600">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Удалить
                   </button>
@@ -259,7 +259,7 @@ export default function Products() {
                         by a delivery rather than set deliberately. */}
                     {product.costPrice > 0 && product.price <= product.costPrice && (
                       <span
-                        className="ml-2 inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-600"
+                        className="ml-2 inline-flex items-center rounded-md bg-danger-50 px-1.5 py-0.5 text-[11px] font-medium text-danger-600"
                         title="Цена продажи не выше себестоимости — проверьте цену или наценку категории"
                       >
                         без маржи
@@ -268,7 +268,7 @@ export default function Products() {
                   </td>
                   <td className="p-4 whitespace-nowrap text-sm text-gray-500">{money(product.costPrice)}</td>
                   <td className="p-4">
-                    <span className={`font-semibold ${product.trackInventory && product.currentStock <= product.minStock ? "text-red-600" : "text-gray-900"}`}>
+                    <span className={`font-semibold ${product.trackInventory && product.currentStock <= product.minStock ? "text-danger-600" : "text-gray-900"}`}>
                       {product.trackInventory ? product.currentStock : "—"}
                     </span>
                   </td>
@@ -284,7 +284,7 @@ export default function Products() {
                       </Link>
                       <button
                         onClick={() => setDeleteId(product.id)}
-                        className="text-sm font-medium text-red-600 hover:text-red-700"
+                        className="text-sm font-medium text-danger-600 hover:text-danger-700"
                       >
                         Удалить
                       </button>
@@ -298,15 +298,16 @@ export default function Products() {
         </>
       )}
 
-      <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Удалить товар" size="sm">
-        <p className="text-gray-600">Вы уверены, что хотите удалить этот товар? Это действие нельзя отменить.</p>
-        <div className="mt-4 flex justify-end gap-3">
-          <button onClick={() => setDeleteId(null)} className="btn-secondary">Отмена</button>
-          <button onClick={handleDelete} disabled={deleteProduct.isPending} className="btn-danger">
-            {deleteProduct.isPending ? "Удаление..." : "Удалить"}
-          </button>
-        </div>
-      </Modal>
+      <ConfirmDialog
+        open={!!deleteId}
+        danger
+        title="Удалить товар?"
+        description="Товар пропадёт из каталога и с кассы. История продаж и приходов останется."
+        confirmLabel="Удалить"
+        loading={deleteProduct.isPending}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   );
 }

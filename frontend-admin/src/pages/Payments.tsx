@@ -8,6 +8,7 @@ import { ru } from "date-fns/locale";
 import { CreditCard, Banknote } from "lucide-react";
 import { Link } from "react-router-dom";
 import EmptyState from "../components/EmptyState";
+import Pagination from "../components/Pagination";
 import { useMoney } from "../hooks/useMoney";
 
 const methodLabels: Record<string, string> = { cash: "Наличные", card: "Карта", online: "Онлайн" };
@@ -58,7 +59,7 @@ export default function Payments() {
                 <tr key={payment.id} className="hover:bg-gray-50">
                   <td className="p-4">
                     <div className="flex items-center gap-2">
-                      {payment.method === "cash" ? <Banknote className="h-5 w-5 text-green-600" /> : <CreditCard className="h-5 w-5 text-blue-600" />}
+                      {payment.method === "cash" ? <Banknote className="h-5 w-5 text-success-600" /> : <CreditCard className="h-5 w-5 text-info-600" />}
                       <span>{methodLabels[payment.method] || payment.method}</span>
                     </div>
                   </td>
@@ -71,13 +72,9 @@ export default function Payments() {
               ))}
             </tbody>
           </table>
-          {pagination && (
-            <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3">
-              <p className="text-sm text-gray-500">Показано {(pagination.page - 1) * pagination.limit + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} из {pagination.total}</p>
-              <div className="flex gap-2">
-                <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1} className="btn-secondary text-xs py-1.5">Назад</button>
-                <button onClick={() => setPage(page + 1)} disabled={page >= pagination.totalPages} className="btn-secondary text-xs py-1.5">Далее</button>
-              </div>
+          {pagination && pagination.totalPages > 1 && (
+            <div className="border-t border-gray-200 px-4 py-3">
+              <Pagination page={page} totalPages={pagination.totalPages} total={pagination.total} onChange={setPage} />
             </div>
           )}
         </div>

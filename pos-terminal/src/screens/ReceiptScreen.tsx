@@ -112,6 +112,7 @@ export default function ReceiptModal({ order, onNewOrder }: ReceiptModalProps) {
           </div>
           <h1 className="mt-5 text-2xl font-bold text-dark-50">Оплачено!</h1>
           <p className="mt-1.5 text-sm text-dark-400">Заказ №{order.orderNumber} — {money(Number(order.total))}</p>
+          {order.kitchenStatus === "new" && <p className="mt-1 text-sm font-medium text-primary-400">Передан на кухню</p>}
         </div>
       </div>
     );
@@ -129,6 +130,7 @@ export default function ReceiptModal({ order, onNewOrder }: ReceiptModalProps) {
           <div className="pb-4 text-center">
             <h2 className="text-xl font-bold text-dark-50">{shopName}</h2>
             <p className="mt-1 text-xs text-dark-400">Спасибо за заказ!</p>
+            {order.kitchenStatus === "new" && <p className="mt-1 text-xs font-medium text-primary-400">Заказ передан на кухню</p>}
           </div>
 
           <div className="flex items-center justify-between py-2 text-xs">

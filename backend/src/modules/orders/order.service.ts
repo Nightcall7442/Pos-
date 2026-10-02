@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import prisma from "../../config/database.js";
 import { ci } from "../../utils/search.js";
-import type { CreateOrderInput, CheckoutInput, UpdateOrderStatusInput, OrderQueryInput } from "./order.schema.js";
+import type { CreateOrderInput, CheckoutInput, UpdateOrderStatusInput, OrderQueryInput, KitchenStatusInput } from "./order.schema.js";
 import { Server as SocketIOServer } from "socket.io";
 import {
   deductTechCardIngredients,
@@ -23,6 +23,9 @@ import { AppError, ConflictError, NotFoundError } from "../../utils/errors.js";
 import { inTransaction } from "../../utils/transaction.js";
 import { attachIdempotencyResource, claimIdempotencyKey, type IdempotencyContext } from "../../utils/idempotency.js";
 import { lockOrder } from "./order.locks.js";
+
+// Сколько часов заказ может висеть на экране кухни, пока его не выдали.
+export const KITCHEN_WINDOW_HOURS = 12;
 
 export class OrderTotalChangedError extends Error {
   constructor(public readonly actualTotal: number) {
@@ -211,6 +214,10 @@ export class OrderService {
     const total = round2(subtotal - discountAmount);
 
     const orderNumber = await nextOrderNumber(tx, tenantId);
+    // Заказ кафе сразу встаёт на экран кухни — и оплаченный тоже: статус оплаты
+    // и кухни разные (schema.prisma, Order.kitchenStatus). Магазину кухня не нужна.
+    const tenant = await tx.tenant.findUnique({ where: { id: tenantId }, select: { businessType: true } });
+    const toKitchen = tenant?.businessType !== "retail";
 
     // Продажа на кассе (status "completed") в той же транзакции списывает
     // ингредиенты по техкарте. Товары и ингредиенты блокируются здесь разом,
@@ -247,6 +254,8 @@ export class OrderService {
         customerPhone: data.customerPhone,
         notes: data.notes,
         completedAt: status === "completed" ? new Date() : null,
+        kitchenStatus: toKitchen ? "new" : null,
+        kitchenStatusAt: toKitchen ? new Date() : null,
         items: { create: orderItems },
       },
     });
@@ -377,7 +386,8 @@ export class OrderService {
       await releaseStock(tx, { tenantId, userId, orderId: id, reservations });
       const row = await tx.order.update({
         where: { id },
-        data: { status: "cancelled" },
+        // Отменённый заказ готовить не нужно — с экрана кухни он уходит.
+        data: { status: "cancelled", kitchenStatus: null, kitchenStatusAt: new Date() },
       });
 
       if (locked.tableId) {
@@ -393,6 +403,48 @@ export class OrderService {
       io.to(`tenant:${tenantId}`).emit("order:cancelled", updated);
     }
 
+    return updated;
+  }
+
+  /**
+   * Экран кухни: заказы, которые ещё не выданы. Окно — последние 12 часов,
+   * чтобы забытая с вечера карточка не висела на экране вечно.
+   */
+  async getKitchenOrders(tenantId: string, branchId?: string) {
+    const since = new Date(Date.now() - KITCHEN_WINDOW_HOURS * 60 * 60 * 1000);
+    const where: Prisma.OrderWhereInput = {
+      tenantId,
+      kitchenStatus: { in: ["new", "cooking", "ready"] },
+      createdAt: { gte: since },
+    };
+    if (branchId) where.branchId = branchId;
+    return prisma.order.findMany({
+      where,
+      include: {
+        items: {
+          include: {
+            product: { select: { id: true, name: true } },
+            modifiers: { include: { modifierItem: true } },
+          },
+        },
+        table: { select: { id: true, number: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+  }
+
+  async updateKitchenStatus(tenantId: string, id: string, data: KitchenStatusInput) {
+    const found = await prisma.order.findFirst({ where: { id, tenantId }, select: { id: true, kitchenStatus: true } });
+    if (!found) throw new NotFoundError("Заказ не найден");
+    // null — заказ кухне не передавался (магазин) или отменён.
+    if (found.kitchenStatus === null) throw new ConflictError("Этого заказа нет на кухне");
+
+    const updated = await prisma.order.update({
+      where: { id },
+      data: { kitchenStatus: data.status, kitchenStatusAt: new Date() },
+      select: { id: true, orderNumber: true, kitchenStatus: true, kitchenStatusAt: true },
+    });
+    if (io) io.to(`tenant:${tenantId}`).emit("order:kitchen", updated);
     return updated;
   }
 

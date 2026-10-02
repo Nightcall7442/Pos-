@@ -86,6 +86,26 @@ export class OrderController {
     }
   }
 
+  async getKitchen(req: Request, res: Response) {
+    try {
+      const branchId = req.query.branchId as string | undefined;
+      const orders = await orderService.getKitchenOrders(req.user!.tenantId, branchId);
+      sendSuccess(res, orders);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
+  async updateKitchenStatus(req: Request, res: Response) {
+    try {
+      const id = req.params.id as string;
+      const order = await orderService.updateKitchenStatus(req.user!.tenantId, id, req.body);
+      sendSuccess(res, order);
+    } catch (error) {
+      handleError(res, error);
+    }
+  }
+
   async getActive(req: Request, res: Response) {
     try {
       const branchId = req.query.branchId as string | undefined;

@@ -22,6 +22,9 @@ const statusTabs = [
   { value: "cancelled", label: "Отменены" },
 ];
 
+// Где заказ на кухне — отдельно от оплаты (оплаченный заказ кафе ещё готовится).
+const kitchenLabels: Record<string, string> = { new: "Кухня: новый", cooking: "Кухня: готовится", ready: "Кухня: на выдаче", served: "Выдан" };
+
 const statusFlow: Record<string, string[]> = {
   pending: ["confirmed", "cancelled"],
   confirmed: ["preparing", "cancelled"],
@@ -124,6 +127,9 @@ export default function Orders() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-semibold text-gray-900">{order.customerName || "Гость"}</span>
                       <Badge variant={badge.variant}>{badge.label}</Badge>
+                      {order.kitchenStatus && (
+                        <Badge variant={order.kitchenStatus === "served" ? "gray" : "info"}>{kitchenLabels[order.kitchenStatus]}</Badge>
+                      )}
                       <Badge variant="gray">{order.type === "dine_in" ? "Зал" : order.type === "takeaway" ? "Навынос" : order.type}</Badge>
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-gray-500">

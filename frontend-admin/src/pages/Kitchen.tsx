@@ -6,20 +6,25 @@ import { useSocket } from "../services/socketService";
 import toast from "react-hot-toast";
 import type { ApiResponse, Order } from "../services";
 import { apiErrorMessage } from "../utils/apiError";
+import { notify } from "../components/notify";
 
 /**
  * Экран кухни — тот же язык, что у кассы: графитовая строка состояния, колонки с
  * табличной шапкой, карточки на белом. Возраст заказа виден издалека: полоса слева
  * и таймер меняют цвет по ожиданию — до 5 минут спокойно, 5–10 внимание, дольше
  * горит. Цвета — через токены темы, поэтому экран работает и в тёмной теме.
+ *
+ * Шаги — кухонный статус заказа, а не статус оплаты: касса кафе продаёт сразу
+ * с оплатой, и такой заказ встаёт сюда «новым» в ту же секунду.
  */
 
-const COLUMNS = [
-  { status: "pending", title: "Новые", action: "Принять", next: "confirmed" },
-  { status: "confirmed", title: "Приняты", action: "Начать готовить", next: "preparing" },
-  { status: "preparing", title: "Готовятся", action: "Готово", next: "ready" },
+type KitchenStep = "new" | "cooking" | "ready" | "served";
+
+const COLUMNS: { status: KitchenStep; title: string; action: string; next: KitchenStep }[] = [
+  { status: "new", title: "Новые", action: "Начать", next: "cooking" },
+  { status: "cooking", title: "Готовятся", action: "Готово", next: "ready" },
   { status: "ready", title: "Выдача", action: "Выдано", next: "served" },
-] as const;
+];
 
 type Urgency = { bar: string; text: string; label: string };
 
@@ -65,14 +70,19 @@ export default function Kitchen() {
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["kitchen-orders"],
-    queryFn: () => api.get<ApiResponse<Order[]>>("/orders/active").then((r) => r.data.data),
+    queryFn: () => api.get<ApiResponse<Order[]>>("/orders/kitchen").then((r) => r.data.data),
     refetchInterval: 5000,
   });
 
   const updateStatus = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) => api.patch(`/orders/${id}/status`, { status }),
-    onSuccess: () => {
+    mutationFn: ({ id, status }: { id: string; status: KitchenStep; previous?: KitchenStep; number?: string }) =>
+      api.patch(`/orders/${id}/kitchen`, { status }),
+    onSuccess: (_res, { id, status, previous, number }) => {
       queryClient.invalidateQueries({ queryKey: ["kitchen-orders"] });
+      // «Выдано» убирает карточку с экрана — на случай промаха даём вернуть.
+      if (status === "served" && previous) {
+        notify.undo(`№${number} выдан`, () => updateStatus.mutate({ id, status: previous }));
+      }
     },
     onError: (error) => {
       toast.error(apiErrorMessage(error, "Не удалось сменить статус заказа"));
@@ -99,15 +109,21 @@ export default function Kitchen() {
       queryClient.invalidateQueries({ queryKey: ["kitchen-orders"] });
     });
 
+    // Другой экран кухни (или повар с планшета) сдвинул шаг.
+    socket.on("order:kitchen", () => {
+      queryClient.invalidateQueries({ queryKey: ["kitchen-orders"] });
+    });
+
     return () => {
       socket.off("order:created");
       socket.off("order:updated");
       socket.off("order:cancelled");
+      socket.off("order:kitchen");
     };
   }, [socket, queryClient, soundEnabled]);
 
-  const active = (orders || []).filter((o) => COLUMNS.some((c) => c.status === o.status));
-  const cooking = active.filter((o) => o.status !== "ready");
+  const active = (orders || []).filter((o) => COLUMNS.some((c) => c.status === o.kitchenStatus));
+  const cooking = active.filter((o) => o.kitchenStatus !== "ready");
   // Часы планшета могут отставать от сервера — отрицательного ожидания не бывает.
   const avgMin = cooking.length
     ? Math.max(0, Math.round(cooking.reduce((sum, o) => sum + (now - new Date(o.createdAt).getTime()), 0) / cooking.length / 60000))
@@ -150,10 +166,10 @@ export default function Kitchen() {
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-primary-600" />
         </div>
       ) : (
-        <div className="grid gap-px bg-gray-200 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-px bg-gray-200 md:grid-cols-3">
           {COLUMNS.map((col) => {
             const list = active
-              .filter((o) => o.status === col.status)
+              .filter((o) => o.kitchenStatus === col.status)
               .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
             return (
               <section key={col.status} aria-label={col.title} className="flex min-h-[420px] min-w-0 flex-col bg-canvas">
@@ -171,7 +187,7 @@ export default function Kitchen() {
                       ready={col.status === "ready"}
                       action={col.action}
                       busy={updateStatus.isPending && updateStatus.variables?.id === order.id}
-                      onNext={() => updateStatus.mutate({ id: order.id, status: col.next })}
+                      onNext={() => updateStatus.mutate({ id: order.id, status: col.next, previous: col.status, number: order.orderNumber })}
                     />
                   ))}
                 </div>
@@ -199,8 +215,8 @@ function Ticket({
   busy: boolean;
   onNext: () => void;
 }) {
-  // На выдаче считаем, сколько готовый заказ ждёт официанта: с последней смены статуса.
-  const since = new Date(ready && order.updatedAt ? order.updatedAt : order.createdAt).getTime();
+  // На выдаче считаем, сколько готовый заказ ждёт официанта: с момента «Готово».
+  const since = new Date(ready && order.kitchenStatusAt ? order.kitchenStatusAt : order.createdAt).getTime();
   const seconds = (now - since) / 1000;
   const minutes = seconds / 60;
   // Готовое ждёт быстрее «горит»: 3 минуты — внимание, 5 — горит.

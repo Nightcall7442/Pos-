@@ -285,6 +285,13 @@ model Order {
   customerPhone     String?   @map("customer_phone")
   estimatedReadyAt  DateTime? @map("estimated_ready_at")
   completedAt       DateTime? @map("completed_at")
+  // Кухня — отдельно от оплаты. status говорит о деньгах (completed — продажа
+  // оплачена, на нём держатся выручка, смена и склад), kitchenStatus — о том,
+  // где блюдо: new → cooking → ready → served. null — кухня не участвует
+  // (магазин). Оплаченный заказ кафе уходит на кухню сразу, а отчёты не ждут,
+  // пока его приготовят.
+  kitchenStatus     String?   @map("kitchen_status")
+  kitchenStatusAt   DateTime? @map("kitchen_status_at")
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
@@ -300,6 +307,8 @@ model Order {
   // Для фоновой отмены неоплаченных заказов (order.cleanup.ts).
   @@index([status, createdAt])
   @@index([cashShiftId])
+  // Экран кухни: заказы точки, которые ещё не выданы.
+  @@index([tenantId, kitchenStatus])
   @@map("orders")
 }
 

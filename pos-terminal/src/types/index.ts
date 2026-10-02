@@ -118,6 +118,8 @@ export interface Order {
   orderNumber: string;
   type: "dine_in" | "takeaway" | "delivery";
   status: "pending" | "confirmed" | "preparing" | "ready" | "completed" | "cancelled";
+  // Кухня — отдельно от оплаты; "new" сразу после продажи в кафе, null — магазин.
+  kitchenStatus?: "new" | "cooking" | "ready" | "served" | null;
   tableId?: string;
   table?: { id: string; number: string };
   customerName?: string;

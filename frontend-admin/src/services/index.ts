@@ -107,8 +107,11 @@ export interface Order {
   discountAmount?: number;
   payments?: { id: string; method: string; amount: number; status: string }[];
   createdAt: string;
-  // Время последней смены статуса — кухня считает по нему, сколько ждёт готовый заказ.
   updatedAt?: string;
+  // Кухня — отдельно от оплаты: new → cooking → ready → served; null — кухня не участвует.
+  kitchenStatus?: "new" | "cooking" | "ready" | "served" | null;
+  // Когда сменился кухонный шаг — по нему видно, сколько готовый заказ ждёт выдачи.
+  kitchenStatusAt?: string | null;
   items: OrderItem[];
   user?: { id: string; firstName: string; lastName?: string } | null;
 }

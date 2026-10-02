@@ -328,7 +328,7 @@ export default function ProductEdit() {
 
         <div className="card space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Цены</h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <label className="label">Цена продажи за {form.saleUnit || "шт"} *</label>
               <input type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })} className="input" required />

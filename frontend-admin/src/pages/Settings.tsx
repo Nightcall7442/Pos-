@@ -93,14 +93,15 @@ export default function Settings() {
     <div className="space-y-6">
       <div><h1 className="text-2xl font-bold text-gray-900">Настройки</h1><p className="text-gray-500">Настройки вашего бизнеса</p></div>
 
-      <div className="flex gap-6">
-        <div className="w-56 flex-shrink-0">
-          <nav className="space-y-1">
+      {/* На телефоне вкладки — строкой над содержимым, на широком экране — колонкой слева (D-4). */}
+      <div className="flex flex-col gap-4 md:flex-row md:gap-6">
+        <div className="md:w-56 md:flex-shrink-0">
+          <nav className="-mx-3 flex gap-1 overflow-x-auto px-3 md:mx-0 md:block md:space-y-1 md:px-0">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full text-left px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                className={`whitespace-nowrap rounded-md px-3 py-2 text-left text-sm font-medium transition-colors md:w-full ${
                   activeTab === tab.id
                     ? "bg-primary-50 text-primary-700"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
@@ -118,7 +119,7 @@ export default function Settings() {
         <form onSubmit={handleSaveGeneral} className="space-y-6">
           <div className="card space-y-3">
             <h2 className="text-lg font-semibold text-gray-900">Тип заведения</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {([
                 { key: "retail", title: "Магазин", text: "Сканер штрихкодов, весовой товар, быстрые кнопки, чек без столов" },
                 { key: "cafe", title: "Кафе или ресторан", text: "Зал, столы, заказы навынос, кухня" },
@@ -145,8 +146,8 @@ export default function Settings() {
                 Код точки вводится один раз при настройке планшета на кассе. После этого кассиры входят,
                 нажав своё имя и набрав PIN, — PIN задаётся в разделе «Сотрудники».
               </p>
-              <div className="flex items-center gap-3">
-                <code className="rounded-lg bg-gray-100 px-4 py-2.5 font-mono text-lg tracking-wide text-gray-900">{settings.slug}</code>
+              <div className="flex flex-wrap items-center gap-3">
+                <code className="max-w-full break-all rounded-lg bg-gray-100 px-4 py-2.5 font-mono text-lg tracking-wide text-gray-900">{settings.slug}</code>
                 <button
                   type="button"
                   className="btn-secondary"
@@ -175,7 +176,7 @@ export default function Settings() {
           </div>
           <div className="card space-y-4">
             <h2 className="text-lg font-semibold text-gray-900">Региональные</h2>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
                 <label className="label">Часовой пояс</label>
                 <select value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })} className="input">

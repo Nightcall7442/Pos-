@@ -71,11 +71,11 @@ export default function Users() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div><h1 className="text-2xl font-bold text-gray-900">Сотрудники</h1><p className="text-gray-500">Управление учётными записями</p></div>
         <button onClick={() => setShowCreate(true)} className="btn-primary"><Plus className="mr-2 h-4 w-4" />Добавить</button>
       </div>
-      <SearchInput value={search} onChange={setSearch} placeholder="Поиск сотрудников..." className="w-80" />
+      <SearchInput value={search} onChange={setSearch} placeholder="Поиск сотрудников..." className="w-full sm:w-80" />
       {isLoading ? <LoadingSpinner /> : (
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[820px]">

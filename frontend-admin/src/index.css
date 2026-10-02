@@ -389,7 +389,7 @@
   }
 
   .card {
-    @apply rounded-md border border-gray-200 bg-surface p-6;
+    @apply rounded-md border border-gray-200 bg-surface p-4 sm:p-6;
   }
 
   .input {

@@ -27,7 +27,7 @@ export default function OrderDetail() {
         <div className="ml-auto"><Badge variant={statusBadge(order.status).variant}>{statusBadge(order.status).label}</Badge></div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="card"><p className="text-xs text-gray-500">Клиент</p><p className="text-sm font-medium">{order.customerName || "Гость"}</p></div>
         <div className="card"><p className="text-xs text-gray-500">Тип</p><p className="text-sm font-medium capitalize">{order.type === "dine_in" ? "В зале" : order.type === "takeaway" ? "Навынос" : order.type}</p></div>
         <div className="card"><p className="text-xs text-gray-500">Стол</p><p className="text-sm font-medium">{order.table?.number || "—"}</p></div>

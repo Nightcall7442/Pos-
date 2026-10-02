@@ -103,11 +103,31 @@ export default function Dashboard() {
       <div className="card">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Последние заказы</h2>
-          <a href="/orders" className="text-sm font-medium text-primary-600 hover:text-primary-700">
+          <Link to="/orders" className="text-sm font-medium text-primary-600 hover:text-primary-700">
             Все заказы
-          </a>
+          </Link>
         </div>
-        <div className="overflow-x-auto">
+        <ul className="divide-y divide-gray-100 sm:hidden">
+          {stats.recentOrders.map((order) => {
+            const badge = statusBadge(order.status);
+            return (
+              <li key={order.id} className="flex items-center justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900">
+                    №{order.orderNumber} · {order.customerName || "Гость"}
+                  </p>
+                  <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                    {order.items?.length || 0} поз. · {format(new Date(order.createdAt), "HH:mm", { locale: ru })}
+                    <Badge variant={badge.variant}>{badge.label}</Badge>
+                  </p>
+                </div>
+                <span className="whitespace-nowrap text-sm font-semibold text-gray-900">{money(order.total)}</span>
+              </li>
+            );
+          })}
+          {(!stats.recentOrders || stats.recentOrders.length === 0) && <li className="py-8 text-center text-sm text-gray-500">Заказов за сегодня пока нет</li>}
+        </ul>
+        <div className="hidden overflow-x-auto sm:block">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wider text-gray-500">

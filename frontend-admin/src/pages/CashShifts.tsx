@@ -49,7 +49,40 @@ export default function CashShifts() {
       {isLoading ? (
         <LoadingSpinner />
       ) : (
-        <div className="card overflow-x-auto">
+        <>
+        <div className="space-y-3 md:hidden">
+          {shifts.length === 0 && <div className="card text-center text-gray-500">Нет смен</div>}
+          {shifts.map((shift) => (
+            <button key={shift.id} type="button" onClick={() => setShowDetail(shift)} className="card block w-full p-4 text-left">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate font-medium text-gray-900">
+                  {shift.user.firstName} {shift.user.lastName}
+                </span>
+                <Badge variant={shift.status === "open" ? "success" : "gray"}>{shift.status === "open" ? "Открыта" : "Закрыта"}</Badge>
+              </div>
+              <p className="mt-0.5 text-xs text-gray-500">
+                {new Date(shift.openedAt).toLocaleString("ru-RU")} → {shift.closedAt ? new Date(shift.closedAt).toLocaleString("ru-RU") : "сейчас"}
+              </p>
+              <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                <div>
+                  <dt className="text-xs text-gray-500">Продажи</dt>
+                  <dd className="font-semibold text-gray-900">{money(shift.totalSales)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-gray-500">Наличные</dt>
+                  <dd className="text-gray-700">{money(shift.totalCashSales)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-gray-500">Разница</dt>
+                  <dd className={shift.difference === null ? "text-gray-400" : shift.difference === 0 ? "font-medium text-green-600" : "font-semibold text-red-600"}>
+                    {shift.difference === null ? "—" : shift.difference === 0 ? "Сходится" : money(shift.difference)}
+                  </dd>
+                </div>
+              </dl>
+            </button>
+          ))}
+        </div>
+        <div className="card hidden overflow-x-auto md:block">
           <table className="w-full min-w-[720px]">
             <thead>
               <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -100,6 +133,7 @@ export default function CashShifts() {
                   <td className="p-4 text-right">
                     <button
                       onClick={() => setShowDetail(shift)}
+                      aria-label="Детали смены"
                       className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
                     >
                       <Eye className="h-4 w-4" />
@@ -117,6 +151,7 @@ export default function CashShifts() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <Modal isOpen={!!showDetail} onClose={() => setShowDetail(null)} title="Детали смены" size="lg">

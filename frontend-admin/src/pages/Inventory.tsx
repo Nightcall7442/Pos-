@@ -101,7 +101,7 @@ export default function Inventory() {
         </div>
       )}
 
-      <SearchInput value={search} onChange={setSearch} placeholder="Поиск товаров..." className="w-80" />
+      <SearchInput value={search} onChange={setSearch} placeholder="Поиск товаров..." className="w-full sm:w-80" />
 
       {isLoading ? (
         <LoadingSpinner />

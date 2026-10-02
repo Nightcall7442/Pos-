@@ -24,16 +24,16 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div><h1 className="text-2xl font-bold text-gray-900">Отчёты</h1><p className="text-gray-500">Аналитика продаж</p></div>
-        <div className="flex items-center gap-3">
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="input" />
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <input type="date" aria-label="С даты" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="input min-w-0 flex-1 sm:w-auto" />
           <span className="text-gray-400">—</span>
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="input" />
+          <input type="date" aria-label="По дату" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="input min-w-0 flex-1 sm:w-auto" />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="card"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50"><DollarSign className="h-5 w-5 text-green-600" /></div><div><p className="text-sm text-gray-500">Выручка</p><p className="text-xl font-bold text-gray-900">{money(salesData?.totalRevenue || 0)}</p></div></div></div>
         <div className="card"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50"><ShoppingCart className="h-5 w-5 text-blue-600" /></div><div><p className="text-sm text-gray-500">Транзакции</p><p className="text-xl font-bold text-gray-900">{salesData?.totalTransactions || 0}</p></div></div></div>
         <div className="card"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-50"><TrendingUp className="h-5 w-5 text-yellow-600" /></div><div><p className="text-sm text-gray-500">Чаевые</p><p className="text-xl font-bold text-gray-900">{money(salesData?.totalTips || 0)}</p></div></div></div>
@@ -57,7 +57,7 @@ export default function Reports() {
           <h3 className="mb-4 text-lg font-semibold text-gray-900">Заказы по типу</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
-              <Pie data={salesData?.ordersByType || []} dataKey="_count" nameKey="type" cx="50%" cy="50%" outerRadius={100} label={({ type, _count }) => `${typeLabels[type] || type}: ${_count}`}>
+              <Pie data={salesData?.ordersByType || []} dataKey="_count" nameKey="type" cx="50%" cy="50%" outerRadius="70%" label={({ type, _count }) => `${typeLabels[type] || type}: ${_count}`}>
                 {(salesData?.ordersByType || []).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
               <Tooltip />

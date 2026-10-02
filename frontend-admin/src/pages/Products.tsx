@@ -32,7 +32,7 @@ export default function Products() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Товары</h1>
           <p className="text-gray-500">Управление каталогом товаров</p>
@@ -49,12 +49,12 @@ export default function Products() {
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <SearchInput value={search} onChange={setSearch} className="w-80" placeholder="Поиск товаров..." />
+      <div className="flex flex-wrap items-center gap-3">
+        <SearchInput value={search} onChange={setSearch} className="w-full sm:w-80" placeholder="Поиск товаров..." />
         <select
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
-          className="input w-48"
+          className="input w-full sm:w-48"
         >
           <option value="">Все категории</option>
           {categories?.map((cat: Category) => (
@@ -122,7 +122,7 @@ export default function Products() {
                   )}
                 </div>
               </div>
-              <div className="mt-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="mt-3 flex gap-2 transition-opacity group-focus-within:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
                 <Link to={`/products/${product.id}`} className="btn-secondary flex-1 text-xs py-1.5">
                   <Pencil className="mr-1 inline h-3 w-3" />
                   Изменить
@@ -136,7 +136,60 @@ export default function Products() {
           ))}
         </div>
       ) : (
-        <div className="card overflow-x-auto">
+        <>
+        {/* Телефон: одна карточка на товар, главное крупно, остальное парами (D-4). */}
+        <div className="card divide-y divide-gray-100 p-0 md:hidden">
+          {products.map((product) => {
+            const low = product.trackInventory && product.currentStock <= product.minStock;
+            const noMargin = product.costPrice > 0 && product.price <= product.costPrice;
+            return (
+              <div key={product.id} className="flex flex-col gap-3 p-4">
+                <div className="flex items-start gap-3">
+                  {product.imageUrl ? (
+                    <img src={product.imageUrl} alt="" className="h-11 w-11 flex-shrink-0 rounded-md object-cover" />
+                  ) : (
+                    <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md bg-gray-100">
+                      <Package className="h-5 w-5 text-gray-400" />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-gray-900">{product.name}</p>
+                    <p className="truncate text-xs text-gray-500">{[product.sku, product.category?.name].filter(Boolean).join(" · ") || "—"}</p>
+                  </div>
+                  <Badge variant={product.isActive ? "success" : "gray"}>{product.isActive ? "Активен" : "Неактивен"}</Badge>
+                </div>
+                <dl className="grid grid-cols-3 gap-2 text-sm">
+                  <div>
+                    <dt className="text-xs text-gray-500">Цена</dt>
+                    <dd className="font-semibold text-gray-900">{money(product.price)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-gray-500">Себестоимость</dt>
+                    <dd className="text-gray-700">{money(product.costPrice)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-gray-500">Остаток</dt>
+                    <dd className={`font-semibold ${low ? "text-red-600" : "text-gray-900"}`}>{product.trackInventory ? product.currentStock : "—"}</dd>
+                  </div>
+                </dl>
+                {noMargin && (
+                  <span className="w-fit rounded-md bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-600">без маржи — проверьте цену</span>
+                )}
+                <div className="flex gap-2">
+                  <Link to={`/products/${product.id}`} className="btn-secondary flex-1">
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Изменить
+                  </Link>
+                  <button onClick={() => setDeleteId(product.id)} className="btn-secondary flex-1 text-red-600">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Удалить
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="card hidden overflow-x-auto md:block">
           <table className="w-full min-w-[720px]">
             <thead>
               <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -210,6 +263,7 @@ export default function Products() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Удалить товар" size="sm">

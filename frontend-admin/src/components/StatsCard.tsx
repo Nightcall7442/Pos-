@@ -26,7 +26,7 @@ export default function StatsCard({ title, value, change, icon, color = "blue" }
         {change !== undefined && (
           <div className={clsx("mt-1 flex items-center gap-1 text-xs font-medium", change >= 0 ? "text-green-600" : "text-red-600")}>
             {change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-            {Math.abs(change)}% from yesterday
+            {Math.abs(change)}% ко вчера
           </div>
         )}
       </div>

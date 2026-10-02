@@ -23,13 +23,13 @@ export default function Tables() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div><h1 className="text-2xl font-bold text-gray-900">Столы</h1><p className="text-gray-500">Управление столами ресторана</p></div>
         <button onClick={() => setShowCreate(true)} className="btn-primary"><Plus className="mr-2 h-4 w-4" />Добавить стол</button>
       </div>
 
       {stats && (
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div className="card text-center"><p className="text-2xl font-bold text-gray-900">{stats.total}</p><p className="text-sm text-gray-500">Всего</p></div>
           <div className="card text-center"><p className="text-2xl font-bold text-green-600">{stats.available}</p><p className="text-sm text-gray-500">Свободны</p></div>
           <div className="card text-center"><p className="text-2xl font-bold text-red-600">{stats.occupied}</p><p className="text-sm text-gray-500">Заняты</p></div>

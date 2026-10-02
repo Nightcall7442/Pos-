@@ -62,7 +62,7 @@ export default function Orders() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Заказы</h1>
           <p className="text-gray-500">Управление и отслеживание заказов</p>
@@ -83,7 +83,7 @@ export default function Orders() {
         ))}
       </div>
 
-      <SearchInput value={search} onChange={setSearch} placeholder="Поиск заказов..." className="w-80" />
+      <SearchInput value={search} onChange={setSearch} placeholder="Поиск заказов..." className="w-full sm:w-80" />
 
       {isLoading ? (
         <LoadingSpinner />
@@ -99,18 +99,18 @@ export default function Orders() {
             const badge = statusBadge(order.status);
             const nextStatuses = statusFlow[order.status] || [];
             return (
-              <div key={order.id} className="card flex items-center justify-between p-4">
-                <div className="flex items-center gap-4">
+              <div key={order.id} className="card flex flex-wrap items-center justify-between gap-3 p-4">
+                <div className="flex min-w-[14rem] flex-1 items-center gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-50 text-lg font-bold text-primary-700">
                     №{order.orderNumber}
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-semibold text-gray-900">{order.customerName || "Гость"}</span>
                       <Badge variant={badge.variant}>{badge.label}</Badge>
                       <Badge variant="gray">{order.type === "dine_in" ? "Зал" : order.type === "takeaway" ? "Навынос" : order.type}</Badge>
                     </div>
-                    <div className="mt-0.5 flex items-center gap-3 text-sm text-gray-500">
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-gray-500">
                       <span>{order.items?.length || 0} поз.</span>
                       <span>·</span>
                       <span className="font-medium text-gray-900">{money(order.total)}</span>
@@ -121,19 +121,19 @@ export default function Orders() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                   {nextStatuses.map((s) => (
                     <button
                       key={s}
                       onClick={() => handleStatusChange(order.id, s)}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                      className={`rounded-md px-3 py-2 text-sm font-medium transition-colors sm:py-1.5 sm:text-xs ${
                         s === "cancelled" ? "bg-red-50 text-red-700 hover:bg-red-100" : "bg-primary-50 text-primary-700 hover:bg-primary-100"
                       }`}
                     >
                       {nextStatusLabels[s] || s}
                     </button>
                   ))}
-                  <Link to={`/orders/${order.id}`} className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+                  <Link to={`/orders/${order.id}`} aria-label={`Открыть заказ №${order.orderNumber}`} className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
                     <Eye className="h-4 w-4" />
                   </Link>
                 </div>

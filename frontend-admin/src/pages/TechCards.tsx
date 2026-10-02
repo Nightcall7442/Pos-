@@ -65,7 +65,7 @@ export default function TechCards() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Тех карты</h1>
           <p className="text-gray-500">Рецептуры блюд и расчёт себестоимости</p>
@@ -160,6 +160,7 @@ export default function TechCards() {
                 {/* Expanded View */}
                 {isExpanded && !isEditing && (
                   <div className="border-t border-gray-100 px-4 pb-4">
+                    <div className="overflow-x-auto">
                     <table className="mt-3 w-full text-sm">
                       <thead>
                         <tr className="text-xs font-medium uppercase text-gray-500">
@@ -192,6 +193,7 @@ export default function TechCards() {
                         </tr>
                       </tfoot>
                     </table>
+                    </div>
                     {!!tc.products?.length && (
                       <div className="mt-3 rounded-lg bg-gray-50 p-3 text-sm">
                         <p className="font-medium text-gray-700 mb-1">Используется в товарах:</p>

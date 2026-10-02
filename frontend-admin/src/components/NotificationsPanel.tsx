@@ -47,7 +47,7 @@ export default function NotificationsPanel({ open, onClose }: NotificationsPanel
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 top-full mt-2 w-96 rounded-xl border border-gray-200 bg-surface shadow-xl"
+      className="fixed inset-x-3 top-14 z-50 mt-2 rounded-md border border-gray-200 bg-surface shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:w-96"
     >
       <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
         <h3 className="text-sm font-semibold text-gray-900">Уведомления</h3>

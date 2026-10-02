@@ -7,7 +7,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { TrendingUp, DollarSign, ShoppingCart, Users } from "lucide-react";
 import { useMoney } from "../hooks/useMoney";
 
-const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+// Сталь, графит, светлая сталь, янтарь, коралл — палитра кассы, без синего шаблона.
+const COLORS = ["#4f6a8a", "#2c3540", "#a2b3c7", "#b26a00", "#c8402b"];
 
 export default function Reports() {
   const { money } = useMoney();
@@ -44,11 +45,11 @@ export default function Reports() {
           <h3 className="mb-4 text-lg font-semibold text-gray-900">Продажи по часам</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={salesData?.salesByHour || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--gray-200)" />
               <XAxis dataKey="hour" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
-              <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="revenue" fill="var(--steel-600)" radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

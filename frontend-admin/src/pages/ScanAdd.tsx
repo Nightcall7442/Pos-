@@ -308,7 +308,7 @@ export default function ScanAdd() {
                     key={String(byWeight)}
                     type="button"
                     onClick={() => setWeighed(byWeight)}
-                    className={`flex-1 px-3 py-2 text-sm font-medium ${weighed === byWeight ? "bg-primary-50 text-primary-700" : "bg-white text-gray-500 hover:bg-gray-50"}`}
+                    className={`flex-1 px-3 py-2 text-sm font-medium ${weighed === byWeight ? "bg-primary-50 text-primary-700" : "bg-surface text-gray-500 hover:bg-gray-50"}`}
                   >
                     {byWeight ? "на вес" : "поштучно"}
                   </button>

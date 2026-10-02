@@ -22,27 +22,27 @@ export default function Header() {
   const unreadCount = data || 0;
 
   return (
-    <header className="relative flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 dark:border-gray-700 dark:bg-gray-800">
+    <header className="relative flex h-14 items-center justify-between bg-bar px-6 text-bar-fg">
       <div className="relative w-96">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bar-muted" />
         <input
           type="text"
           placeholder="Поиск товаров, заказов..."
-          className="input pl-10"
+          className="block h-9 w-full rounded border border-white/10 bg-white/5 pl-10 pr-3 text-sm text-bar-fg placeholder:text-bar-muted focus:border-white/30 focus:outline-none"
         />
       </div>
 
       <div className="flex items-center gap-2">
         <button
           onClick={toggleTheme}
-          className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+          className="rounded p-2 text-bar-muted hover:bg-bar-hover hover:text-white"
         >
           {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
         </button>
         <div className="relative">
           <button
             onClick={() => setNotificationsOpen(!notificationsOpen)}
-            className="relative rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+            className="relative rounded p-2 text-bar-muted hover:bg-bar-hover hover:text-white"
           >
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
@@ -56,16 +56,16 @@ export default function Header() {
             onClose={() => setNotificationsOpen(false)}
           />
         </div>
-        <div className="ml-2 flex items-center gap-3 border-l border-gray-200 pl-4 dark:border-gray-600">
+        <div className="ml-2 flex items-center gap-3 border-l border-white/10 pl-4">
           <div className="text-right">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <p className="text-sm font-medium text-white">
               {user?.firstName} {user?.lastName}
             </p>
-            <p className="text-xs text-gray-500 capitalize">{user?.role === "admin" ? "Администратор" : user?.role === "cashier" ? "Кассир" : user?.role}</p>
+            <p className="text-xs text-bar-muted capitalize">{user?.role === "admin" ? "Администратор" : user?.role === "cashier" ? "Кассир" : user?.role}</p>
           </div>
           <button
             onClick={logout}
-            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
+            className="rounded p-2 text-bar-muted hover:bg-bar-hover hover:text-red-400"
           >
             <LogOut className="h-5 w-5" />
           </button>

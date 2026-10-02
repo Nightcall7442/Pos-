@@ -16,7 +16,7 @@ interface CategoryForm {
   markupPercent: number;
 }
 
-const defaultForm: CategoryForm = { name: "", description: "", color: "#3b82f6", imageUrl: "", isIngredient: false, markupPercent: 0 };
+const defaultForm: CategoryForm = { name: "", description: "", color: "#62799a", imageUrl: "", isIngredient: false, markupPercent: 0 };
 
 export default function Categories() {
   const [showCreate, setShowCreate] = useState(false);
@@ -70,7 +70,7 @@ export default function Categories() {
     setForm({
       name: cat.name,
       description: cat.description || "",
-      color: cat.color || "#3b82f6",
+      color: cat.color || "#62799a",
       imageUrl: cat.imageUrl || "",
       isIngredient: cat.isIngredient || false,
       markupPercent: Number(cat.markupPercent) || 0,
@@ -116,7 +116,7 @@ export default function Categories() {
                 ) : (
                   <div
                     className="h-12 w-12 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-lg"
-                    style={{ backgroundColor: cat.color || "#e5e7eb" }}
+                    style={{ backgroundColor: cat.color || "var(--gray-200)" }}
                   >
                     {cat.name.slice(0, 2)}
                   </div>

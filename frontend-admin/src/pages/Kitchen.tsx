@@ -297,7 +297,7 @@ function OrderCard({
         className={`w-full rounded-lg py-3 font-semibold transition-all active:scale-95 disabled:opacity-50 ${
           isReady
             ? "bg-green-600 text-white hover:bg-green-700"
-            : "bg-white text-gray-900 hover:bg-gray-100"
+            : "bg-surface text-gray-900 hover:bg-gray-100"
         }`}
       >
         {isUpdating ? (

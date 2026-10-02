@@ -45,7 +45,7 @@ export default function Modal({ isOpen, onClose, title, children, size = "md" }:
       />
       <div
         className={clsx(
-          "relative z-10 mx-4 w-full rounded-2xl bg-white shadow-2xl transition-all",
+          "relative z-10 mx-4 w-full rounded-2xl bg-surface shadow-2xl transition-all",
           sizeMap[size]
         )}
       >

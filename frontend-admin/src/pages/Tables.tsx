@@ -43,7 +43,7 @@ export default function Tables() {
             const badge = statusBadge(table.status);
             return (
               <div key={table.id} className={`rounded-xl border-2 p-4 text-center transition-all hover:shadow-md ${statusColors[table.status] || "border-gray-200"}`}>
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-surface shadow-sm">
                   <span className="text-xl font-bold text-gray-900">{table.number}</span>
                 </div>
                 <p className="mt-2 text-sm text-gray-500">{table.capacity} мест</p>

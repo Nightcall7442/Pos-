@@ -24,7 +24,7 @@ export default function Layout() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen overflow-hidden bg-canvas">
       <Sidebar />
       <div className={`flex flex-1 flex-col overflow-hidden transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-20"}`}>
         <Header />

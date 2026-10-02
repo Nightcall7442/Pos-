@@ -284,7 +284,7 @@ export default function StockReceipts() {
                 />
               </div>
               {showSuggestions && searchQuery && filteredProducts.length > 0 && (
-                <div className="absolute z-10 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+                <div className="absolute z-10 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-surface shadow-lg">
                   {filteredProducts.slice(0, 10).map((p) => (
                     <button
                       key={p.id}

@@ -67,8 +67,8 @@ export default function TechCards() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Тех карты</h1>
-          <p className="text-gray-500 dark:text-gray-400">Рецептуры блюд и расчёт себестоимости</p>
+          <h1 className="text-2xl font-bold text-gray-900">Тех карты</h1>
+          <p className="text-gray-500">Рецептуры блюд и расчёт себестоимости</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="btn-primary">
           <Plus className="mr-2 h-4 w-4" /> Создать техкарту
@@ -108,15 +108,15 @@ export default function TechCards() {
               <div key={tc.id} className="card overflow-hidden">
                 {/* Card Header */}
                 <div
-                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
                   onClick={() => { if (!isEditing) { setExpandedId(isExpanded ? null : tc.id); setEditingId(null); } }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/30">
-                      <ChefHat className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100">
+                      <ChefHat className="h-5 w-5 text-orange-600" />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">{tc.name}</p>
+                      <p className="font-semibold text-gray-900">{tc.name}</p>
                       <p className="text-xs text-gray-500">
                         {items.length} ингред. · Выход: {output} {tc.unit}
                         {!!tc.products?.length && ` · Товаров: ${tc.products.length}`}
@@ -125,7 +125,7 @@ export default function TechCards() {
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      <p className="text-sm font-semibold text-gray-900">
                         {totalCost.toLocaleString("ru-RU")} СУМ
                       </p>
                       <p className="text-xs text-gray-500">Себестоимость</p>
@@ -159,7 +159,7 @@ export default function TechCards() {
 
                 {/* Expanded View */}
                 {isExpanded && !isEditing && (
-                  <div className="border-t border-gray-100 dark:border-gray-700 px-4 pb-4">
+                  <div className="border-t border-gray-100 px-4 pb-4">
                     <table className="mt-3 w-full text-sm">
                       <thead>
                         <tr className="text-xs font-medium uppercase text-gray-500">
@@ -171,11 +171,11 @@ export default function TechCards() {
                           <th className="pb-2 text-right">Стоимость</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                      <tbody className="divide-y divide-gray-100">
                         {items.map((item, idx) => (
                           <tr key={idx}>
                             <td className="py-2 text-gray-500">{idx + 1}</td>
-                            <td className="py-2 font-medium text-gray-900 dark:text-gray-100">{getIngName(item.ingredientId)}</td>
+                            <td className="py-2 font-medium text-gray-900">{getIngName(item.ingredientId)}</td>
                             <td className="py-2 text-center text-gray-600">{item.grossWeight || "—"} {item.unit}</td>
                             <td className="py-2 text-center text-gray-600">{item.netWeight || item.quantity} {item.unit}</td>
                             <td className="py-2 text-center text-gray-600">{item.unit}</td>
@@ -197,7 +197,7 @@ export default function TechCards() {
                         <p className="font-medium text-gray-700 mb-1">Используется в товарах:</p>
                         <div className="flex flex-wrap gap-2">
                           {tc.products?.map((p) => (
-                            <span key={p.id} className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-600 border">
+                            <span key={p.id} className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-gray-600 border">
                               {p.name}
                             </span>
                           ))}
@@ -209,7 +209,7 @@ export default function TechCards() {
 
                 {/* Edit Mode */}
                 {isEditing && (
-                  <div className="border-t border-gray-100 dark:border-gray-700 px-4 pb-4 pt-3 space-y-3">
+                  <div className="border-t border-gray-100 px-4 pb-4 pt-3 space-y-3">
                     <div>
                       <label className="label">Название техкарты</label>
                       <input
@@ -277,9 +277,9 @@ export default function TechCards() {
       {/* Create Modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-800 max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-lg rounded-2xl bg-surface p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Новая тех карта</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Новая тех карта</h2>
               <button onClick={() => setShowCreate(false)} className="rounded p-1 text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
             </div>
             <div className="space-y-4">

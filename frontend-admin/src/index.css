@@ -1,81 +1,417 @@
 @import "tailwindcss";
 
+/*
+ * Панель Qwik — в языке экрана кассы: сталь и графит, белые таблицы, зелёная
+ * только оплата. Тёмная тема живёт в токенах: класс .dark на <html> меняет,
+ * что значит каждый шаг шкалы, поэтому страницам не нужны dark:-классы (D-1).
+ * Синий шаблона Tailwind заменён сталью — и primary, и blue (D-2).
+ */
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme {
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-200: #bfdbfe;
-  --color-primary-300: #93c5fd;
-  --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
-  --color-primary-800: #1e40af;
-  --color-primary-900: #1e3a8a;
+@theme inline {
+  --color-gray-50: var(--gray-50);
+  --color-gray-100: var(--gray-100);
+  --color-gray-200: var(--gray-200);
+  --color-gray-300: var(--gray-300);
+  --color-gray-400: var(--gray-400);
+  --color-gray-500: var(--gray-500);
+  --color-gray-600: var(--gray-600);
+  --color-gray-700: var(--gray-700);
+  --color-gray-800: var(--gray-800);
+  --color-gray-900: var(--gray-900);
+  --color-gray-950: var(--gray-950);
+  --color-primary-50: var(--steel-50);
+  --color-primary-100: var(--steel-100);
+  --color-primary-200: var(--steel-200);
+  --color-primary-300: var(--steel-300);
+  --color-primary-400: var(--steel-400);
+  --color-primary-500: var(--steel-500);
+  --color-primary-600: var(--steel-600);
+  --color-primary-700: var(--steel-700);
+  --color-primary-800: var(--steel-800);
+  --color-primary-900: var(--steel-900);
+  --color-primary-950: var(--steel-950);
+  --color-blue-50: var(--steel-50);
+  --color-blue-100: var(--steel-100);
+  --color-blue-200: var(--steel-200);
+  --color-blue-300: var(--steel-300);
+  --color-blue-400: var(--steel-400);
+  --color-blue-500: var(--steel-500);
+  --color-blue-600: var(--steel-600);
+  --color-blue-700: var(--steel-700);
+  --color-blue-800: var(--steel-800);
+  --color-blue-900: var(--steel-900);
+  --color-blue-950: var(--steel-950);
+  --color-red-50: var(--red-50);
+  --color-red-100: var(--red-100);
+  --color-red-200: var(--red-200);
+  --color-red-300: var(--red-300);
+  --color-red-400: var(--red-400);
+  --color-red-500: var(--red-500);
+  --color-red-600: var(--red-600);
+  --color-red-700: var(--red-700);
+  --color-red-800: var(--red-800);
+  --color-red-900: var(--red-900);
+  --color-red-950: var(--red-950);
+  --color-orange-50: var(--orange-50);
+  --color-orange-100: var(--orange-100);
+  --color-orange-200: var(--orange-200);
+  --color-orange-300: var(--orange-300);
+  --color-orange-400: var(--orange-400);
+  --color-orange-500: var(--orange-500);
+  --color-orange-600: var(--orange-600);
+  --color-orange-700: var(--orange-700);
+  --color-orange-800: var(--orange-800);
+  --color-orange-900: var(--orange-900);
+  --color-orange-950: var(--orange-950);
+  --color-amber-50: var(--amber-50);
+  --color-amber-100: var(--amber-100);
+  --color-amber-200: var(--amber-200);
+  --color-amber-300: var(--amber-300);
+  --color-amber-400: var(--amber-400);
+  --color-amber-500: var(--amber-500);
+  --color-amber-600: var(--amber-600);
+  --color-amber-700: var(--amber-700);
+  --color-amber-800: var(--amber-800);
+  --color-amber-900: var(--amber-900);
+  --color-amber-950: var(--amber-950);
+  --color-yellow-50: var(--yellow-50);
+  --color-yellow-100: var(--yellow-100);
+  --color-yellow-200: var(--yellow-200);
+  --color-yellow-300: var(--yellow-300);
+  --color-yellow-400: var(--yellow-400);
+  --color-yellow-500: var(--yellow-500);
+  --color-yellow-600: var(--yellow-600);
+  --color-yellow-700: var(--yellow-700);
+  --color-yellow-800: var(--yellow-800);
+  --color-yellow-900: var(--yellow-900);
+  --color-yellow-950: var(--yellow-950);
+  --color-green-50: var(--green-50);
+  --color-green-100: var(--green-100);
+  --color-green-200: var(--green-200);
+  --color-green-300: var(--green-300);
+  --color-green-400: var(--green-400);
+  --color-green-500: var(--green-500);
+  --color-green-600: var(--green-600);
+  --color-green-700: var(--green-700);
+  --color-green-800: var(--green-800);
+  --color-green-900: var(--green-900);
+  --color-green-950: var(--green-950);
+  --color-emerald-50: var(--emerald-50);
+  --color-emerald-100: var(--emerald-100);
+  --color-emerald-200: var(--emerald-200);
+  --color-emerald-300: var(--emerald-300);
+  --color-emerald-400: var(--emerald-400);
+  --color-emerald-500: var(--emerald-500);
+  --color-emerald-600: var(--emerald-600);
+  --color-emerald-700: var(--emerald-700);
+  --color-emerald-800: var(--emerald-800);
+  --color-emerald-900: var(--emerald-900);
+  --color-emerald-950: var(--emerald-950);
+  --color-purple-50: var(--purple-50);
+  --color-purple-100: var(--purple-100);
+  --color-purple-200: var(--purple-200);
+  --color-purple-300: var(--purple-300);
+  --color-purple-400: var(--purple-400);
+  --color-purple-500: var(--purple-500);
+  --color-purple-600: var(--purple-600);
+  --color-purple-700: var(--purple-700);
+  --color-purple-800: var(--purple-800);
+  --color-purple-900: var(--purple-900);
+  --color-purple-950: var(--purple-950);
+  --color-surface: var(--surface);
+  --color-canvas: var(--canvas);
+  --color-action: var(--action);
+  --color-action-hover: var(--action-hover);
+  --color-bar: var(--bar);
+  --color-bar-2: var(--bar-2);
+  --color-bar-hover: var(--bar-hover);
+  --color-bar-active: var(--bar-active);
+  --color-bar-fg: var(--bar-fg);
+  --color-bar-muted: var(--bar-muted);
+  --color-pay: var(--pay);
+  --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-cond: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", sans-serif;
+}
+
+:root {
+  --gray-50: #f5f7f8;
+  --gray-100: #eceff1;
+  --gray-200: #e1e5e8;
+  --gray-300: #c9cfd4;
+  --gray-400: #9aa3aa;
+  --gray-500: #6b7378;
+  --gray-600: #525a60;
+  --gray-700: #3a4247;
+  --gray-800: #2c3337;
+  --gray-900: #15191b;
+  --gray-950: #0b0e10;
+  --steel-50: #f1f4f8;
+  --steel-100: #e2e8f0;
+  --steel-200: #c6d1de;
+  --steel-300: #a2b3c7;
+  --steel-400: #7d93ae;
+  --steel-500: #62799a;
+  --steel-600: #4f6a8a;
+  --steel-700: #3f566f;
+  --steel-800: #33465b;
+  --steel-900: #2a3a4c;
+  --steel-950: #1b2633;
+  --red-50: oklch(97.1% 0.013 17.38);
+  --red-100: oklch(93.6% 0.032 17.717);
+  --red-200: oklch(88.5% 0.062 18.334);
+  --red-300: oklch(80.8% 0.114 19.571);
+  --red-400: oklch(70.4% 0.191 22.216);
+  --red-500: oklch(63.7% 0.237 25.331);
+  --red-600: oklch(57.7% 0.245 27.325);
+  --red-700: oklch(50.5% 0.213 27.518);
+  --red-800: oklch(44.4% 0.177 26.899);
+  --red-900: oklch(39.6% 0.141 25.723);
+  --red-950: oklch(25.8% 0.092 26.042);
+  --orange-50: oklch(98% 0.016 73.684);
+  --orange-100: oklch(95.4% 0.038 75.164);
+  --orange-200: oklch(90.1% 0.076 70.697);
+  --orange-300: oklch(83.7% 0.128 66.29);
+  --orange-400: oklch(75% 0.183 55.934);
+  --orange-500: oklch(70.5% 0.213 47.604);
+  --orange-600: oklch(64.6% 0.222 41.116);
+  --orange-700: oklch(55.3% 0.195 38.402);
+  --orange-800: oklch(47% 0.157 37.304);
+  --orange-900: oklch(40.8% 0.123 38.172);
+  --orange-950: oklch(26.6% 0.079 36.259);
+  --amber-50: oklch(98.7% 0.022 95.277);
+  --amber-100: oklch(96.2% 0.059 95.617);
+  --amber-200: oklch(92.4% 0.12 95.746);
+  --amber-300: oklch(87.9% 0.169 91.605);
+  --amber-400: oklch(82.8% 0.189 84.429);
+  --amber-500: oklch(76.9% 0.188 70.08);
+  --amber-600: oklch(66.6% 0.179 58.318);
+  --amber-700: oklch(55.5% 0.163 48.998);
+  --amber-800: oklch(47.3% 0.137 46.201);
+  --amber-900: oklch(41.4% 0.112 45.904);
+  --amber-950: oklch(27.9% 0.077 45.635);
+  --yellow-50: oklch(98.7% 0.026 102.212);
+  --yellow-100: oklch(97.3% 0.071 103.193);
+  --yellow-200: oklch(94.5% 0.129 101.54);
+  --yellow-300: oklch(90.5% 0.182 98.111);
+  --yellow-400: oklch(85.2% 0.199 91.936);
+  --yellow-500: oklch(79.5% 0.184 86.047);
+  --yellow-600: oklch(68.1% 0.162 75.834);
+  --yellow-700: oklch(55.4% 0.135 66.442);
+  --yellow-800: oklch(47.6% 0.114 61.907);
+  --yellow-900: oklch(42.1% 0.095 57.708);
+  --yellow-950: oklch(28.6% 0.066 53.813);
+  --green-50: oklch(98.2% 0.018 155.826);
+  --green-100: oklch(96.2% 0.044 156.743);
+  --green-200: oklch(92.5% 0.084 155.995);
+  --green-300: oklch(87.1% 0.15 154.449);
+  --green-400: oklch(79.2% 0.209 151.711);
+  --green-500: oklch(72.3% 0.219 149.579);
+  --green-600: oklch(62.7% 0.194 149.214);
+  --green-700: oklch(52.7% 0.154 150.069);
+  --green-800: oklch(44.8% 0.119 151.328);
+  --green-900: oklch(39.3% 0.095 152.535);
+  --green-950: oklch(26.6% 0.065 152.934);
+  --emerald-50: oklch(97.9% 0.021 166.113);
+  --emerald-100: oklch(95% 0.052 163.051);
+  --emerald-200: oklch(90.5% 0.093 164.15);
+  --emerald-300: oklch(84.5% 0.143 164.978);
+  --emerald-400: oklch(76.5% 0.177 163.223);
+  --emerald-500: oklch(69.6% 0.17 162.48);
+  --emerald-600: oklch(59.6% 0.145 163.225);
+  --emerald-700: oklch(50.8% 0.118 165.612);
+  --emerald-800: oklch(43.2% 0.095 166.913);
+  --emerald-900: oklch(37.8% 0.077 168.94);
+  --emerald-950: oklch(26.2% 0.051 172.552);
+  --purple-50: oklch(97.7% 0.014 308.299);
+  --purple-100: oklch(94.6% 0.033 307.174);
+  --purple-200: oklch(90.2% 0.063 306.703);
+  --purple-300: oklch(82.7% 0.119 306.383);
+  --purple-400: oklch(71.4% 0.203 305.504);
+  --purple-500: oklch(62.7% 0.265 303.9);
+  --purple-600: oklch(55.8% 0.288 302.321);
+  --purple-700: oklch(49.6% 0.265 301.924);
+  --purple-800: oklch(43.8% 0.218 303.724);
+  --purple-900: oklch(38.1% 0.176 304.987);
+  --purple-950: oklch(29.1% 0.149 302.717);
+  --surface: #ffffff;
+  --canvas: #eceff1;
+  --action: #2c3540;
+  --action-hover: #36414d;
+  --bar: #232b33;
+  --bar-2: #2c3540;
+  --bar-hover: #36414d;
+  --bar-active: #5a6878;
+  --bar-fg: #d9e0e5;
+  --bar-muted: #8e9aa8;
+  --pay: #2f9e61;
+  --toast-bg: #232b33;
+  --toast-fg: #e6eaec;
+  color-scheme: light;
+}
+
+.dark {
+  --gray-50: #101416;
+  --gray-100: #171c1f;
+  --gray-200: #262d31;
+  --gray-300: #353e43;
+  --gray-400: #5f6a70;
+  --gray-500: #8a9499;
+  --gray-600: #a3adb1;
+  --gray-700: #c4cbce;
+  --gray-800: #dde2e4;
+  --gray-900: #e6eaec;
+  --gray-950: #f4f6f7;
+  --steel-50: #161d26;
+  --steel-100: #1b2430;
+  --steel-200: #24303f;
+  --steel-300: #33465b;
+  --steel-400: #7d93ae;
+  --steel-500: #8ea3bd;
+  --steel-600: #9fb3cc;
+  --steel-700: #b4c4d8;
+  --steel-800: #cdd8e5;
+  --steel-900: #e2e8f0;
+  --steel-950: #f1f4f8;
+  --red-50: oklch(25.8% 0.092 26.042);
+  --red-100: oklch(39.6% 0.141 25.723);
+  --red-200: oklch(44.4% 0.177 26.899);
+  --red-300: oklch(50.5% 0.213 27.518);
+  --red-400: oklch(70.4% 0.191 22.216);
+  --red-500: oklch(63.7% 0.237 25.331);
+  --red-600: oklch(63.7% 0.237 25.331);
+  --red-700: oklch(70.4% 0.191 22.216);
+  --red-800: oklch(80.8% 0.114 19.571);
+  --red-900: oklch(88.5% 0.062 18.334);
+  --red-950: oklch(93.6% 0.032 17.717);
+  --orange-50: oklch(26.6% 0.079 36.259);
+  --orange-100: oklch(40.8% 0.123 38.172);
+  --orange-200: oklch(47% 0.157 37.304);
+  --orange-300: oklch(55.3% 0.195 38.402);
+  --orange-400: oklch(75% 0.183 55.934);
+  --orange-500: oklch(70.5% 0.213 47.604);
+  --orange-600: oklch(70.5% 0.213 47.604);
+  --orange-700: oklch(75% 0.183 55.934);
+  --orange-800: oklch(83.7% 0.128 66.29);
+  --orange-900: oklch(90.1% 0.076 70.697);
+  --orange-950: oklch(95.4% 0.038 75.164);
+  --amber-50: oklch(27.9% 0.077 45.635);
+  --amber-100: oklch(41.4% 0.112 45.904);
+  --amber-200: oklch(47.3% 0.137 46.201);
+  --amber-300: oklch(55.5% 0.163 48.998);
+  --amber-400: oklch(82.8% 0.189 84.429);
+  --amber-500: oklch(76.9% 0.188 70.08);
+  --amber-600: oklch(76.9% 0.188 70.08);
+  --amber-700: oklch(82.8% 0.189 84.429);
+  --amber-800: oklch(87.9% 0.169 91.605);
+  --amber-900: oklch(92.4% 0.12 95.746);
+  --amber-950: oklch(96.2% 0.059 95.617);
+  --yellow-50: oklch(28.6% 0.066 53.813);
+  --yellow-100: oklch(42.1% 0.095 57.708);
+  --yellow-200: oklch(47.6% 0.114 61.907);
+  --yellow-300: oklch(55.4% 0.135 66.442);
+  --yellow-400: oklch(85.2% 0.199 91.936);
+  --yellow-500: oklch(79.5% 0.184 86.047);
+  --yellow-600: oklch(79.5% 0.184 86.047);
+  --yellow-700: oklch(85.2% 0.199 91.936);
+  --yellow-800: oklch(90.5% 0.182 98.111);
+  --yellow-900: oklch(94.5% 0.129 101.54);
+  --yellow-950: oklch(97.3% 0.071 103.193);
+  --green-50: oklch(26.6% 0.065 152.934);
+  --green-100: oklch(39.3% 0.095 152.535);
+  --green-200: oklch(44.8% 0.119 151.328);
+  --green-300: oklch(52.7% 0.154 150.069);
+  --green-400: oklch(79.2% 0.209 151.711);
+  --green-500: oklch(72.3% 0.219 149.579);
+  --green-600: oklch(72.3% 0.219 149.579);
+  --green-700: oklch(79.2% 0.209 151.711);
+  --green-800: oklch(87.1% 0.15 154.449);
+  --green-900: oklch(92.5% 0.084 155.995);
+  --green-950: oklch(96.2% 0.044 156.743);
+  --emerald-50: oklch(26.2% 0.051 172.552);
+  --emerald-100: oklch(37.8% 0.077 168.94);
+  --emerald-200: oklch(43.2% 0.095 166.913);
+  --emerald-300: oklch(50.8% 0.118 165.612);
+  --emerald-400: oklch(76.5% 0.177 163.223);
+  --emerald-500: oklch(69.6% 0.17 162.48);
+  --emerald-600: oklch(69.6% 0.17 162.48);
+  --emerald-700: oklch(76.5% 0.177 163.223);
+  --emerald-800: oklch(84.5% 0.143 164.978);
+  --emerald-900: oklch(90.5% 0.093 164.15);
+  --emerald-950: oklch(95% 0.052 163.051);
+  --purple-50: oklch(29.1% 0.149 302.717);
+  --purple-100: oklch(38.1% 0.176 304.987);
+  --purple-200: oklch(43.8% 0.218 303.724);
+  --purple-300: oklch(49.6% 0.265 301.924);
+  --purple-400: oklch(71.4% 0.203 305.504);
+  --purple-500: oklch(62.7% 0.265 303.9);
+  --purple-600: oklch(62.7% 0.265 303.9);
+  --purple-700: oklch(71.4% 0.203 305.504);
+  --purple-800: oklch(82.7% 0.119 306.383);
+  --purple-900: oklch(90.2% 0.063 306.703);
+  --purple-950: oklch(94.6% 0.033 307.174);
+  --surface: #15191b;
+  --canvas: #0e1214;
+  --action: #5a6878;
+  --action-hover: #66758a;
+  --bar: #0e1216;
+  --bar-2: #12171d;
+  --bar-hover: #1b222a;
+  --bar-active: #2a3440;
+  --bar-fg: #c6ced2;
+  --bar-muted: #6f7b80;
+  --pay: #2f9e61;
+  --toast-bg: #2a3440;
+  --toast-fg: #e6eaec;
+  color-scheme: dark;
 }
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
-  }
-  .dark body,
-  .dark {
-    @apply bg-gray-900 text-gray-100;
+    @apply bg-canvas text-gray-900 antialiased;
+    font-family: var(--font-sans);
+    /* Суммы, остатки и время не «прыгают» при пересчёте (D-3). */
+    font-variant-numeric: tabular-nums;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center rounded-md bg-action px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-action-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
-  }
-  .dark .btn-secondary {
-    @apply border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700;
+    @apply inline-flex items-center justify-center rounded-md border border-gray-300 bg-surface px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2;
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2;
   }
 
   .card {
-    @apply rounded-xl border border-gray-200 bg-white p-6 shadow-sm;
-  }
-  .dark .card {
-    @apply border-gray-700 bg-gray-800;
+    @apply rounded-md border border-gray-200 bg-surface p-6;
   }
 
   .input {
-    @apply block w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 shadow-sm transition-colors placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500;
-  }
-  .dark .input {
-    @apply border-gray-600 bg-gray-700 text-gray-100 placeholder:text-gray-400;
+    @apply block w-full rounded border border-gray-300 bg-surface px-3.5 py-2.5 text-sm text-gray-900 transition-colors placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500;
   }
 
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1.5;
-  }
-  .dark .label {
-    @apply text-gray-300;
+    @apply mb-1.5 block text-sm font-medium text-gray-700;
   }
 }
 
-
 /* ── Экраны входа и регистрации ───────────────────────────────────────────────
-   Оформлены как сайт qwik.uz: бумажный фон, серифный заголовок, зелёный
-   акцент, прямые углы. Это первое, что видит пользователь после лендинга,
-   поэтому переход не должен выглядеть как переход в другой продукт.
-   Классы отдельные: внутренняя часть панели остаётся в своём оформлении.
-   Тема здесь всегда светлая — «бумага» тёмного варианта не имеет. */
+   В том же языке, что касса и панель: светлый фон, белая карточка, графитовая
+   кнопка, шрифт IBM Plex. Тема здесь всегда светлая — вход видят до того,
+   как пользователь выбрал тему. */
 .auth-screen {
-  --paper: #f7f5f0;
-  --ink: #14150f;
-  --muted: #6d6c62;
-  --line: #dedbd2;
-  --accent: #1f5f3f;
+  --paper: #eceff1;
+  --ink: #15191b;
+  --muted: #6b7378;
+  --line: #dfe3e6;
+  --accent: #2c3540;
+  --accent-text: #4f6a8a;
 
   min-height: 100vh;
   display: flex;
@@ -84,35 +420,36 @@
   padding: 40px 24px;
   background: var(--paper);
   color: var(--ink);
-  font-family: Inter, system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
+  color-scheme: light;
 }
 
 .auth-box { width: 100%; max-width: 420px; }
 
-.auth-head { margin-bottom: 32px; }
+.auth-head { margin-bottom: 28px; }
 
 .auth-kicker {
   font-size: 12px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .auth-title {
-  font-family: "Instrument Serif", Georgia, serif;
-  font-weight: 400;
-  font-size: 44px;
-  line-height: 1.05;
+  font-weight: 600;
+  font-size: 36px;
+  line-height: 1.1;
   letter-spacing: -0.02em;
 }
-.auth-title em { font-style: italic; color: var(--accent); }
+.auth-title em { font-style: normal; color: var(--accent-text); }
 
 .auth-sub { margin-top: 10px; color: var(--muted); font-size: 15px; }
 
 .auth-card {
   background: #fff;
   border: 1px solid var(--line);
+  border-radius: 6px;
   padding: 28px;
 }
 
@@ -137,8 +474,8 @@
   border-radius: 4px;
   transition: border-color 0.15s ease;
 }
-.auth-input::placeholder { color: #a8a69c; }
-.auth-input:focus { outline: none; border-color: var(--accent); }
+.auth-input::placeholder { color: #9aa3aa; }
+.auth-input:focus { outline: none; border-color: var(--accent-text); }
 
 .auth-input-wrap { position: relative; }
 .auth-reveal {
@@ -157,7 +494,7 @@
   margin-top: 24px;
   padding: 13px 22px;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   font-family: inherit;
   color: #fff;
   background: var(--accent);
@@ -166,11 +503,11 @@
   cursor: pointer;
   transition: background 0.15s ease, transform 0.1s ease;
 }
-.auth-submit:hover:not(:disabled) { background: #17492f; }
+.auth-submit:hover:not(:disabled) { background: #36414d; }
 .auth-submit:active:not(:disabled) { transform: scale(0.99); }
 .auth-submit:disabled { opacity: 0.55; cursor: not-allowed; }
 
-.auth-hint { color: #b04a3a; font-size: 13px; margin-top: 7px; }
+.auth-hint { color: #c8402b; font-size: 13px; margin-top: 7px; }
 
 .auth-foot {
   margin-top: 26px;
@@ -178,7 +515,7 @@
   font-size: 14px;
   color: var(--muted);
 }
-.auth-foot a { color: var(--accent); font-weight: 500; }
+.auth-foot a { color: var(--accent-text); font-weight: 500; }
 .auth-foot a:hover { text-decoration: underline; }
 
 .auth-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -197,8 +534,8 @@
 }
 .auth-choice-item b { display: block; font-size: 14px; font-weight: 600; color: var(--ink); }
 .auth-choice-item span { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); }
-.auth-choice-item:hover { border-color: var(--accent); }
-.auth-choice-item.on { border-color: var(--accent); background: #eef4f0; box-shadow: inset 0 0 0 1px var(--accent); }
+.auth-choice-item:hover { border-color: var(--accent-text); }
+.auth-choice-item.on { border-color: var(--accent-text); background: #f1f4f8; box-shadow: inset 0 0 0 1px var(--accent-text); }
 
 .auth-spinner {
   display: inline-block;
@@ -214,13 +551,13 @@
 @keyframes auth-spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 520px) {
-  .auth-title { font-size: 36px; }
+  .auth-title { font-size: 30px; }
   .auth-grid { grid-template-columns: 1fr; }
   .auth-choice { grid-template-columns: 1fr; }
   .auth-grid .auth-field + .auth-field { margin-top: 18px; }
 }
 
-/* Custom scrollbar */
+/* Полоса прокрутки — по токенам, одинаково в обеих темах. */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -231,18 +568,20 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: var(--gray-300);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: var(--gray-400);
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: #4b5563;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

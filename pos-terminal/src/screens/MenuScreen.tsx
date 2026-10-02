@@ -552,7 +552,7 @@ export default function MenuScreen({ user, onLogout, onCheckout, onCloseShift }:
             <button
               onClick={onCheckout}
               disabled={items.length === 0}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 py-4 text-sm font-bold text-white shadow-lg shadow-primary-600/25 transition-all hover:bg-primary-500 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-success-600 py-4 text-sm font-bold text-white shadow-lg shadow-success-600/25 transition-all hover:bg-success-500 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Оплатить
               <ChevronRight className="h-4 w-4" />

@@ -83,8 +83,8 @@ export default function CloseShiftScreen({ shiftId, onShiftClosed, onCancel }: C
           <div className="grid grid-cols-2 gap-3">
             <SummaryCard icon={<TrendingUp className="h-4 w-4 text-primary-400" />} label="Общие продажи" value={money(shift.totalSales)} />
             <SummaryCard icon={<Banknote className="h-4 w-4 text-success-400" />} label="Наличные" value={money(shift.totalCashSales)} />
-            <SummaryCard icon={<CreditCard className="h-4 w-4 text-blue-400" />} label="Карта" value={money(shift.totalCardSales)} />
-            <SummaryCard icon={<QrCode className="h-4 w-4 text-purple-400" />} label="QR" value={money(shift.totalQrSales)} />
+            <SummaryCard icon={<CreditCard className="h-4 w-4 text-primary-400" />} label="Карта" value={money(shift.totalCardSales)} />
+            <SummaryCard icon={<QrCode className="h-4 w-4 text-primary-300" />} label="QR" value={money(shift.totalQrSales)} />
           </div>
 
           {/* Opening / Expected */}

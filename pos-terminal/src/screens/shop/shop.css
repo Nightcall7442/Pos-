@@ -1,14 +1,21 @@
-/* Касса магазина. Дизайн — макет A «Чек» с плитками из B; тот же язык, что у
-   сайта и входа: бумага, тушь, зелёный, прямые углы, крупные цифры Instrument
-   Serif. Всё через переменные, поэтому работают и светлая, и тёмная темы.
+/* Касса магазина. Язык — как у рабочих кассовых терминалов: графитовая строка
+   состояния, белый чек с чередованием строк, выбранная строка — сталь,
+   стальные цифровые клавиши, графитовые клавиши действий, зелёная только
+   оплата. Шрифт — IBM Plex: ровный, с кириллицей и табличными цифрами.
+   Всё через переменные, поэтому работают и светлая, и тёмная темы.
    Классы с префиксом sh- — экран кафе (MenuScreen) их не использует. */
 
 .sh {
-  --paper: #f7f5f0; --card: #fff; --line: #dedbd2; --line-soft: #ece9e0;
-  --ink: #14150f; --muted: #6d6c62; --faint: #a8a69c;
-  --accent: #1f5f3f; --accent-hi: #17492f; --accent-soft: #e7efe9; --accent-mid: #bcd5c6; --on-accent: #fff;
-  --amber: #a8690b; --amber-soft: #f8eed6; --red: #b04a3a; --red-soft: #f7e4df;
-  --key: #f7f5f0; --key-press: #ece9e1; --zebra: #fbfaf6; --scrim: rgba(20, 21, 15, 0.5);
+  --paper: #eceff1; --card: #fff; --line: #dfe3e6; --line-soft: #eceff1;
+  --ink: #15191b; --muted: #6b7378; --faint: #9aa3aa;
+  --accent: #4f6a8a; --accent-hi: #3f566f; --accent-soft: #e2e8f0; --accent-mid: #c6d1de; --on-accent: #fff;
+  --sel: #62799a; --sel-fg: #fff;
+  --bar: #232b33; --bar-fg: #d9e0e5; --bar-muted: #8e9aa8;
+  --key: #5a6878; --key-hi: #66758a; --key-press: #4b5866; --key-fg: #fff;
+  --fn: #2c3540; --fn-hi: #36414d; --fn-fg: #e3e8ea;
+  --pay: #2f9e61; --pay-hi: #35ad6b;
+  --amber: #b26a00; --amber-soft: #f8eed6; --red: #c8402b; --red-soft: #f7e4df;
+  --zebra: #f5f7f8; --head: #eceff1; --scrim: rgba(13, 17, 19, 0.5);
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
 
   flex: 1;
@@ -17,15 +24,20 @@
   flex-direction: column;
   background: var(--paper);
   color: var(--ink);
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
 :root[data-theme="dark"] .sh {
-  --paper: #0e0f0b; --card: #171812; --line: #2b2d25; --line-soft: #22241d;
-  --ink: #f0eee5; --muted: #9b998b; --faint: #68675c;
-  --accent: #2e8a5f; --accent-hi: #379a6b; --accent-soft: rgba(46, 138, 95, 0.15); --accent-mid: rgba(46, 138, 95, 0.45);
-  --amber: #e2a73f; --amber-soft: rgba(226, 167, 63, 0.14); --red: #e58a7a; --red-soft: rgba(229, 138, 122, 0.14);
-  --key: #1d1e17; --key-press: #272920; --zebra: #141510; --scrim: rgba(0, 0, 0, 0.62);
+  --paper: #0e1214; --card: #15191b; --line: #272e31; --line-soft: #1e2427;
+  --ink: #e6eaec; --muted: #8a9499; --faint: #5f6a70;
+  --accent: #7d93ae; --accent-hi: #8ea3bd; --accent-soft: rgba(98, 121, 154, 0.18); --accent-mid: rgba(98, 121, 154, 0.45);
+  --sel: #3d5573; --sel-fg: #fff;
+  --bar: #0e1216; --bar-fg: #c6ced2; --bar-muted: #6f7b80;
+  --key: #2a3440; --key-hi: #33404e; --key-press: #222b35; --key-fg: #e6eaec;
+  --fn: #12171d; --fn-hi: #1b222a; --fn-fg: #cfd6d9;
+  --amber: #ffb547; --amber-soft: rgba(255, 181, 71, 0.14); --red: #ff8b7d; --red-soft: rgba(255, 139, 125, 0.14);
+  --zebra: #191e20; --head: #1e2427; --scrim: rgba(0, 0, 0, 0.62);
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
 }
 .sh *, .sh *::before, .sh *::after { box-sizing: border-box; }
@@ -33,12 +45,18 @@
 :where(.sh) button:disabled { cursor: not-allowed; }
 .sh .tab { font-variant-numeric: tabular-nums; }
 :where(.sh) svg.i { width: 20px; height: 20px; flex: none; }
-.sh .serif { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; }
+.sh .serif { font-weight: 600; }
 .sh .lbl { font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted); }
 
 /* ── верхняя панель ─────────────────────────────────────────────────────── */
-.sh-top { height: 52px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 18px; background: var(--card); border-bottom: 1px solid var(--line); }
-.sh-logo { font-family: "Instrument Serif", Georgia, serif; font-size: 26px; letter-spacing: -0.02em; line-height: 1; }
+.sh-top { height: 52px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 18px; background: var(--bar); color: var(--bar-fg); }
+.sh-top .sh-chip { border-color: rgba(255, 255, 255, 0.14); background: transparent; color: var(--bar-fg); }
+.sh-top .sh-chip:hover:not(:disabled) { border-color: rgba(255, 255, 255, 0.36); }
+.sh-top .sh-chip .i, .sh-top .sh-chip.plain, .sh-top .sh-shop, .sh-top .sh-time { color: var(--bar-muted); }
+.sh-top .sh-ic { color: var(--bar-muted); }
+.sh-top .sh-ic:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+.sh-top .sh-vr { background: rgba(255, 255, 255, 0.14); }
+.sh-logo { font-weight: 600; font-size: 20px; letter-spacing: -0.01em; line-height: 1; color: #fff; }
 .sh-shop { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sh-sp { flex: 1; }
 .sh-chip { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--card); font-size: 13px; font-weight: 500; white-space: nowrap; transition: border-color 0.15s ease; }
@@ -46,11 +64,11 @@
 .sh-chip .i { width: 16px; height: 16px; color: var(--muted); }
 .sh-chip.plain { border-color: transparent; background: transparent; color: var(--muted); padding: 0; }
 .sh-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--amber); color: #fff; font-size: 11px; font-weight: 600; }
-.sh-dot { width: 8px; height: 8px; border-radius: 50%; background: #2e8a5f; flex: none; }
+.sh-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pay); flex: none; }
 .sh-vr { width: 1px; height: 22px; background: var(--line); }
 .sh-time { font-size: 13px; color: var(--muted); }
 .sh-who { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; white-space: nowrap; }
-.sh-av { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: flex; align-items: center; justify-content: center; font-family: "Instrument Serif", Georgia, serif; font-size: 13px; }
+.sh-av { width: 28px; height: 28px; border-radius: 50%; background: var(--key); color: var(--on-accent); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; }
 .sh-ic { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; color: var(--muted); border-radius: 4px; }
 .sh-ic:hover { color: var(--ink); background: var(--paper); }
 
@@ -67,7 +85,7 @@
 .sh-tog { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 4px; font-weight: 500; font-size: 14px; background: var(--paper); white-space: nowrap; }
 .sh-tog:hover { border-color: var(--accent); }
 .sh-tog .i { width: 18px; height: 18px; color: var(--muted); }
-.sh-tog.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.sh-tog.on { background: var(--key); border-color: var(--key); color: var(--key-fg); }
 .sh-tog.on .i { color: var(--on-accent); }
 .sh-tog.sq { width: 44px; padding: 0; justify-content: center; }
 
@@ -85,9 +103,10 @@
 /* ── чек ────────────────────────────────────────────────────────────────── */
 .sh-rcpt { flex: 1; min-height: 0; background: var(--card); border: 1px solid var(--line); border-radius: 4px; display: flex; flex-direction: column; overflow: hidden; }
 .sh-g { display: grid; grid-template-columns: 44px minmax(0, 1fr) 150px 120px 124px; align-items: center; padding: 0 18px; }
-.sh-rh { height: 38px; flex: none; border-bottom: 1px solid var(--line); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.sh-rh { height: 38px; flex: none; background: var(--head); border-bottom: 1px solid var(--line); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .sh-rh > *:nth-child(n + 3) { text-align: right; }
 .sh-rl { flex: 1; min-height: 0; overflow-y: auto; }
+.sh-rl > :nth-child(even) { background: var(--zebra); }
 .sh-row { min-height: 52px; border-bottom: 1px solid var(--line-soft); cursor: pointer; }
 .sh-row .n { color: var(--faint); font-size: 13px; }
 .sh-row .nm { font-size: 16px; font-weight: 500; line-height: 1.2; min-width: 0; }
@@ -99,8 +118,10 @@
 .sh-row .p { text-align: right; color: var(--muted); font-size: 14px; }
 .sh-row .p small { color: var(--faint); font-size: 12px; }
 .sh-row .s { text-align: right; font-weight: 600; font-size: 16px; }
-.sh-sel { background: var(--accent-soft); border-left: 3px solid var(--accent); border-bottom: 1px solid var(--accent-mid); }
-.sh-sel .sh-row { border-bottom: 0; padding-left: 15px; }
+.sh-rl > .sh-sel, .sh-sel { background: var(--sel); color: var(--sel-fg); }
+.sh-sel .sh-row { border-bottom: 0; }
+.sh-sel .sh-row .n, .sh-sel .sh-row .bc, .sh-sel .sh-row .p, .sh-sel .sh-row .p small { color: rgba(255, 255, 255, 0.75); }
+.sh-sel .sh-row .q.kg .i { color: #fff; }
 .sh-ctl { display: flex; align-items: center; gap: 10px; padding: 0 18px 12px 62px; }
 .sh-step { display: flex; align-items: center; background: var(--card); border: 1px solid var(--accent-mid); border-radius: 4px; height: 40px; }
 .sh-step button { width: 44px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--accent); }
@@ -139,7 +160,7 @@
 .sh-cc:hover { border-color: var(--accent); }
 .sh-cc small { color: var(--faint); font-size: 12px; font-weight: 400; }
 .sh-cc .i { width: 16px; height: 16px; }
-.sh-cc.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.sh-cc.on { background: var(--key); border-color: var(--key); color: var(--key-fg); }
 .sh-cc.on small { color: rgba(255, 255, 255, 0.7); }
 .sh-tiles-wrap { flex: 1; min-height: 0; overflow-y: auto; padding: 2px; margin: -2px; }
 .sh-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 12px; }
@@ -149,7 +170,7 @@
 .sh-t .emo { width: 62px; height: 62px; font-size: 33px; margin-top: 14px; flex: none; }
 .sh-t .nm { font-size: 15px; font-weight: 600; line-height: 1.2; margin-top: 9px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .sh-t .pr { margin-top: auto; padding-top: 8px; display: flex; align-items: baseline; gap: 5px; }
-.sh-t .pr .v { font-family: "Instrument Serif", Georgia, serif; font-size: 27px; line-height: 1; letter-spacing: -0.01em; }
+.sh-t .pr .v { font-weight: 600; font-size: 27px; line-height: 1; letter-spacing: -0.01em; }
 .sh-t .pr small { color: var(--muted); font-size: 12.5px; }
 .emo, .sh .emo { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--accent-soft); overflow: hidden; }
 .sh .emo img { width: 100%; height: 100%; object-fit: cover; }
@@ -160,7 +181,7 @@
 .sh-bd.low { background: var(--amber-soft); color: var(--amber); }
 .sh-bd.out { background: var(--red-soft); color: var(--red); }
 .sh-t.in { border: 1.5px solid var(--accent); background: var(--accent-soft); }
-.sh-t.in .sh-bd.r { background: var(--accent); color: var(--on-accent); }
+.sh-t.in .sh-bd.r { background: var(--sel); color: var(--sel-fg); }
 .sh-t.in .emo { background: var(--card); }
 .sh-t.off { opacity: 0.55; }
 .sh-more { margin: 14px auto 4px; display: block; height: 44px; padding: 0 22px; border: 1px solid var(--line); border-radius: 4px; background: var(--card); font-weight: 500; }
@@ -172,37 +193,39 @@
 
 /* ── правая колонка ─────────────────────────────────────────────────────── */
 .sh-side { background: var(--card); border-left: 1px solid var(--line); padding: 18px 22px; display: flex; flex-direction: column; gap: clamp(8px, 1.6vh, 16px); min-height: 0; overflow-y: auto; }
-.sh-tot .v { font-family: "Instrument Serif", Georgia, serif; font-size: clamp(56px, 11vh, 92px); line-height: 0.95; letter-spacing: -0.025em; margin-top: 8px; white-space: nowrap; }
-.sh-tot .v small { font-family: Inter, sans-serif; font-size: 20px; letter-spacing: 0; color: var(--muted); margin-left: 8px; }
+.sh-tot .v { font-weight: 600; font-size: clamp(56px, 11vh, 92px); line-height: 0.95; letter-spacing: -0.025em; margin-top: 8px; white-space: nowrap; }
+.sh-tot .v small { font-weight: 500; font-size: 20px; letter-spacing: 0; color: var(--muted); margin-left: 8px; }
 .sh-tot .m { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-size: 13px; margin-top: 10px; }
 .sh-tot .m b { color: var(--ink); font-weight: 600; }
 .sh-kd { display: flex; align-items: center; justify-content: space-between; height: 46px; flex: none; padding: 0 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); }
 .sh-kd .lbl { letter-spacing: 0.1em; }
-.sh-kd .val { font-family: "Instrument Serif", Georgia, serif; font-size: 28px; color: var(--accent); line-height: 1; display: flex; align-items: center; gap: 10px; }
+.sh-kd .val { font-weight: 600; font-size: 28px; color: var(--accent); line-height: 1; display: flex; align-items: center; gap: 10px; }
 .sh-kd .val button { color: var(--muted); display: flex; }
 .sh-pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; flex: none; }
-.sh-pad button { height: clamp(44px, 7.4vh, 62px); border: 1px solid var(--line); border-radius: 4px; background: var(--key); font-family: "Instrument Serif", Georgia, serif; font-size: 28px; display: flex; align-items: center; justify-content: center; transition: background 0.1s ease, border-color 0.1s ease; }
-.sh-pad button:hover { border-color: var(--accent); }
+.sh-pad button { height: clamp(44px, 7.4vh, 62px); border: 0; border-radius: 4px; background: var(--key); color: var(--key-fg); font-weight: 600; font-size: 28px; display: flex; align-items: center; justify-content: center; transition: background 0.1s ease, border-color 0.1s ease; }
+.sh-pad button:hover { background: var(--key-hi); }
 .sh-pad button:active { background: var(--key-press); }
-.sh-pad button.f { font-family: Inter, sans-serif; font-size: 15px; font-weight: 500; color: var(--muted); }
+.sh-pad button.f { font-size: 15px; font-weight: 500; color: var(--fn-fg); background: var(--fn); }
+.sh-pad button.f:hover { background: var(--fn-hi); }
 .sh-pad button.f .i { width: 20px; height: 20px; }
-.sh-pad button.go { background: var(--accent-soft); border-color: var(--accent-mid); color: var(--accent); }
+.sh-pad button.go { background: var(--fn); color: #fff; }
+.sh-pad button.go:hover { background: var(--fn-hi); }
 .sh-two { display: flex; gap: 8px; flex: none; }
 .sh-two button { flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line); border-radius: 4px; font-size: 14px; font-weight: 500; white-space: nowrap; min-width: 0; }
 .sh-two button:hover { border-color: var(--accent); }
 .sh-two .i { width: 17px; height: 17px; color: var(--muted); }
 .sh-two .set { border-color: var(--accent-mid); background: var(--accent-soft); }
 .sh-pay { margin-top: auto; display: flex; flex-direction: column; gap: 10px; flex: none; padding-top: 4px; }
-.sh-cash { height: clamp(60px, 9vh, 78px); background: var(--accent); color: var(--on-accent); border-radius: 4px; display: flex; align-items: center; gap: 14px; padding: 0 22px; font-size: 24px; font-weight: 600; transition: background 0.15s ease, transform 0.08s ease; }
-.sh-cash:hover:not(:disabled) { background: var(--accent-hi); }
+.sh-cash { height: clamp(60px, 9vh, 78px); background: var(--pay); color: var(--on-accent); border-radius: 4px; display: flex; align-items: center; gap: 14px; padding: 0 22px; font-size: 24px; font-weight: 600; transition: background 0.15s ease, transform 0.08s ease; }
+.sh-cash:hover:not(:disabled) { background: var(--pay-hi); }
 .sh-cash:active:not(:disabled) { transform: scale(0.99); }
 .sh-cash:disabled, .sh-alt:disabled { opacity: 0.4; }
 .sh-cash .i { width: 28px; height: 28px; }
 .sh-fk { margin-left: auto; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 3px; padding: 3px 8px; color: rgba(255, 255, 255, 0.85); }
 .sh-alts { display: flex; gap: 10px; }
-.sh-alt { flex: 1; height: 56px; border: 1.5px solid var(--accent); color: var(--accent); border-radius: 4px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; font-size: 17px; transition: background 0.15s ease; }
-.sh-alt:hover:not(:disabled) { background: var(--accent-soft); }
-.sh-alt .sh-fk { margin-left: 6px; border-color: var(--accent-mid); color: var(--accent); opacity: 0.8; }
+.sh-alt { flex: 1; height: 56px; border: 0; background: var(--fn); color: var(--fn-fg); border-radius: 4px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; font-size: 17px; transition: background 0.15s ease; }
+.sh-alt:hover:not(:disabled) { background: var(--fn-hi); }
+.sh-alt .sh-fk { margin-left: 6px; border-color: rgba(255, 255, 255, 0.3); color: rgba(255, 255, 255, 0.75); }
 
 /* ── окна ───────────────────────────────────────────────────────────────── */
 .sh-scrim { position: fixed; inset: 0; z-index: 60; background: var(--scrim); display: flex; align-items: center; justify-content: center; padding: 16px; animation: fade-in 0.15s ease; }
@@ -215,39 +238,39 @@
 .sh-mh > div { flex: 1; min-width: 0; }
 .sh-wd { border: 1px solid var(--line); border-radius: 4px; background: var(--paper); padding: 14px 20px 16px; margin-bottom: 16px; }
 .sh-wd .row { display: flex; align-items: baseline; justify-content: space-between; }
-.sh-wd .big { font-family: "Instrument Serif", Georgia, serif; font-size: 88px; line-height: 1; letter-spacing: -0.02em; }
-.sh-wd .big small { font-family: Inter, sans-serif; font-size: 26px; color: var(--muted); letter-spacing: 0; margin-left: 10px; }
+.sh-wd .big { font-weight: 600; font-size: 88px; line-height: 1; letter-spacing: -0.02em; }
+.sh-wd .big small { font-weight: 500; font-size: 26px; color: var(--muted); letter-spacing: 0; margin-left: 10px; }
 .sh-wd .big.ph { color: var(--faint); }
 .sh-wd .eq { font-size: 26px; font-weight: 600; color: var(--accent); margin-top: 4px; display: flex; justify-content: space-between; align-items: baseline; }
 .sh-wd .eq span { font-size: 13px; font-weight: 400; color: var(--muted); }
 .sh-wd .eq.bad { color: var(--red); }
 .sh-mb { display: grid; grid-template-columns: 1fr 200px; gap: 16px; }
 .sh-kp { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.sh-kp button { height: 58px; border: 1px solid var(--line); border-radius: 4px; background: var(--key); font-family: "Instrument Serif", Georgia, serif; font-size: 28px; display: flex; align-items: center; justify-content: center; }
-.sh-kp button:hover { border-color: var(--accent); }
+.sh-kp button { height: 58px; border: 0; border-radius: 4px; background: var(--key); color: var(--key-fg); font-weight: 600; font-size: 28px; display: flex; align-items: center; justify-content: center; }
+.sh-kp button:hover { background: var(--key-hi); }
 .sh-kp button:active { background: var(--key-press); }
-.sh-kp button .i { width: 22px; height: 22px; color: var(--muted); }
+.sh-kp button .i { width: 22px; height: 22px; color: var(--key-fg); }
 .sh-qw { display: flex; flex-direction: column; gap: 8px; }
 .sh-qw button { height: 44px; border: 1px solid var(--line); border-radius: 4px; background: var(--card); font-weight: 600; font-size: 15px; text-align: center; }
 .sh-qw button:hover { border-color: var(--accent); }
 .sh-ma { display: flex; gap: 10px; margin-top: 16px; }
 .sh-ma .cancel { width: 150px; height: 62px; border: 1px solid var(--line); border-radius: 4px; font-weight: 600; font-size: 16px; text-align: center; }
 .sh-ma .cancel:hover { border-color: var(--ink); }
-.sh-ma .ok { flex: 1; height: 62px; background: var(--accent); color: var(--on-accent); border-radius: 4px; font-weight: 600; font-size: 19px; display: flex; align-items: center; justify-content: center; gap: 10px; }
-.sh-ma .ok:hover:not(:disabled) { background: var(--accent-hi); }
+.sh-ma .ok { flex: 1; height: 62px; background: var(--pay); color: var(--on-accent); border-radius: 4px; font-weight: 600; font-size: 19px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.sh-ma .ok:hover:not(:disabled) { background: var(--pay-hi); }
 .sh-ma .ok:disabled { opacity: 0.4; }
 .sh-ma .ok .i { width: 22px; height: 22px; }
 
 /* оплата */
 .sh-pm-total { text-align: center; padding: 6px 0 18px; }
-.sh-pm-total .v { font-family: "Instrument Serif", Georgia, serif; font-size: 76px; line-height: 1; letter-spacing: -0.02em; margin-top: 6px; }
-.sh-pm-total .v small { font-family: Inter, sans-serif; font-size: 20px; color: var(--muted); letter-spacing: 0; margin-left: 8px; }
+.sh-pm-total .v { font-weight: 600; font-size: 76px; line-height: 1; letter-spacing: -0.02em; margin-top: 6px; }
+.sh-pm-total .v small { font-weight: 500; font-size: 20px; color: var(--muted); letter-spacing: 0; margin-left: 8px; }
 .sh-pm-tender { border: 1px solid var(--line); border-radius: 4px; background: var(--paper); padding: 12px 18px 14px; margin-bottom: 12px; }
 .sh-pm-tender .row { display: flex; justify-content: space-between; align-items: baseline; }
-.sh-pm-tender .v { font-family: "Instrument Serif", Georgia, serif; font-size: 52px; line-height: 1.05; }
+.sh-pm-tender .v { font-weight: 600; font-size: 52px; line-height: 1.05; }
 .sh-pm-tender .v.ph { color: var(--faint); }
 .sh-pm-change { display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px; font-size: 15px; color: var(--muted); }
-.sh-pm-change b { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; font-size: 34px; color: var(--accent); }
+.sh-pm-change b { font-weight: 600; font-size: 34px; color: var(--accent); }
 .sh-pm-change.short b { color: var(--red); }
 .sh-pm-quick { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
 .sh-pm-quick button { flex: 1; min-width: 96px; height: 44px; border: 1px solid var(--line); border-radius: 4px; font-weight: 600; font-size: 14px; background: var(--card); }
@@ -262,17 +285,17 @@
 .sh-done { text-align: center; padding: 8px 4px 0; }
 .sh-done .ok { width: 68px; height: 68px; margin: 0 auto 12px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; }
 .sh-done .ok .i { width: 36px; height: 36px; }
-.sh-done h3 { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; font-size: 34px; letter-spacing: -0.01em; }
+.sh-done h3 { font-weight: 600; font-size: 34px; letter-spacing: -0.01em; }
 .sh-done .sub { color: var(--muted); font-size: 14px; margin-top: 4px; }
 .sh-done .chg { margin: 18px 0 6px; padding: 14px; border: 1px solid var(--accent-mid); border-radius: 4px; background: var(--accent-soft); }
-.sh-done .chg .v { font-family: "Instrument Serif", Georgia, serif; font-size: 68px; line-height: 1; color: var(--accent); }
-.sh-done .chg .v small { font-family: Inter, sans-serif; font-size: 18px; margin-left: 8px; color: var(--muted); }
+.sh-done .chg .v { font-weight: 600; font-size: 68px; line-height: 1; color: var(--accent); }
+.sh-done .chg .v small { font-weight: 500; font-size: 18px; margin-left: 8px; color: var(--muted); }
 .sh-done .actions { display: flex; gap: 10px; margin-top: 20px; }
 .sh-done .actions .ghost { flex: 1; height: 56px; border: 1px solid var(--line); border-radius: 4px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center; }
 .sh-done .actions .ghost:hover:not(:disabled) { border-color: var(--accent); }
 .sh-done .actions .ghost .i { width: 18px; height: 18px; }
-.sh-done .actions .next { flex: 2; height: 56px; background: var(--accent); color: var(--on-accent); border-radius: 4px; font-weight: 600; font-size: 17px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-.sh-done .actions .next:hover { background: var(--accent-hi); }
+.sh-done .actions .next { flex: 2; height: 56px; background: var(--fn); color: var(--on-accent); border-radius: 4px; font-weight: 600; font-size: 17px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.sh-done .actions .next:hover { background: var(--fn-hi); }
 .sh-done .hint { margin-top: 12px; font-size: 12px; color: var(--faint); }
 
 /* отложенные и клиент */

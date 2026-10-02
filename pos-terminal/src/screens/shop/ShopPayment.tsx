@@ -165,7 +165,7 @@ export default function ShopPayment({ method, total, shiftId, onClose, onPaid }:
                 <span className="lbl">Получено</span>
                 <span className={`v tab${text === "" ? " ph" : ""}`}>
                   {parts(text ? parseDecimal(text) : total).figure}
-                  <small style={{ fontFamily: "Inter, sans-serif", fontSize: 18, marginLeft: 8, color: "var(--muted)" }}>{totalParts.symbol}</small>
+                  <small style={{ fontWeight: 500, fontSize: 18, marginLeft: 8, color: "var(--muted)" }}>{totalParts.symbol}</small>
                 </span>
               </div>
               <div className={`sh-pm-change${short ? " short" : ""}`}>

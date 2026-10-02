@@ -103,7 +103,7 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
             {([
               { key: "cash" as const, label: "Наличные", icon: Banknote, activeColor: "border-success-500 bg-success-500/10 shadow-success-500/10", textColor: "text-success-500" },
               { key: "card" as const, label: "Карта", icon: CreditCard, activeColor: "border-primary-500 bg-primary-600/10 shadow-primary-500/10", textColor: "text-primary-400" },
-              { key: "qr" as const, label: "QR", icon: QrCode, activeColor: "border-blue-500 bg-blue-500/10 shadow-blue-500/10", textColor: "text-blue-400" },
+              { key: "qr" as const, label: "QR", icon: QrCode, activeColor: "border-primary-500 bg-primary-500/10 shadow-primary-500/10", textColor: "text-primary-400" },
             ]).map(({ key, label, icon: Icon, activeColor, textColor }) => (
               <button
                 key={key}
@@ -173,7 +173,7 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
           <button
             onClick={() => createOrder.mutate()}
             disabled={createOrder.isPending || !canPay}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-600 py-4 text-base font-bold text-white shadow-lg shadow-primary-600/30 transition-all hover:bg-primary-500 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-success-600 py-4 text-base font-bold text-white shadow-lg shadow-success-600/30 transition-all hover:bg-success-500 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {createOrder.isPending ? (
               <>
@@ -194,8 +194,8 @@ export default function PaymentModal({ shiftId, onComplete, onClose }: PaymentMo
       {showQrSoon && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" style={{ animation: "fade-in 0.2s ease" }}>
           <div className="rounded-3xl border border-dark-600 bg-dark-800 p-8 w-80 text-center shadow-2xl" style={{ animation: "scale-in 0.2s ease" }}>
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/15 mb-4">
-              <Smartphone className="h-8 w-8 text-blue-400" />
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-500/15 mb-4">
+              <Smartphone className="h-8 w-8 text-primary-400" />
             </div>
             <h3 className="text-lg font-bold text-dark-50">Скоро будет доступно</h3>
             <p className="mt-2 text-sm text-dark-400">QR-оплата находится в разработке</p>
